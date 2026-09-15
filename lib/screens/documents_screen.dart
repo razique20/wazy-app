@@ -319,7 +319,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
           await _loadData();
         },
         icon: const Icon(Icons.add),
-        label: const Text('Scan'),
+        label: const Text('Add Document'),
       ),
     );
   }
@@ -404,7 +404,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                 await _loadData();
               },
               icon: const Icon(Icons.add),
-              label: const Text('Scan first document'),
+              label: const Text('Add first document'),
             )
           else
             TextButton(

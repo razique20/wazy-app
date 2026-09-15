@@ -184,4 +184,53 @@ void main() {
       expect(restored.monthlyContribution, 250);
     });
   });
+
+  group('FinanceMath overall budget calculations', () {
+    test('totalBudgetAllocated sums category monthly limits', () {
+      final budgets = [
+        const CategoryBudget(
+          id: 'b1',
+          collectionId: 'c1',
+          category: FinanceCategory.rent,
+          monthlyLimit: 10000,
+        ),
+        const CategoryBudget(
+          id: 'b2',
+          collectionId: 'c1',
+          category: FinanceCategory.salaries,
+          monthlyLimit: 25000,
+        ),
+      ];
+
+      expect(FinanceMath.totalBudgetAllocated(budgets), 35000);
+    });
+
+    test('remainingUnallocatedBudget calculates unallocated budget correctly', () {
+      final budgets = [
+        const CategoryBudget(
+          id: 'b1',
+          collectionId: 'c1',
+          category: FinanceCategory.rent,
+          monthlyLimit: 10000,
+        ),
+        const CategoryBudget(
+          id: 'b2',
+          collectionId: 'c1',
+          category: FinanceCategory.salaries,
+          monthlyLimit: 25000,
+        ),
+      ];
+
+      expect(FinanceMath.remainingUnallocatedBudget(50000, budgets), 15000);
+      // Excluding b1 (10,000) means remaining is 50,000 - 25,000 = 25,000.
+      expect(
+        FinanceMath.remainingUnallocatedBudget(
+          50000,
+          budgets,
+          excludingCategoryId: 'b1',
+        ),
+        25000,
+      );
+    });
+  });
 }

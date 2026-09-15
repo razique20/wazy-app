@@ -33,6 +33,7 @@ class FinanceService extends ChangeNotifier {
   final List<FinanceTransaction> _transactions = [];
   final List<CategoryBudget> _budgets = [];
   final List<SavingsEnvelope> _envelopes = [];
+  final Map<String, double> _overallBudgets = {};
   bool _initialized = false;
 
   // ------------------------------------------------------------------
@@ -44,6 +45,12 @@ class FinanceService extends ChangeNotifier {
   List<CategoryBudget> get budgets => List.unmodifiable(_budgets);
 
   List<SavingsEnvelope> get envelopes => List.unmodifiable(_envelopes);
+
+  /// Overall monthly budget for the active collection (if set).
+  double? get activeOverallBudget {
+    final activeId = DocumentCollectionService.instance.activeCollectionId;
+    return _overallBudgets[activeId];
+  }
 
   /// All records scoped to the active collection.
   List<FinanceTransaction> get activeTransactions {
@@ -252,6 +259,18 @@ class FinanceService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Set or clear the overall monthly budget for the active collection.
+  Future<void> setOverallBudget(double? amount) async {
+    final activeId = DocumentCollectionService.instance.activeCollectionId;
+    if (amount == null || amount <= 0) {
+      _overallBudgets.remove(activeId);
+    } else {
+      _overallBudgets[activeId] = amount;
+    }
+    await _persistLocal();
+    notifyListeners();
+  }
+
   // ------------------------------------------------------------------
   // Writes — envelopes
   // ------------------------------------------------------------------
@@ -348,6 +367,7 @@ class FinanceService extends ChangeNotifier {
         'transactions': _transactions.map((t) => t.toJson()).toList(),
         'budgets': _budgets.map((b) => b.toJson()).toList(),
         'envelopes': _envelopes.map((e) => e.toJson()).toList(),
+        'overallBudgets': _overallBudgets,
       }),
     );
   }
@@ -376,6 +396,12 @@ class FinanceService extends ChangeNotifier {
           (decoded['envelopes'] as List<dynamic>? ?? const [])
               .map((json) => SavingsEnvelope.fromJson(json as Map<String, dynamic>)),
         );
+      _overallBudgets.clear();
+      if (decoded['overallBudgets'] is Map<String, dynamic>) {
+        (decoded['overallBudgets'] as Map<String, dynamic>).forEach((key, val) {
+          if (val is num) _overallBudgets[key] = val.toDouble();
+        });
+      }
     } catch (_) {
       // Ignore malformed cache — start empty rather than crash.
     }

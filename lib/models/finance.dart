@@ -349,6 +349,27 @@ class FinanceMath {
     return result;
   }
 
+  /// Total sum of category monthly budget limits.
+  static double totalBudgetAllocated(List<CategoryBudget> budgets) {
+    return budgets.fold(0.0, (sum, b) => sum + b.monthlyLimit);
+  }
+
+  /// Remaining unallocated monthly budget given an overall budget limit.
+  /// If [excludingCategoryId] is provided (e.g., when editing an existing budget),
+  /// that category's existing limit is excluded from the allocated sum.
+  static double remainingUnallocatedBudget(
+    double overallBudget,
+    List<CategoryBudget> budgets, {
+    String? excludingCategoryId,
+  }) {
+    var allocated = 0.0;
+    for (final b in budgets) {
+      if (excludingCategoryId != null && b.id == excludingCategoryId) continue;
+      allocated += b.monthlyLimit;
+    }
+    return overallBudget - allocated;
+  }
+
   /// Renewal cost outlook: sum of known renewal fees for active documents
   /// expiring within [withinDays].
   static double renewalOutlook(List<ExpiryItem> items, int withinDays) {

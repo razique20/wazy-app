@@ -680,6 +680,10 @@ class _MoneyScreenState extends State<MoneyScreen> {
     ThemeData theme,
     Map<FinanceCategory, double> spendByCategory,
   ) {
+    final overallBudget = FinanceService.instance.activeOverallBudget;
+    final totalAllocated = FinanceMath.totalBudgetAllocated(_budgets);
+    final isOverAllocated = overallBudget != null && totalAllocated > overallBudget;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -687,12 +691,132 @@ class _MoneyScreenState extends State<MoneyScreen> {
           theme,
           'Monthly budgets',
           Icons.speed_rounded,
-          actionLabel: 'Add',
+          actionLabel: 'Add category',
           onAction: _showBudgetSheet,
         ),
         const SizedBox(height: 12),
+        Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(
+              color: isOverAllocated
+                  ? theme.colorScheme.error
+                  : theme.colorScheme.outlineVariant,
+            ),
+          ),
+          color: isOverAllocated
+              ? theme.colorScheme.errorContainer.withValues(alpha: 0.15)
+              : theme.colorScheme.surfaceContainerLow,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.account_balance_rounded,
+                          size: 20,
+                          color: isOverAllocated
+                              ? theme.colorScheme.error
+                              : theme.colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Overall Monthly Budget',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    TextButton.icon(
+                      onPressed: _showOverallBudgetSheet,
+                      icon: Icon(
+                        overallBudget == null ? Icons.add_rounded : Icons.edit_rounded,
+                        size: 16,
+                      ),
+                      label: Text(
+                        overallBudget == null ? 'Set budget' : 'Edit',
+                      ),
+                    ),
+                  ],
+                ),
+                if (overallBudget != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    MoneyFormat.aed(overallBudget),
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Allocated: ${MoneyFormat.aed(totalAllocated)}',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: isOverAllocated
+                              ? theme.colorScheme.error
+                              : theme.colorScheme.onSurfaceVariant,
+                          fontWeight: isOverAllocated ? FontWeight.bold : FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        isOverAllocated
+                            ? 'Over: ${MoneyFormat.aed(totalAllocated - overallBudget)}'
+                            : 'Remaining: ${MoneyFormat.aed(overallBudget - totalAllocated)}',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: isOverAllocated
+                              ? theme.colorScheme.error
+                              : theme.colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: (totalAllocated / overallBudget).clamp(0.0, 1.0),
+                      minHeight: 8,
+                      backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                      color: isOverAllocated
+                          ? theme.colorScheme.error
+                          : (totalAllocated == overallBudget
+                              ? Colors.orange
+                              : theme.colorScheme.primary),
+                    ),
+                  ),
+                ] else ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'No overall monthly budget set. Tap "Set budget" to set a total monthly spending limit across all categories.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
         if (_budgets.isEmpty)
-          _hintCard(theme, 'Set a monthly limit for any category to see progress here.')
+          _hintCard(
+            theme,
+            overallBudget != null
+                ? 'No category budgets added yet. Tap "Add category" to allocate your monthly budget.'
+                : 'Set a monthly limit for any category to see progress here.',
+          )
         else
           ..._budgets.map((budget) {
             final spent = spendByCategory[budget.category] ?? 0;
@@ -819,14 +943,48 @@ class _MoneyScreenState extends State<MoneyScreen> {
     await FinanceService.instance.addTransaction(created);
   }
 
-  Future<void> _showBudgetSheet({CategoryBudget? existing}) async {
-    final result = await showModalBottomSheet<(FinanceCategory, double)>(
+  Future<void> _showOverallBudgetSheet() async {
+    final current = FinanceService.instance.activeOverallBudget;
+    final result = await showModalBottomSheet<double?>(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => _BudgetFormSheet(existing: existing),
+      builder: (_) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: _OverallBudgetFormSheet(currentLimit: current),
+      ),
+    );
+    if (result == null) return;
+    await FinanceService.instance.setOverallBudget(result < 0 ? null : result);
+  }
+
+  Future<void> _showBudgetSheet({CategoryBudget? existing}) async {
+    final overallBudget = FinanceService.instance.activeOverallBudget;
+    final double? maxAllowed = overallBudget != null
+        ? FinanceMath.remainingUnallocatedBudget(
+            overallBudget,
+            _budgets,
+            excludingCategoryId: existing?.id,
+          )
+        : null;
+
+    final result = await showModalBottomSheet<(FinanceCategory, double)>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: _BudgetFormSheet(
+          existing: existing,
+          maxAllowedLimit: maxAllowed,
+        ),
+      ),
     );
     if (result == null) return;
     await FinanceService.instance.upsertBudget(result.$1, result.$2);
@@ -1372,30 +1530,26 @@ class _TransactionFormSheetState extends State<_TransactionFormSheet> {
 }
 
 // ====================================================================
-// Budget form sheet
+// Overall Budget form sheet
 // ====================================================================
 
-class _BudgetFormSheet extends StatefulWidget {
-  final CategoryBudget? existing;
+class _OverallBudgetFormSheet extends StatefulWidget {
+  final double? currentLimit;
 
-  const _BudgetFormSheet({this.existing});
+  const _OverallBudgetFormSheet({this.currentLimit});
 
   @override
-  State<_BudgetFormSheet> createState() => _BudgetFormSheetState();
+  State<_OverallBudgetFormSheet> createState() => _OverallBudgetFormSheetState();
 }
 
-class _BudgetFormSheetState extends State<_BudgetFormSheet> {
-  late FinanceCategory _category;
+class _OverallBudgetFormSheetState extends State<_OverallBudgetFormSheet> {
   late final TextEditingController _limitController;
 
   @override
   void initState() {
     super.initState();
-    _category = widget.existing?.category ?? FinanceCategory.other;
     _limitController = TextEditingController(
-      text: widget.existing == null
-          ? ''
-          : widget.existing!.monthlyLimit.toStringAsFixed(0),
+      text: widget.currentLimit != null ? widget.currentLimit!.toStringAsFixed(0) : '',
     );
   }
 
@@ -1406,9 +1560,13 @@ class _BudgetFormSheetState extends State<_BudgetFormSheet> {
   }
 
   void _submit() {
-    final limit = double.tryParse(_limitController.text.trim());
-    if (limit == null || limit <= 0) return;
-    Navigator.pop(context, (_category, limit));
+    final val = double.tryParse(_limitController.text.trim());
+    if (val == null || val <= 0) return;
+    Navigator.pop(context, val);
+  }
+
+  void _clear() {
+    Navigator.pop(context, -1.0);
   }
 
   @override
@@ -1422,10 +1580,178 @@ class _BudgetFormSheetState extends State<_BudgetFormSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
+              widget.currentLimit == null
+                  ? 'Set overall monthly budget'
+                  : 'Edit overall monthly budget',
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Set the overall monthly limit across all spending categories. Individual category budgets will be constrained within this amount.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _limitController,
+              autofocus: true,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'Total Monthly Budget (AED)',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.account_balance_rounded),
+              ),
+            ),
+            const SizedBox(height: 20),
+            FilledButton(
+              onPressed: _submit,
+              child: const Text('Save overall budget'),
+            ),
+            if (widget.currentLimit != null) ...[
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: _clear,
+                style: TextButton.styleFrom(
+                  foregroundColor: theme.colorScheme.error,
+                ),
+                child: const Text('Remove overall budget cap'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ====================================================================
+// Budget form sheet
+// ====================================================================
+
+class _BudgetFormSheet extends StatefulWidget {
+  final CategoryBudget? existing;
+  final double? maxAllowedLimit;
+
+  const _BudgetFormSheet({this.existing, this.maxAllowedLimit});
+
+  @override
+  State<_BudgetFormSheet> createState() => _BudgetFormSheetState();
+}
+
+class _BudgetFormSheetState extends State<_BudgetFormSheet> {
+  late FinanceCategory _category;
+  late final TextEditingController _limitController;
+  String? _errorText;
+
+  @override
+  void initState() {
+    super.initState();
+    _category = widget.existing?.category ?? FinanceCategory.other;
+    _limitController = TextEditingController(
+      text: widget.existing == null
+          ? ''
+          : widget.existing!.monthlyLimit.toStringAsFixed(0),
+    );
+    _limitController.addListener(_validate);
+  }
+
+  @override
+  void dispose() {
+    _limitController.dispose();
+    super.dispose();
+  }
+
+  void _validate() {
+    final text = _limitController.text.trim();
+    if (text.isEmpty) {
+      if (_errorText != null) setState(() => _errorText = null);
+      return;
+    }
+    final val = double.tryParse(text);
+    if (val == null || val <= 0) {
+      if (_errorText != 'Enter a valid amount') {
+        setState(() => _errorText = 'Enter a valid amount');
+      }
+      return;
+    }
+
+    if (widget.maxAllowedLimit != null && val > widget.maxAllowedLimit! + 0.01) {
+      final maxStr = MoneyFormat.aed(widget.maxAllowedLimit! < 0 ? 0 : widget.maxAllowedLimit!);
+      final msg = widget.maxAllowedLimit! <= 0
+          ? 'Overall monthly budget is fully allocated'
+          : 'Exceeds remaining monthly budget ($maxStr)';
+      if (_errorText != msg) {
+        setState(() => _errorText = msg);
+      }
+    } else {
+      if (_errorText != null) setState(() => _errorText = null);
+    }
+  }
+
+  void _submit() {
+    _validate();
+    if (_errorText != null) return;
+    final limit = double.tryParse(_limitController.text.trim());
+    if (limit == null || limit <= 0) return;
+    if (widget.maxAllowedLimit != null && limit > widget.maxAllowedLimit! + 0.01) return;
+    Navigator.pop(context, (_category, limit));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final maxLimit = widget.maxAllowedLimit;
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
               widget.existing == null ? 'Add budget' : 'Edit budget',
               style: theme.textTheme.titleMedium
                   ?.copyWith(fontWeight: FontWeight.w600),
             ),
+            if (maxLimit != null) ...[
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: maxLimit <= 0
+                      ? theme.colorScheme.errorContainer.withValues(alpha: 0.3)
+                      : theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      maxLimit <= 0 ? Icons.warning_amber_rounded : Icons.info_outline_rounded,
+                      size: 16,
+                      color: maxLimit <= 0
+                          ? theme.colorScheme.error
+                          : theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        maxLimit <= 0
+                            ? 'Overall monthly budget is 100% allocated.'
+                            : 'Available from overall monthly budget: ${MoneyFormat.aed(maxLimit)}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: maxLimit <= 0
+                              ? theme.colorScheme.error
+                              : theme.colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             DropdownButtonFormField<FinanceCategory>(
               initialValue: _category,
@@ -1454,14 +1780,15 @@ class _BudgetFormSheetState extends State<_BudgetFormSheet> {
               controller: _limitController,
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Monthly limit (AED)',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
+                errorText: _errorText,
               ),
             ),
             const SizedBox(height: 20),
             FilledButton(
-              onPressed: _submit,
+              onPressed: _errorText != null ? null : _submit,
               child: const Text('Save budget'),
             ),
           ],
