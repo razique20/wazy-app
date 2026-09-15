@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/document_type.dart';
 import '../../models/expiry_item.dart';
+import '../indicators/department_logo.dart';
 
 class ExpiryCard extends StatelessWidget {
   final ExpiryItem item;
@@ -39,6 +40,9 @@ class ExpiryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final accent = _accentColor();
+    final locationText = item.location != null && item.location!.isNotEmpty && item.location != 'UAE'
+        ? item.location!
+        : item.docType.displayName;
 
     return Material(
       color: _cardColor(context),
@@ -56,21 +60,7 @@ class ExpiryCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: accent.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Center(
-                  child: Icon(
-                    item.docType.icon,
-                    color: accent,
-                    size: 22,
-                  ),
-                ),
-              ),
+              DepartmentLogo(item: item, size: 44),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -86,7 +76,7 @@ class ExpiryCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${item.docType.displayName} • Expires ${item.expiryDate}',
+                      '$locationText • Expires ${item.expiryDate}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.outline,
                       ),

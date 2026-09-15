@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/document_type.dart';
 import '../../models/expiry_item.dart';
+import '../indicators/department_logo.dart';
 
 class DocumentListTile extends StatelessWidget {
   final ExpiryItem item;
@@ -24,15 +25,6 @@ class DocumentListTile extends StatelessWidget {
     return Colors.green.shade700;
   }
 
-  IconData _statusIcon() {
-    final days = item.daysRemaining;
-    if (!item.isActive) return Icons.cancel_outlined;
-    if (days <= 7) return Icons.warning_amber_rounded;
-    if (days <= 30) return Icons.warning_amber_outlined;
-    if (days <= 60) return Icons.schedule;
-    return Icons.check_circle_outline;
-  }
-
   String _label() {
     final days = item.daysRemaining;
     if (!item.isActive) return 'Expired / Offboarded';
@@ -52,16 +44,9 @@ class DocumentListTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Row(
             children: [
-              SizedBox(
-                width: 44,
-                height: 44,
-                child: Center(
-                  child: Icon(
-                    _statusIcon(),
-                    color: _color(),
-                    size: 26,
-                  ),
-                ),
+              DepartmentLogo(
+                item: item,
+                size: 44,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -78,7 +63,9 @@ class DocumentListTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      item.docType.displayName,
+                      (item.location != null && item.location!.isNotEmpty)
+                          ? '${item.docType.displayName} • ${item.location}'
+                          : item.docType.displayName,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Theme.of(context).colorScheme.outline,
                           ),

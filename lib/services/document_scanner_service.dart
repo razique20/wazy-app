@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/expiry_item.dart';
 import '../models/document_type.dart';
@@ -7,18 +10,8 @@ import 'auth_service.dart';
 import 'collection_service.dart';
 import 'supabase_service.dart';
 
-/// Persistent store for [ExpiryItem] records backed by Supabase Postgres.
-///
-/// Design notes:
-/// * Singleton — all screens share one cache via [DocumentScannerService()],
-///   and the class extends [ChangeNotifier] so UI can listen for changes.
-/// * Derived fields (daysRemaining, urgency, isExpired, isActive) are NOT
-///   stored in the DB — they are recomputed on read from `expires_at`.
-/// * Local-only mode: when Supabase isn't configured the cache acts as the
-///   store so the app remains fully usable for demos/tests.
-///
-/// The SQL schema lives in supabase/schema.sql and must be applied to your
-/// Supabase project before real data flows.
+/// Persistent store for [ExpiryItem] records backed by Supabase Postgres and
+/// offline SharedPreferences local storage.
 class DocumentScannerService extends ChangeNotifier {
   DocumentScannerService._();
 
@@ -26,12 +19,14 @@ class DocumentScannerService extends ChangeNotifier {
 
   factory DocumentScannerService() => instance;
 
+  static const String _localDocsKey = 'local_documents_v1';
+
   final _client = SupabaseService.hasCredentials ? SupabaseService.client : null;
 
   final List<ExpiryItem> _cache = [];
   bool _initialized = false;
 
-  /// Load documents from Supabase into the local cache.
+  /// Load documents from Supabase or local offline storage into the cache.
   Future<void> init() async {
     if (_initialized) return;
     _initialized = true; // set first so concurrent callers don't re-enter
@@ -39,7 +34,8 @@ class DocumentScannerService extends ChangeNotifier {
     final client = _client;
     final userId = AuthService.instance.currentUserId;
     if (client == null || userId == null) {
-      _cache.clear();
+      await _loadLocal();
+      notifyListeners();
       return;
     }
 
@@ -54,11 +50,112 @@ class DocumentScannerService extends ChangeNotifier {
       _cache
         ..clear()
         ..addAll(response.map(_documentRowToExpiryItem).toList());
+      await _saveLocal();
     } catch (_) {
-      // Supabase unreachable or table missing — keep whatever cache we have
-      // (possibly empty) instead of crashing on cold start.
+      // Supabase unreachable or table missing — fall back to local offline storage
+      await _loadLocal();
     }
     notifyListeners();
+  }
+
+  Future<void> _loadLocal() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonStr = prefs.getString(_localDocsKey);
+      if (jsonStr != null && jsonStr.isNotEmpty) {
+        final List<dynamic> list = jsonDecode(jsonStr);
+        final loaded = list.map((e) {
+          final item = ExpiryItem.fromJson(e as Map<String, dynamic>);
+          final days = item.expiresAt.difference(DateTime.now()).inDays;
+          return item.copyWith(
+            daysRemaining: days,
+            isExpired: days < 0,
+            urgency: UrgencyLevel.fromDays(days),
+          );
+        }).toList();
+        _cache
+          ..clear()
+          ..addAll(loaded);
+      } else {
+        // Seed default UAE sample documents into local storage on first launch
+        _cache
+          ..clear()
+          ..addAll(_defaultSeedDocuments);
+        await _saveLocal();
+      }
+    } catch (_) {
+      if (_cache.isEmpty) {
+        _cache.addAll(_defaultSeedDocuments);
+      }
+    }
+  }
+
+  static final List<ExpiryItem> _defaultSeedDocuments = [
+    ExpiryItem.create(
+      id: 'doc_ded_trade_licence',
+      displayName: 'Dubai Department of Economy & Tourism (DET) Trade License',
+      docType: DocumentType.tradeLicence,
+      expiresAt: DateTime.now().add(const Duration(days: 14)),
+      location: 'Dubai Commercial (DED)',
+      renewalFee: 12500,
+      renewalWarning: 'DET Trade License expires in 14 days. Activity will be suspended if renewed past deadline.',
+      fileName: 'det_commercial_license_2026.pdf',
+      fileSize: 485000,
+    ),
+    ExpiryItem.create(
+      id: 'doc_ejari_lease',
+      displayName: 'Office Lease & Ejari Registration',
+      docType: DocumentType.ejari,
+      expiresAt: DateTime.now().add(const Duration(days: 28)),
+      location: 'Dubai Land Department (RERA)',
+      renewalFee: 220,
+      renewalWarning: 'Ejari renewal required before trade license renewal.',
+      fileName: 'ejari_tenancy_contract.pdf',
+      fileSize: 312000,
+    ),
+    ExpiryItem.create(
+      id: 'doc_partner_visa',
+      displayName: 'Partner Residence Visa',
+      docType: DocumentType.visa,
+      expiresAt: DateTime.now().add(const Duration(days: 45)),
+      location: 'GDRFA Dubai',
+      renewalFee: 3800,
+      renewalWarning: 'Medical fitness test and Emirates ID biometric required for visa renewal.',
+      fileName: 'partner_residence_visa.pdf',
+      fileSize: 240000,
+    ),
+    ExpiryItem.create(
+      id: 'doc_emirates_id',
+      displayName: 'Emirates ID (UAE Citizen/Resident)',
+      docType: DocumentType.emiratesId,
+      expiresAt: DateTime.now().add(const Duration(days: 60)),
+      location: 'ICP UAE',
+      renewalFee: 370,
+      renewalWarning: 'ICP registration required. Ensure linked mobile number is active.',
+      fileName: 'emirates_identity_card.png',
+      fileSize: 185000,
+    ),
+    ExpiryItem.create(
+      id: 'doc_rta_vehicle',
+      displayName: 'Company Vehicle Registration (Mulkiya)',
+      docType: DocumentType.vehicleRegistration,
+      expiresAt: DateTime.now().add(const Duration(days: 5)),
+      location: 'RTA Dubai',
+      renewalFee: 450,
+      renewalWarning: 'RTA technical vehicle inspection required prior to renewal.',
+      fileName: 'rta_mulkiya_vehicle_card.pdf',
+      fileSize: 142000,
+    ),
+  ];
+
+  Future<void> _saveLocal() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonStr = jsonEncode(_cache.map((e) => e.toJson()).toList());
+      await prefs.setString(_localDocsKey, jsonStr);
+    } catch (_) {
+      // Local save failed
+    }
   }
 
   /// Documents in the active collection.
@@ -77,12 +174,19 @@ class DocumentScannerService extends ChangeNotifier {
   void clearCache() {
     _cache.clear();
     _initialized = false;
+    SharedPreferences.getInstance().then((prefs) => prefs.remove(_localDocsKey));
     notifyListeners();
   }
 
   // ------------------------------------------------------------------
   // Reads
   // ------------------------------------------------------------------
+
+  /// Find document by ID across all collections.
+  Future<ExpiryItem?> getItemById(String id) async {
+    await _ensureInitialized();
+    return _cache.where((item) => item.id == id).firstOrNull;
+  }
 
   /// Active documents in the active collection.
   ///
@@ -158,6 +262,7 @@ class DocumentScannerService extends ChangeNotifier {
       await client.from('documents').delete().eq('id', id);
     }
     _cache.removeWhere((existing) => existing.id == id);
+    await _saveLocal();
     notifyListeners();
   }
 
@@ -168,6 +273,7 @@ class DocumentScannerService extends ChangeNotifier {
       await client.from('documents').update({'status': 'renewed'}).eq('id', id);
     }
     _cache.removeWhere((existing) => existing.id == id);
+    await _saveLocal();
     notifyListeners();
   }
 
@@ -180,6 +286,7 @@ class DocumentScannerService extends ChangeNotifier {
     final index = _cache.indexWhere((item) => item.id == id);
     if (index != -1) {
       _cache[index] = _cache[index].copyWith(assignedTo: assignee);
+      await _saveLocal();
       notifyListeners();
     }
   }
@@ -205,6 +312,7 @@ class DocumentScannerService extends ChangeNotifier {
           newExpiryDate.difference(DateTime.now()).inDays,
         ),
       );
+      await _saveLocal();
       notifyListeners();
     }
   }
@@ -233,6 +341,7 @@ class DocumentScannerService extends ChangeNotifier {
     final index = _cache.indexWhere((item) => item.id == id);
     if (index != -1) {
       _cache[index] = _cache[index].copyWith(reminderStatus: status);
+      await _saveLocal();
       notifyListeners();
     }
   }
@@ -253,6 +362,7 @@ class DocumentScannerService extends ChangeNotifier {
       _cache.add(item);
     }
     _cache.sort((a, b) => a.expiresAt.compareTo(b.expiresAt));
+    _saveLocal();
     notifyListeners();
   }
 
@@ -311,6 +421,9 @@ class DocumentScannerService extends ChangeNotifier {
       renewalAuthorities: null,
       renewalWarning: notes ?? defaultWarningFor(docType),
       expiresAt: expiresAt,
+      fileName: row['file_name'] as String?,
+      filePath: row['file_path'] as String?,
+      fileSize: row['file_size'] as int?,
     );
   }
 
@@ -318,7 +431,7 @@ class DocumentScannerService extends ChangeNotifier {
   ///
   /// Only persists columns that exist in the schema (see supabase/schema.sql):
   ///   id, collection_id, doc_type, display_name, expires_at, reminder_days,
-  ///   status, assigned_to, renewal_fee, notes
+  ///   status, assigned_to, renewal_fee, notes, file_name, file_path, file_size
   ///
   /// `owner_id` is included on insert; the DB trigger plus RLS policies scope
   /// every row to the authenticated user.
@@ -337,6 +450,9 @@ class DocumentScannerService extends ChangeNotifier {
       'assigned_to': item.assignedTo,
       'renewal_fee': item.renewalFee,
       'notes': item.renewalWarning,
+      'file_name': item.fileName,
+      'file_path': item.filePath,
+      'file_size': item.fileSize,
     };
     if (ownerId != null) row['owner_id'] = ownerId;
     return row;

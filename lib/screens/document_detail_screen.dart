@@ -27,9 +27,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
   }
 
   Future<void> _loadItem() async {
-    // Find item by ID
-    final allItems = await DocumentScannerService().getAllItems();
-    final item = allItems.where((i) => i.id == widget.documentId).firstOrNull;
+    // Find item by ID directly across all cached documents
+    final item = await DocumentScannerService.instance.getItemById(widget.documentId);
     if (mounted) {
       setState(() {
         _item = item;
@@ -101,214 +100,273 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
-      body: CustomScrollView(
-        slivers: [
-          // App bar with document info
-          SliverAppBar(
-            expandedHeight: 200,
-            pinned: true,
-            backgroundColor: theme.colorScheme.surface,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.edit_outlined),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Edit document (coming soon)')),
-                  );
-                },
-                tooltip: 'Edit document',
-              ),
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert),
-                onSelected: (value) => _handleMenuAction(context, value, item),
-                itemBuilder: (context) => [
-                  const PopupMenuItem(value: 'renew', child: Text('Mark as renewed')),
-                  const PopupMenuItem(value: 'share', child: Text('Share details')),
-                  const PopupMenuItem(value: 'export', child: Text('Export report')),
-                  const PopupMenuItem(value: 'delete', child: Text('Remove document')),
-                ],
+      appBar: AppBar(
+        title: Text(item.displayName),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Edit document (coming soon)')),
+              );
+            },
+            tooltip: 'Edit document',
+          ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) => _handleMenuAction(context, value, item),
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'renew', child: Text('Mark as renewed')),
+              const PopupMenuItem(value: 'share', child: Text('Share details')),
+              const PopupMenuItem(value: 'export', child: Text('Export report')),
+              const PopupMenuItem(value: 'delete', child: Text('Remove document')),
+            ],
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top Header Card with Department Logo
+            _buildHeaderCard(theme, item, urgency, expiresAt, daysRemaining),
+
+            const SizedBox(height: 16),
+
+            // Warning box
+            if (!item.isExpired)
+              _buildWarningCard(theme, item),
+
+            if (item.fileName != null || item.filePath != null) ...[
+              const SizedBox(height: 16),
+              _buildAttachedFileCard(theme, item),
+            ],
+
+            const SizedBox(height: 16),
+
+            // Key info grid
+            _buildInfoGrid(theme, item),
+
+            const SizedBox(height: 20),
+
+            // Urgency path steps
+            _buildUrgencyPath(theme, item),
+
+            const SizedBox(height: 20),
+
+            // Renewal process
+            _buildRenewalProcess(theme, item),
+
+            const SizedBox(height: 20),
+
+            // Actions
+            _buildActions(theme, item),
+
+            const SizedBox(height: 40),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderCard(
+    ThemeData theme,
+    ExpiryItem item,
+    UrgencyLevel urgency,
+    DateTime expiresAt,
+    int daysRemaining,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: urgency.color.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: urgency.color.withOpacity(0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              DepartmentLogo(item: item, size: 52),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.displayName,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      (item.location != null && item.location!.isNotEmpty)
+                          ? '${item.docType.displayName} • ${item.location}'
+                          : item.docType.displayName,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.outline,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      urgency.color.withOpacity(0.06),
-                      theme.colorScheme.surface,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: SafeArea(
-                  top: false,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Document type chip
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: urgency.color.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                item.docType.icon,
-                                size: 14,
-                                color: urgency.color,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                item.docType.displayName,
-                                style: TextStyle(
-                                  color: urgency.color,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: daysRemaining <= 7
-                                      ? Colors.red
-                                      : daysRemaining <= 30
-                                          ? Colors.amber
-                                          : Colors.green,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  '$daysRemaining days',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // Title
-                        Text(
-                          item.displayName,
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: -0.3,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 8),
-                        // Expiry date
-                        Row(
-                          children: [
-                            const Icon(Icons.calendar_today_rounded, size: 16),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Expires ${DateFormat('EEEE, dd MMMM yyyy').format(expiresAt)}',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.outline,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Icon(Icons.access_time_rounded, size: 16),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Documented ${item.documentDate != null ? DateFormat('dd MMM yyyy').format(DateTime.parse(item.documentDate!)) : 'Not recorded'}',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.outline,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Spacer(),
-                        // Urgency badge
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: urgency.color.withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                urgency.icon,
-                                color: urgency.color,
-                                size: 14,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                urgency.title,
-                                style: TextStyle(
-                                  color: urgency.color,
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Icon(Icons.calendar_today_rounded, size: 16),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Expires ${DateFormat('EEEE, dd MMMM yyyy').format(expiresAt)}',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: daysRemaining <= 7
+                      ? Colors.red
+                      : daysRemaining <= 30
+                          ? Colors.orange
+                          : Colors.green,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  daysRemaining < 0 ? '${-daysRemaining}d overdue' : '$daysRemaining days left',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(urgency.icon, size: 15, color: urgency.color),
+              const SizedBox(width: 6),
+              Text(
+                urgency.title,
+                style: TextStyle(
+                  color: urgency.color,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
+              if (item.documentDate != null && item.documentDate!.isNotEmpty)
+                Text(
+                  'Documented: ${item.documentDate}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.outline,
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAttachedFileCard(ThemeData theme, ExpiryItem item) {
+    final fileName = item.fileName ?? 'Attached Document';
+    final fileSizeKb = item.fileSize != null ? (item.fileSize! / 1024).toStringAsFixed(0) : null;
+    final ext = fileName.contains('.') ? fileName.split('.').last.toUpperCase() : 'FILE';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              Icons.attach_file_rounded,
+              color: theme.colorScheme.onPrimaryContainer,
+              size: 24,
             ),
           ),
-
-          // Content
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Warning box
-                  if (!item.isExpired)
-                    _buildWarningCard(theme, item),
-
-                  const SizedBox(height: 16),
-
-                  // Key info grid
-                  _buildInfoGrid(theme, item),
-
-                  const SizedBox(height: 20),
-
-                  // Urgency path steps
-                  _buildUrgencyPath(theme, item),
-
-                  const SizedBox(height: 20),
-
-                  // Renewal process
-                  _buildRenewalProcess(theme, item),
-
-                  const SizedBox(height: 20),
-
-                  // Actions
-                  _buildActions(theme, item),
-
-                  const SizedBox(height: 40),
-                ],
-              ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        ext,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        fileName,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  fileSizeKb != null ? 'Attachment file size: $fileSizeKb KB' : 'Document attachment file',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.outline,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          OutlinedButton.icon(
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Attached file: $fileName')),
+              );
+            },
+            icon: const Icon(Icons.remove_red_eye_outlined, size: 16),
+            label: const Text('View'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             ),
           ),
         ],
@@ -707,19 +765,6 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                     ],
                   ),
                 ),
-                if (!isLast)
-                  Flexible(
-                    child: Column(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            height: 2,
-                            color: theme.colorScheme.outline.withOpacity(0.2),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
               ],
             ),
           );
@@ -965,18 +1010,14 @@ class _TimelineStep extends StatelessWidget {
     return Column(
       children: [
         // Top connector line
-        Expanded(
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: Container(
-              height: 2,
-              color: isActive
-                  ? color.withOpacity(0.6)
-                  : isCompleted
-                      ? color.withOpacity(0.3)
-                      : Colors.transparent,
-            ),
-          ),
+        Container(
+          height: 3,
+          width: double.infinity,
+          color: isActive
+              ? color
+              : isCompleted
+                  ? color.withOpacity(0.4)
+                  : Theme.of(context).colorScheme.outline.withOpacity(0.2),
         ),
         // Content
         Padding(

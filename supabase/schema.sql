@@ -54,6 +54,9 @@ create table if not exists public.documents (
   assigned_to text,
   renewal_fee numeric(10,2),
   notes text,
+  file_name text,
+  file_path text,
+  file_size bigint,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

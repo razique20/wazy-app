@@ -117,6 +117,9 @@ class ExpiryItem {
   final List<String>? renewalAuthorities;
   final String? renewalWarning;
   final DateTime expiresAt;
+  final String? fileName;
+  final String? filePath;
+  final int? fileSize;
 
   String get label => '$displayName (${docType.displayName})';
 
@@ -142,6 +145,9 @@ class ExpiryItem {
     this.renewalAuthorities,
     this.renewalWarning,
     required this.expiresAt,
+    this.fileName,
+    this.filePath,
+    this.fileSize,
   });
 
   factory ExpiryItem.fromJson(Map<String, dynamic> json) {
@@ -175,6 +181,9 @@ class ExpiryItem {
       renewalAuthorities: (json['renewalAuthorities'] as List<dynamic>?)?.cast<String>(),
       renewalWarning: json['renewalWarning'] as String?,
       expiresAt: DateTime.parse(json['expiresAt'] as String),
+      fileName: json['fileName'] as String?,
+      filePath: json['filePath'] as String?,
+      fileSize: json['fileSize'] as int?,
     );
   }
 
@@ -201,6 +210,9 @@ class ExpiryItem {
       'renewalAuthorities': renewalAuthorities,
       'renewalWarning': renewalWarning,
       'expiresAt': expiresAt.toIso8601String(),
+      'fileName': fileName,
+      'filePath': filePath,
+      'fileSize': fileSize,
     };
   }
 
@@ -222,6 +234,9 @@ class ExpiryItem {
     List<String>? renewalAuthorities,
     String? renewalWarning,
     int? reminderStatus,
+    String? fileName,
+    String? filePath,
+    int? fileSize,
   }) {
     final daysRemaining = expiresAt.difference(DateTime.now()).inDays;
     final urgency = UrgencyLevel.fromDays(daysRemaining);
@@ -246,6 +261,9 @@ class ExpiryItem {
       renewalWarning: renewalWarning ?? defaultWarning(docType),
       expiresAt: expiresAt,
       reminderStatus: reminderStatus ?? _calculateReminderStatus(daysRemaining),
+      fileName: fileName,
+      filePath: filePath,
+      fileSize: fileSize,
     );
   }
 
@@ -318,6 +336,9 @@ class ExpiryItem {
     List<String>? renewalAuthorities,
     String? renewalWarning,
     DateTime? expiresAt,
+    String? fileName,
+    String? filePath,
+    int? fileSize,
   }) {
     return ExpiryItem(
       collectionId: collectionId ?? this.collectionId,
@@ -341,6 +362,9 @@ class ExpiryItem {
       renewalAuthorities: renewalAuthorities ?? this.renewalAuthorities,
       renewalWarning: renewalWarning ?? this.renewalWarning,
       expiresAt: expiresAt ?? this.expiresAt,
+      fileName: fileName ?? this.fileName,
+      filePath: filePath ?? this.filePath,
+      fileSize: fileSize ?? this.fileSize,
     );
   }
 }

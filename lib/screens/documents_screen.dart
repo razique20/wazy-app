@@ -7,6 +7,7 @@ import '../models/expiry_item.dart';
 import '../models/finance.dart';
 import '../services/document_scanner_service.dart';
 import '../services/urgency_engine.dart';
+import '../widgets/indicators/department_logo.dart';
 
 /// Documents tab (Tier 1): the full expiry-tracking workspace — search,
 /// filters and detailed cards with inline actions.
@@ -837,18 +838,9 @@ class _DocumentCard extends StatelessWidget {
               // Header row
               Row(
                 children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: item.docType.primaryColor.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      item.docType.icon,
-                      color: item.docType.primaryColor,
-                      size: 22,
-                    ),
+                  DepartmentLogo(
+                    item: item,
+                    size: 44,
                   ),
                   const SizedBox(width: 12),
                   Expanded(

@@ -158,7 +158,12 @@ class _AppShellState extends State<_AppShell> {
     if (mounted) setState(() => _items = items);
   }
 
-  void _onItemsChanged() => _loadItems();
+  void _onItemsChanged() {
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadItems();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -237,23 +242,14 @@ class _BadgeIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final badge = Container(
-      width: 8,
-      height: 8,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 1.5),
-      ),
-    );
+    final iconWidget = Icon(icon);
+    if (!showDot) return iconWidget;
 
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Icon(icon),
-        if (showDot)
-          Positioned(top: -2, right: -3, child: badge),
-      ],
+    return Badge(
+      isLabelVisible: true,
+      backgroundColor: color,
+      smallSize: 8,
+      child: iconWidget,
     );
   }
 }

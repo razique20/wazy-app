@@ -24,6 +24,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _activeId = DocumentCollection.personalId;
   bool _loading = true;
   bool _saving = false;
+  String _userName = 'Razique M K';
+  String _userRole = 'PRO / Document Admin';
+  String _userPhone = '+971 50 123 4567';
   bool _notificationsEnabled = true;
   bool _whatsappAlertsEnabled = true;
   bool _emailAlertsEnabled = true;
@@ -53,7 +56,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
+    final email = AuthService.instance.userEmail;
+    final defaultName = email != null && email.contains('@')
+        ? email.split('@').first.replaceAll('.', ' ').toUpperCase()
+        : 'Razique M K';
+
     setState(() {
+      _userName = prefs.getString('userName') ?? defaultName;
+      _userRole = prefs.getString('userRole') ?? 'PRO / Document Admin';
+      _userPhone = prefs.getString('userPhone') ?? '+971 50 123 4567';
       _notificationsEnabled = prefs.getBool('notificationsEnabled') ?? true;
       _whatsappAlertsEnabled = prefs.getBool('whatsappAlertsEnabled') ?? true;
       _emailAlertsEnabled = prefs.getBool('emailAlertsEnabled') ?? true;
@@ -67,6 +78,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _saveSettings() async {
     setState(() => _saving = true);
     final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('userName', _userName);
+    await prefs.setString('userRole', _userRole);
+    await prefs.setString('userPhone', _userPhone);
     await prefs.setBool('notificationsEnabled', _notificationsEnabled);
     await prefs.setBool('whatsappAlertsEnabled', _whatsappAlertsEnabled);
     await prefs.setBool('emailAlertsEnabled', _emailAlertsEnabled);
@@ -81,6 +95,97 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SnackBar(content: Text('Settings saved')),
       );
     }
+  }
+
+  Future<void> _editProfile(BuildContext context) async {
+    final nameCtrl = TextEditingController(text: _userName);
+    final roleCtrl = TextEditingController(text: _userRole);
+    final phoneCtrl = TextEditingController(text: _userPhone);
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 20,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.edit_note_rounded, size: 24),
+                const SizedBox(width: 8),
+                Text(
+                  'Edit User Profile',
+                  style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Full Name',
+                prefixIcon: Icon(Icons.person_outline),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: roleCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Role / Designation',
+                prefixIcon: Icon(Icons.badge_outlined),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: phoneCtrl,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                labelText: 'Phone Number',
+                prefixIcon: Icon(Icons.phone_outlined),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _userName = nameCtrl.text.trim().isEmpty ? _userName : nameCtrl.text.trim();
+                    _userRole = roleCtrl.text.trim().isEmpty ? _userRole : roleCtrl.text.trim();
+                    _userPhone = phoneCtrl.text.trim().isEmpty ? _userPhone : phoneCtrl.text.trim();
+                  });
+                  Navigator.pop(ctx);
+                  _saveSettings();
+                },
+                icon: const Icon(Icons.check_circle_outline),
+                label: const Text('Save Profile'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _signOut() async {
@@ -208,6 +313,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // User Profile & Account Header Card
+                  _buildProfileHeaderCard(theme, signedInEmail),
+
+                  const SizedBox(height: 20),
+
                   // Collections manager
                   _buildCollectionsSection(context, theme),
 
@@ -431,6 +541,239 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
             ),
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // User Profile Header Card
+  // ------------------------------------------------------------------
+
+  Widget _buildProfileHeaderCard(ThemeData theme, String? email) {
+    final initials = _userName
+        .trim()
+        .split(' ')
+        .where((e) => e.isNotEmpty)
+        .map((e) => e[0])
+        .take(2)
+        .join('')
+        .toUpperCase();
+    final isCloudSynced =
+        SupabaseService.hasCredentials && AuthService.instance.isSignedIn;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.primaryContainer.withOpacity(0.6),
+            theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      theme.colorScheme.primary,
+                      theme.colorScheme.tertiary,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.primary.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    initials.isEmpty ? 'U' : initials,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _userName,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 17,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isCloudSynced
+                                ? Colors.green.withOpacity(0.15)
+                                : Colors.teal.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isCloudSynced ? Colors.green : Colors.teal,
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isCloudSynced
+                                    ? Icons.cloud_done
+                                    : Icons.storage_rounded,
+                                size: 12,
+                                color: isCloudSynced
+                                    ? Colors.green.shade700
+                                    : Colors.teal.shade700,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                isCloudSynced ? 'Cloud Synced' : 'Local Workspace',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: isCloudSynced
+                                      ? Colors.green.shade700
+                                      : Colors.teal.shade700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 1,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            _userRole,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(Icons.email_outlined,
+                            size: 13, color: theme.colorScheme.outline),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            email ?? 'local@wazy.app',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.outline,
+                              fontSize: 11,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(Icons.phone_outlined,
+                            size: 13, color: theme.colorScheme.outline),
+                        const SizedBox(width: 4),
+                        Text(
+                          _userPhone,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.outline,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          const Divider(height: 1),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _editProfile(context),
+                  icon: const Icon(Icons.edit_outlined, size: 16),
+                  label: const Text('Edit Profile'),
+                  style: OutlinedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              if (SupabaseService.hasCredentials &&
+                  AuthService.instance.isSignedIn)
+                OutlinedButton.icon(
+                  onPressed: _signOut,
+                  icon: const Icon(Icons.logout, size: 16, color: Colors.red),
+                  label: const Text('Sign out',
+                      style: TextStyle(color: Colors.red)),
+                  style: OutlinedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    side: BorderSide(color: Colors.red.shade300),
+                  ),
+                )
+              else if (SupabaseService.hasCredentials)
+                FilledButton.icon(
+                  onPressed: () => context.go('/login'),
+                  icon: const Icon(Icons.login, size: 16),
+                  label: const Text('Sign in'),
+                  style: FilledButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
