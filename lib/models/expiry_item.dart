@@ -100,7 +100,10 @@ class ExpiryItem {
 
   final String id;
   final String displayName;
-  final DocumentType docType;
+
+  /// Resolved type metadata. Built-ins map to the [DocumentType] enum via
+  /// [DocumentTypeMeta.builtinEnum]; custom types carry their own definition.
+  final DocumentTypeMeta docType;
   final String expiryDate;
   final int daysRemaining;
   final bool isExpired;
@@ -121,6 +124,11 @@ class ExpiryItem {
   final String? fileName;
   final String? filePath;
   final int? fileSize;
+
+  /// Last local/remote mutation timestamp. Used by the offline-first sync
+  /// (see DocumentScannerService) for last-writer-wins conflict resolution.
+  /// Null on records created before this field existed.
+  final DateTime? updatedAt;
 
   String get label => '$displayName (${docType.displayName})';
 
@@ -149,13 +157,12 @@ class ExpiryItem {
     this.fileName,
     this.filePath,
     this.fileSize,
+    this.updatedAt,
   });
 
   factory ExpiryItem.fromJson(Map<String, dynamic> json) {
-    final docType = DocumentType.values.firstWhere(
-      (e) => e.name == json['docType'],
-      orElse: () => DocumentType.tradeLicence,
-    );
+    final docType =
+        DocumentTypeRegistry.instance.byKey(json['docType'] as String?);
 
     final urgencyPriority = json['urgencyPriority'] as int? ?? 0;
     final urgency = UrgencyLevel.values[urgencyPriority.clamp(0, 3)];
@@ -185,6 +192,7 @@ class ExpiryItem {
       fileName: json['fileName'] as String?,
       filePath: json['filePath'] as String?,
       fileSize: json['fileSize'] as int?,
+      updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? ''),
     );
   }
 
@@ -193,7 +201,7 @@ class ExpiryItem {
       'collectionId': collectionId,
       'id': id,
       'displayName': displayName,
-      'docType': docType.name,
+      'docType': docType.key,
       'expiryDate': expiryDate,
       'daysRemaining': daysRemaining,
       'isExpired': isExpired,
@@ -214,13 +222,14 @@ class ExpiryItem {
       'fileName': fileName,
       'filePath': filePath,
       'fileSize': fileSize,
+      'updatedAt': updatedAt?.toIso8601String(),
     };
   }
 
   factory ExpiryItem.create({
     required String id,
     required String displayName,
-    required DocumentType docType,
+    required DocumentTypeMeta docType,
     required DateTime expiresAt,
     String? collectionId,
     String? description,
@@ -259,7 +268,7 @@ class ExpiryItem {
       renewalFee: renewalFee,
       renewalSteps: renewalSteps,
       renewalAuthorities: renewalAuthorities,
-      renewalWarning: renewalWarning ?? defaultWarning(docType),
+      renewalWarning: renewalWarning ?? docType.defaultWarning,
       expiresAt: expiresAt,
       reminderStatus: reminderStatus ?? _calculateReminderStatus(daysRemaining),
       fileName: fileName,
@@ -276,36 +285,6 @@ class ExpiryItem {
     return 0;
   }
 
-  static String defaultWarning(DocumentType type) {
-    switch (type) {
-      case DocumentType.tradeLicence:
-        return 'Licence expired → Activity suspended. Renewal required within 30 days or activity stops.';
-      case DocumentType.ejari:
-        return 'Ejari expired → Contract invalid. Cannot renew without valid Ejari.';
-      case DocumentType.visa:
-        return 'Visa expired → Employee must leave UAE or apply for renewal. Grace period: 6 months.';
-      case DocumentType.insurance:
-        return 'Insurance lapsed → No coverage. Claims denied.';
-      case DocumentType.contracts:
-        return 'Contract expired → Legal terms may revert to month-to-month.';
-      case DocumentType.domainNames:
-        return 'Domain expired → Website and email down. Redemption period: 30 days.';
-      case DocumentType.softwareSubscriptions:
-        return 'Subscription expired → Service suspended. Access lost until renewal.';
-      case DocumentType.emiratesId:
-        return 'Emirates ID expired → Cannot travel or access services.';
-      case DocumentType.labourDocuments:
-        return 'Labour card expired → Work permit invalid. Employee cannot work.';
-      case DocumentType.vehicleRegistration:
-        return 'Registration expired → Fine AED 500+. Vehicle may be impounded.';
-      case DocumentType.permits:
-        return 'Permit expired → Business activity not authorized.';
-      case DocumentType.certificates:
-        return 'Certificate expired → Professional status may be invalidated.';
-      case DocumentType.supplierAgreements:
-        return 'Agreement expired → Supplier terms may change. Review before expiry.';
-    }
-  }
 
   static String formatDate(DateTime date) {
     final months = [
@@ -319,7 +298,7 @@ class ExpiryItem {
     String? collectionId,
     String? id,
     String? displayName,
-    DocumentType? docType,
+    DocumentTypeMeta? docType,
     String? expiryDate,
     int? daysRemaining,
     bool? isExpired,
@@ -340,6 +319,7 @@ class ExpiryItem {
     String? fileName,
     String? filePath,
     int? fileSize,
+    DateTime? updatedAt,
   }) {
     return ExpiryItem(
       collectionId: collectionId ?? this.collectionId,
@@ -366,6 +346,7 @@ class ExpiryItem {
       fileName: fileName ?? this.fileName,
       filePath: filePath ?? this.filePath,
       fileSize: fileSize ?? this.fileSize,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }

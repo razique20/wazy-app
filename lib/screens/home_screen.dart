@@ -169,6 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'home_add_document',
         onPressed: () => context.push('/scan'),
         icon: const Icon(Icons.add_rounded),
         label: const Text('Add Document'),
@@ -912,9 +913,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
-              if (upcoming.length > 3)
+              if (upcoming.isNotEmpty)
                 TextButton(
-                  onPressed: () => context.go('/documents'),
+                  onPressed: () => context.push('/expiry-list'),
                   child: const Text('View all'),
                 ),
             ],

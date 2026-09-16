@@ -13,10 +13,9 @@ class AuthService {
 
   static final AuthService instance = AuthService._();
 
-  bool get isAvailable => SupabaseService.hasCredentials;
+  bool get isAvailable => SupabaseService.isInitialized;
 
-  Session? get _session =>
-      isAvailable ? SupabaseService.client.auth.currentSession : null;
+  Session? get _session => SupabaseService.clientOrNull?.auth.currentSession;
 
   /// Whether a signed-in session exists (restored automatically on cold
   /// start by supabase_flutter).

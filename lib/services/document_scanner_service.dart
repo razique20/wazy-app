@@ -8,6 +8,9 @@ import '../models/document_type.dart';
 import '../models/document_collection.dart';
 import 'auth_service.dart';
 import 'collection_service.dart';
+import 'doc_sync.dart';
+import 'expiry_report.dart';
+import 'notification_service.dart';
 import 'supabase_service.dart';
 
 /// Persistent store for [ExpiryItem] records backed by Supabase Postgres and
@@ -20,16 +23,26 @@ class DocumentScannerService extends ChangeNotifier {
   factory DocumentScannerService() => instance;
 
   static const String _localDocsKey = 'local_documents_v1';
+  static const String _outboxKey = 'local_documents_outbox_v1';
 
-  final _client = SupabaseService.hasCredentials ? SupabaseService.client : null;
+  /// Null in local-only mode (unconfigured, or Supabase not initialised —
+  /// e.g. unit tests). clientOrNull never throws.
+  final _client = SupabaseService.clientOrNull;
 
   final List<ExpiryItem> _cache = [];
+
+  /// Offline mutation queue (see [DocSync]/[PendingOp]). Mutations made while
+  /// offline (or when a write throws) land here and are replayed to Supabase
+  /// on the next init/refresh.
+  final List<PendingOp> _outbox = [];
   bool _initialized = false;
 
   /// Load documents from Supabase or local offline storage into the cache.
   Future<void> init() async {
     if (_initialized) return;
     _initialized = true; // set first so concurrent callers don't re-enter
+
+    await _loadOutbox();
 
     final client = _client;
     final userId = AuthService.instance.currentUserId;
@@ -47,12 +60,15 @@ class DocumentScannerService extends ChangeNotifier {
           .eq('status', 'active')
           .order('expires_at', ascending: true);
 
-      _cache
-        ..clear()
-        ..addAll(response.map(_documentRowToExpiryItem).toList());
+      final remote = response
+          .map(_documentRowToExpiryItem)
+          .toList();
+      await _mergeRemote(remote);
+      await _flushOutbox();
       await _saveLocal();
     } catch (_) {
-      // Supabase unreachable or table missing — fall back to local offline storage
+      // Supabase unreachable — stay on the local cache; queued mutations
+      // will be flushed on a later refresh.
       await _loadLocal();
     }
     notifyListeners();
@@ -130,19 +146,33 @@ class DocumentScannerService extends ChangeNotifier {
   /// Pass [includeExpired] to also receive documents that slipped past their
   /// expiry date (still tracked in the DB with status 'expired').
   Future<List<ExpiryItem>> getAllItems({bool includeExpired = false}) async {
+    return getAllItemsIn(
+      DocumentCollectionService.instance.activeCollectionId,
+      includeExpired: includeExpired,
+    );
+  }
+
+  /// Same as [getAllItems] for an arbitrary collection — lets the expiry
+  /// list/search exports run over a collection chosen in the filter sheet
+  /// without mutating the app-wide active-collection selection.
+  Future<List<ExpiryItem>> getAllItemsIn(
+    String collectionId, {
+    bool includeExpired = false,
+  }) async {
     await _ensureInitialized();
     return List.unmodifiable(
-      _activeItems
+      _cache
           .where((item) =>
-              item.isActive || (includeExpired && item.isExpired))
+              item.collectionId == collectionId &&
+              (item.isActive || (includeExpired && item.isExpired)))
           .toList(),
     );
   }
 
-  Future<List<ExpiryItem>> getItemsByType(DocumentType type) async {
+  Future<List<ExpiryItem>> getItemsByType(DocumentTypeMeta type) async {
     await _ensureInitialized();
     return _activeItems
-        .where((item) => item.isActive && item.docType == type)
+        .where((item) => item.isActive && item.docType.key == type.key)
         .toList();
   }
 
@@ -162,53 +192,142 @@ class DocumentScannerService extends ChangeNotifier {
         .toList();
   }
 
+  /// Global text search across every collection: matches document name,
+  /// record/document number fields (description, location/authority,
+  /// assigned-to), file names, type names and free-form notes.
+  /// Case-insensitive; empty query returns everything active.
+  Future<List<ExpiryItem>> search(String query) async {
+    await _ensureInitialized();
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return _activeItems.where((i) => i.isActive).toList();
+
+    return _activeItems
+        .where((i) => i.isActive && DocumentScannerSearch.matchesQuery(i, q))
+        .toList();
+  }
+
   // ------------------------------------------------------------------
   // Writes — remote first, then update local cache and notify
   // ------------------------------------------------------------------
 
   Future<void> addItem(ExpiryItem item) async {
     await _ensureInitialized();
-    final client = _client;
     // Documents always land in the active collection.
     final scoped = item.copyWith(
       collectionId: DocumentCollectionService.instance.activeCollectionId,
+      updatedAt: DateTime.now().toUtc(),
     );
     final row = _expiryItemToDocumentRow(scoped, ownerId: AuthService.instance.currentUserId);
 
-    if (client != null) {
-      await client.from('documents').insert(row);
-    }
+    // Offline-first: cache immediately, then try the server; on failure the
+    // mutation is queued and replayed on the next sync.
     _replaceInCache(scoped);
+    _enqueueUpsert(scoped);
+    final client = _client;
+    if (client != null) {
+      try {
+        await client.from('documents').insert(row);
+        _outbox.removeWhere((op) => op.id == scoped.id);
+        await _saveOutbox();
+      } catch (_) {
+        // stays queued
+      }
+    }
+
+    // Schedule OS-level reminders on the 90/60/30/7-day ladder.
+    await NotificationService.instance.scheduleEscalationLadder(
+      scoped.id,
+      scoped.expiresAt,
+      title: scoped.displayName,
+    );
   }
 
   Future<void> updateItem(ExpiryItem updatedItem) async {
     await _ensureInitialized();
-    final client = _client;
-    final row = _expiryItemToDocumentRow(updatedItem);
+    // Always re-stamp the mutation time: the caller passes a copy of a cached
+    // item, and LWW conflict resolution (DocSync.merge) compares updatedAt —
+    // an unstamped update would tie with (or lose to) its own remote copy.
+    final stamped =
+        updatedItem.copyWith(updatedAt: DateTime.now().toUtc());
+    final row = _expiryItemToDocumentRow(stamped);
 
+    _replaceInCache(stamped);
+    _enqueueUpsert(stamped);
+    final client = _client;
     if (client != null) {
-      await client.from('documents').update(row).eq('id', updatedItem.id);
+      try {
+        await client.from('documents').update(row).eq('id', stamped.id);
+        _outbox.removeWhere((op) => op.id == stamped.id);
+        await _saveOutbox();
+      } catch (_) {
+        // stays queued
+      }
     }
-    _replaceInCache(updatedItem);
+    _replaceInCache(stamped);
+
+    // Re-schedule: replaces the old reminders (stable notification ids)
+    // with ones matching the new expiry date.
+    await NotificationService.instance.cancelReminders(updatedItem.id);
+    await NotificationService.instance.scheduleEscalationLadder(
+      updatedItem.id,
+      updatedItem.expiresAt,
+      title: updatedItem.displayName,
+    );
   }
 
   Future<void> removeItem(String id) async {
     await _ensureInitialized();
+    _enqueueDelete(id);
     final client = _client;
     if (client != null) {
-      await client.from('documents').delete().eq('id', id);
+      try {
+        await client.from('documents').delete().eq('id', id);
+        _outbox.removeWhere((op) => op.id == id);
+        await _saveOutbox();
+      } catch (_) {
+        // stays queued
+      }
     }
+    await NotificationService.instance.cancelReminders(id);
     _cache.removeWhere((existing) => existing.id == id);
     await _saveLocal();
     notifyListeners();
   }
 
-  Future<void> markAsRenewed(String id) async {
+  /// Synchronous snapshot of the whole cache — for pickers/dropdowns where
+  /// a Future would complicate build(). Filter/sort as needed by the caller.
+  List<ExpiryItem> getAllItemsSync() => List.unmodifiable(_cache);
+
+  /// Mark a document as renewed.
+  ///
+  /// When [newExpiryDate] is given the document is *renewed in place*: the
+  /// expiry moves forward, reminders are rescheduled on the 90/60/30/7
+  /// ladder, and the document stays active (the "tier glue" loop — see
+  /// FEATURE_IDEAS.md). Without it the legacy behaviour applies: the
+  /// document is archived (status 'renewed' server-side, removed from the
+  /// active cache locally).
+  Future<void> markAsRenewed(String id, {DateTime? newExpiryDate}) async {
     await _ensureInitialized();
     final client = _client;
-    if (client != null) {
-      await client.from('documents').update({'status': 'renewed'}).eq('id', id);
+
+    if (newExpiryDate != null) {
+      await updateExpiryDate(id, newExpiryDate);
+      return;
     }
+
+    if (client != null) {
+      try {
+        await client
+            .from('documents')
+            .update({'status': 'renewed'}).eq('id', id);
+      } catch (_) {
+        // Offline: queue a delete op so the next sync removes the row
+        // server-side too. Without this the pull phase would resurrect the
+        // renewed document as an active row on the next refresh.
+        _enqueueDelete(id);
+      }
+    }
+    await NotificationService.instance.cancelReminders(id);
     _cache.removeWhere((existing) => existing.id == id);
     await _saveLocal();
     notifyListeners();
@@ -216,13 +335,24 @@ class DocumentScannerService extends ChangeNotifier {
 
   Future<void> assignTo(String id, String assignee) async {
     await _ensureInitialized();
-    final client = _client;
-    if (client != null) {
-      await client.from('documents').update({'assigned_to': assignee}).eq('id', id);
-    }
     final index = _cache.indexWhere((item) => item.id == id);
     if (index != -1) {
-      _cache[index] = _cache[index].copyWith(assignedTo: assignee);
+      final updated = _cache[index].copyWith(
+        assignedTo: assignee,
+        updatedAt: DateTime.now().toUtc(),
+      );
+      _cache[index] = updated;
+      _enqueueUpsert(updated);
+      final client = _client;
+      if (client != null) {
+        try {
+          await client.from('documents').update({'assigned_to': assignee}).eq('id', id);
+          _outbox.removeWhere((op) => op.id == id);
+          await _saveOutbox();
+        } catch (_) {
+          // stays queued
+        }
+      }
       await _saveLocal();
       notifyListeners();
     }
@@ -231,32 +361,52 @@ class DocumentScannerService extends ChangeNotifier {
   Future<void> updateExpiryDate(String id, DateTime newExpiryDate) async {
     await _ensureInitialized();
     final client = _client;
-    if (client != null) {
-      await client.from('documents').update({
-        'expires_at': _dateOnly(newExpiryDate),
-      }).eq('id', id);
-    }
 
     final index = _cache.indexWhere((item) => item.id == id);
     if (index != -1) {
-      final days = DateTime.now().difference(newExpiryDate).inDays;
-      _cache[index] = _cache[index].copyWith(
+      final days = newExpiryDate.difference(DateTime.now()).inDays;
+      final updated = _cache[index].copyWith(
         expiresAt: newExpiryDate,
         expiryDate: ExpiryItem.formatDate(newExpiryDate),
-        daysRemaining: -days, // positive days remaining
-        isExpired: newExpiryDate.isBefore(DateTime.now()),
-        urgency: UrgencyLevel.fromDays(
-          newExpiryDate.difference(DateTime.now()).inDays,
-        ),
+        daysRemaining: days,
+        isExpired: days < 0,
+        urgency: UrgencyLevel.fromDays(days),
+        updatedAt: DateTime.now().toUtc(),
       );
+      _cache[index] = updated;
+      _enqueueUpsert(updated);
+      if (client != null) {
+        try {
+          await client.from('documents').update({
+            'expires_at': _dateOnly(newExpiryDate),
+          }).eq('id', id);
+          _outbox.removeWhere((op) => op.id == id);
+          await _saveOutbox();
+        } catch (_) {
+          // stays queued
+        }
+      }
       await _saveLocal();
       notifyListeners();
+
+      // Keep OS reminders in sync with the new expiry date.
+      await NotificationService.instance.cancelReminders(id);
+      if (!updated.isExpired) {
+        await NotificationService.instance.scheduleEscalationLadder(
+          id,
+          newExpiryDate,
+          title: updated.displayName,
+        );
+      }
     }
   }
 
   /// Toggle the reminder-status badge. Writes to the `reminders` table when
   /// Supabase is configured (one row per activation, channel 'push'); the
   /// cache is always updated so the UI works offline too.
+  ///
+  /// Status 0 cancels the OS-level reminders; any other status (re)schedules
+  /// the 90/60/30/7-day ladder for this document.
   Future<void> setReminderStatus(String id, int status) async {
     await _ensureInitialized();
     final client = _client;
@@ -280,6 +430,133 @@ class DocumentScannerService extends ChangeNotifier {
       _cache[index] = _cache[index].copyWith(reminderStatus: status);
       await _saveLocal();
       notifyListeners();
+
+      // Keep OS-level reminders in sync with the badge.
+      if (status == 0) {
+        await NotificationService.instance.cancelReminders(id);
+      } else {
+        await NotificationService.instance.scheduleEscalationLadder(
+          id,
+          _cache[index].expiresAt,
+          title: _cache[index].displayName,
+        );
+      }
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Offline-first sync — outbox + LWW merge (logic in doc_sync.dart)
+  // ------------------------------------------------------------------
+
+  /// Reconcile fetched remote rows into the local cache (pull phase).
+  ///
+  /// Remote rows are fetched WITHOUT a status filter downstream of this
+  /// method's contract: a row deleted on another device simply won't appear
+  /// here, and [DocSync.merge] turns that into a local drop unless the local
+  /// record has unsynced edits.
+  Future<void> _mergeRemote(List<ExpiryItem> remote) async {
+    final remoteById = {for (final r in remote) r.id: r};
+
+    // 1. Remote rows missing locally → add (pulled from another device),
+    //    unless the local outbox has a pending delete for them.
+    for (final r in remoteById.values) {
+      final local = _cache.where((i) => i.id == r.id).firstOrNull;
+      final pendingDelete = _outbox.any((op) => op.id == r.id && op.isDelete);
+      if (local == null) {
+        if (!pendingDelete) _cache.add(r);
+        continue;
+      }
+      final action = DocSync.merge(
+        localUpdatedAt: local.updatedAt,
+        remoteUpdatedAt: r.updatedAt,
+        localDirty: _outbox.any((op) => op.id == r.id && !op.isDelete),
+      );
+      switch (action) {
+        case MergeAction.takeRemote:
+          _cache[_cache.indexWhere((i) => i.id == r.id)] = r;
+        case MergeAction.keepLocal:
+          _outbox.add(PendingOp.upsert(r.id, _expiryItemToDocumentRow(local)));
+        case MergeAction.dropDeleted:
+          break; // unreachable here (remote exists); handled below
+      }
+    }
+
+    // 2. Local rows missing remotely → deleted elsewhere (or this device is
+    //    offline). Drop unless the local record has unsynced edits — those
+    //    resurrect the row on the next push.
+    final remoteIds = remoteById.keys.toSet();
+    final staleLocal = _cache
+        .where((i) => !remoteIds.contains(i.id) && !_outbox.any((op) => op.id == i.id))
+        .map((i) => i.id)
+        .toList();
+    _cache.removeWhere((i) => staleLocal.contains(i.id));
+
+    _cache.sort((a, b) => a.expiresAt.compareTo(b.expiresAt));
+  }
+
+  /// Replay queued mutations to Supabase, oldest first. Successful ops are
+  /// removed from the outbox; failures keep it for the next flush.
+  Future<void> _flushOutbox() async {
+    final client = _client;
+    if (client == null || _outbox.isEmpty) return;
+
+    final remaining = <PendingOp>[];
+    for (final op in _outbox) {
+      try {
+        if (op.isDelete) {
+          await client.from('documents').delete().eq('id', op.id);
+        } else {
+          await client.from('documents').upsert({
+            ...op.item!,
+            'owner_id': AuthService.instance.currentUserId,
+          });
+        }
+      } catch (_) {
+        remaining.add(op); // network/permission failure — retry later
+      }
+    }
+    _outbox
+      ..clear()
+      ..addAll(remaining);
+    await _saveOutbox();
+  }
+
+  void _enqueueUpsert(ExpiryItem item) {
+    _outbox.removeWhere((op) => op.id == item.id);
+    _outbox.add(PendingOp.upsert(item.id, _expiryItemToDocumentRow(item)));
+    _saveOutbox();
+  }
+
+  void _enqueueDelete(String id) {
+    _outbox.removeWhere((op) => op.id == id);
+    _outbox.add(PendingOp.delete(id));
+    _saveOutbox();
+  }
+
+  Future<void> _loadOutbox() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonStr = prefs.getString(_outboxKey);
+      if (jsonStr != null && jsonStr.isNotEmpty) {
+        final list = jsonDecode(jsonStr) as List<dynamic>;
+        _outbox
+          ..clear()
+          ..addAll(list.map((e) => PendingOp.fromJson(e as Map<String, dynamic>)));
+      }
+    } catch (_) {
+      _outbox.clear();
+    }
+  }
+
+  Future<void> _saveOutbox() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        _outboxKey,
+        jsonEncode(_outbox.map((op) => op.toJson()).toList()),
+      );
+    } catch (_) {
+      // Local save failed — outbox stays in memory for this session.
     }
   }
 
@@ -319,10 +596,8 @@ class DocumentScannerService extends ChangeNotifier {
   /// NOTE: reads the legacy `company_id` key as a fallback until every
   /// project has run the migration to `collection_id`.
   static ExpiryItem _documentRowToExpiryItem(Map<String, dynamic> row) {
-    final docType = DocumentType.values.firstWhere(
-      (e) => e.name == row['doc_type'] as String?,
-      orElse: () => DocumentType.tradeLicence,
-    );
+    final docType =
+        DocumentTypeRegistry.instance.byKey(row['doc_type'] as String?);
 
     final expiresAt =
         DateTime.tryParse(row['expires_at'] as String? ?? '') ?? DateTime.now();
@@ -361,6 +636,9 @@ class DocumentScannerService extends ChangeNotifier {
       fileName: row['file_name'] as String?,
       filePath: row['file_path'] as String?,
       fileSize: row['file_size'] as int?,
+      updatedAt: DateTime.tryParse(
+        (row['updated_at_client'] ?? row['updated_at']) as String? ?? '',
+      ),
     );
   }
 
@@ -379,7 +657,7 @@ class DocumentScannerService extends ChangeNotifier {
     final row = <String, dynamic>{
       'id': item.id,
       'collection_id': item.collectionId,
-      'doc_type': item.docType.name,
+      'doc_type': item.docType.key,
       'display_name': item.displayName,
       'expires_at': _dateOnly(item.expiresAt),
       'reminder_days': _defaultReminderDays(item.docType),
@@ -391,6 +669,9 @@ class DocumentScannerService extends ChangeNotifier {
       'file_path': item.filePath,
       'file_size': item.fileSize,
     };
+    if (item.updatedAt != null) {
+      row['updated_at_client'] = item.updatedAt!.toIso8601String();
+    }
     if (ownerId != null) row['owner_id'] = ownerId;
     return row;
   }
@@ -403,38 +684,9 @@ class DocumentScannerService extends ChangeNotifier {
     return 0;
   }
 
-  static int _defaultReminderDays(DocumentType type) {
-    return type == DocumentType.softwareSubscriptions ? 14 : 30;
+  static int _defaultReminderDays(DocumentTypeMeta type) {
+    return type.key == DocumentType.softwareSubscriptions.name ? 14 : 30;
   }
 
-  static String defaultWarningFor(DocumentType type) {
-    switch (type) {
-      case DocumentType.tradeLicence:
-        return 'Licence expired → Activity suspended. Renewal required within 30 days or activity stops.';
-      case DocumentType.ejari:
-        return 'Ejari expired → Contract invalid. Cannot renew without valid Ejari.';
-      case DocumentType.visa:
-        return 'Visa expired → Employee must leave UAE or apply for renewal. Grace period: 6 months.';
-      case DocumentType.insurance:
-        return 'Insurance lapsed → No coverage. Claims denied.';
-      case DocumentType.contracts:
-        return 'Contract expired → Legal terms may revert to month-to-month.';
-      case DocumentType.domainNames:
-        return 'Domain expired → Website and email down. Redemption period: 30 days.';
-      case DocumentType.softwareSubscriptions:
-        return 'Subscription expired → Service suspended. Access lost until renewal.';
-      case DocumentType.emiratesId:
-        return 'Emirates ID expired → Cannot travel or access services.';
-      case DocumentType.labourDocuments:
-        return 'Labour card expired → Work permit invalid. Employee cannot work.';
-      case DocumentType.vehicleRegistration:
-        return 'Registration expired → Fine AED 500+. Vehicle may be impounded.';
-      case DocumentType.permits:
-        return 'Permit expired → Business activity not authorized.';
-      case DocumentType.certificates:
-        return 'Certificate expired → Professional status may be invalidated.';
-      case DocumentType.supplierAgreements:
-        return 'Agreement expired → Supplier terms may change. Review before expiry.';
-    }
-  }
+  static String defaultWarningFor(DocumentTypeMeta type) => type.defaultWarning;
 }

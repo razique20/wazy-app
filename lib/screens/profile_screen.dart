@@ -7,6 +7,8 @@ import '../services/auth_service.dart';
 import '../services/collection_service.dart';
 import '../services/document_scanner_service.dart';
 import '../services/finance_service.dart';
+import '../services/custom_document_type_service.dart';
+import '../services/notification_service.dart';
 import '../services/supabase_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/widgets.dart';
@@ -29,8 +31,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _userRole = 'Document Admin';
   String _userPhone = '';
   bool _notificationsEnabled = true;
-  bool _whatsappAlertsEnabled = true;
-  bool _emailAlertsEnabled = true;
+  bool _whatsappAlertsEnabled = false; // kept so the pref survives; WhatsApp is inactive
   int _reminderCadence = 90;
   int _taskCadence = 60;
   int _escalationCadence = 30;
@@ -68,7 +69,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _userPhone = prefs.getString('userPhone') ?? '';
       _notificationsEnabled = prefs.getBool('notificationsEnabled') ?? true;
       _whatsappAlertsEnabled = prefs.getBool('whatsappAlertsEnabled') ?? true;
-      _emailAlertsEnabled = prefs.getBool('emailAlertsEnabled') ?? true;
       _reminderCadence = prefs.getInt('reminderCadence') ?? 90;
       _taskCadence = prefs.getInt('taskCadence') ?? 60;
       _escalationCadence = prefs.getInt('escalationCadence') ?? 30;
@@ -84,11 +84,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
     await prefs.setString('userPhone', _userPhone);
     await prefs.setBool('notificationsEnabled', _notificationsEnabled);
     await prefs.setBool('whatsappAlertsEnabled', _whatsappAlertsEnabled);
-    await prefs.setBool('emailAlertsEnabled', _emailAlertsEnabled);
     await prefs.setInt('reminderCadence', _reminderCadence);
     await prefs.setInt('taskCadence', _taskCadence);
     await prefs.setInt('escalationCadence', _escalationCadence);
     await prefs.setInt('whatsappCadence', _whatsappCadence);
+
+    // Apply the master notifications toggle to the scheduled OS reminders.
+    try {
+      final items = await DocumentScannerService.instance.getAllItems();
+      for (final item in items) {
+        if (_notificationsEnabled) {
+          await NotificationService.instance.scheduleEscalationLadder(
+            item.id,
+            item.expiresAt,
+            title: item.displayName,
+          );
+        } else {
+          await NotificationService.instance.cancelReminders(item.id);
+        }
+      }
+    } catch (_) {
+      // Non-fatal: scheduling may be unavailable (e.g. plugin not ready).
+    }
 
     if (mounted) {
       setState(() => _saving = false);
@@ -220,6 +237,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     await AuthService.instance.signOut();
     DocumentScannerService.instance.clearCache();
     FinanceService.instance.clearCache();
+    CustomDocumentTypeService.instance.reset();
 
     if (mounted) context.go('/login');
   }
@@ -357,25 +375,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           },
                         ),
                         const Divider(height: 1),
+                        // WhatsApp alerts need a server-side provider —
+                        // inactive until the Edge Function exists.
                         SwitchListTile(
                           title: const Text('WhatsApp alerts'),
-                          subtitle: const Text('Send urgent alerts via WhatsApp'),
-                          value: _whatsappAlertsEnabled,
-                          onChanged: (value) {
-                            setState(() => _whatsappAlertsEnabled = value);
-                            _markDirty();
-                          },
+                          subtitle:
+                              const Text('Coming soon — needs WhatsApp Business API'),
+                          value: false,
+                          onChanged: null,
                         ),
                         const Divider(height: 1),
+                        // Email alerts need a server-side provider —
+                        // inactive until the Edge Function exists.
                         SwitchListTile(
                           title: const Text('Email alerts'),
                           subtitle:
-                              const Text('Send renewal reminders via email'),
-                          value: _emailAlertsEnabled,
-                          onChanged: (value) {
-                            setState(() => _emailAlertsEnabled = value);
-                            _markDirty();
-                          },
+                              const Text('Coming soon — needs a mail provider'),
+                          value: false,
+                          onChanged: null,
                         ),
                       ],
                     ),
@@ -473,13 +490,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const Divider(height: 1),
                         ListTile(
+                          enabled: false,
                           leading: const CircleAvatar(
                             backgroundColor: Colors.red,
                             child: Icon(Icons.whatshot_rounded,
                                 color: Colors.white, size: 18),
                           ),
                           title: const Text('7-day WhatsApp'),
-                          subtitle: const Text('Final urgent alert via WhatsApp'),
+                          subtitle: const Text(
+                              'Coming soon — needs WhatsApp Business API'),
                           trailing: DropdownButton<int>(
                             value: _whatsappCadence,
                             underline: const SizedBox(),
@@ -489,12 +508,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 child: Text('$d days'),
                               );
                             }).toList(),
-                            onChanged: (v) {
-                              if (v != null) {
-                                setState(() => _whatsappCadence = v);
-                                _markDirty();
-                              }
-                            },
+                            onChanged: null,
                           ),
                         ),
                       ],

@@ -6,9 +6,11 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 
-import '../models/document_type.dart';
 import '../models/expiry_item.dart';
+import '../models/finance.dart';
+import '../services/finance_service.dart';
 import '../services/document_scanner_service.dart';
+import '../services/notification_service.dart';
 import '../widgets/widgets.dart';
 
 class DocumentDetailScreen extends StatefulWidget {
@@ -1069,22 +1071,16 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
           ),
         ),
         const SizedBox(height: 10),
+        // WhatsApp alerts are not active yet (need a server-side provider).
+        // The button is shown disabled so users see it's coming.
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('WhatsApp reminder sent (demo)'),
-                ),
-              );
-            },
+            onPressed: null,
             icon: const Icon(Icons.chat_rounded),
-            label: const Text('Send WhatsApp reminder'),
+            label: const Text('WhatsApp reminder — coming soon'),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 12),
-              side: const BorderSide(color: Colors.green),
-              iconColor: Colors.green,
             ),
           ),
         ),
@@ -1092,15 +1088,13 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Renewal reminder set (demo)'),
-                ),
-              );
-            },
+            onPressed: () => _scheduleReminders(context, item),
             icon: const Icon(Icons.notifications_active_rounded),
-            label: const Text('Schedule reminders'),
+            label: Text(
+              item.reminderStatus > 0
+                  ? 'Reminders active — tap to reschedule'
+                  : 'Schedule reminders',
+            ),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 12),
             ),
@@ -1110,13 +1104,75 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
     );
   }
 
+  /// Schedules OS-level local notifications on the 90/60/30/7-day ladder
+  /// for this document (only tiers still in the future fire).
+  Future<void> _scheduleReminders(
+    BuildContext context,
+    ExpiryItem item,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await NotificationService.instance.scheduleEscalationLadder(
+        item.id,
+        item.expiresAt,
+        title: item.displayName,
+      );
+      if (item.reminderStatus == 0) {
+        await DocumentScannerService.instance.setReminderStatus(item.id, 1);
+      }
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Reminders scheduled for ${item.displayName} (90/60/30/7 days)',
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not schedule reminders: $e')),
+      );
+    }
+  }
+
   Future<void> _markAsRenewed(BuildContext context, ExpiryItem item) async {
     try {
-      await DocumentScannerService.instance.markAsRenewed(item.id);
+      // Tier glue: renewing in place also offers to log the renewal payment
+      // against the Money tier, closing the loop from either direction.
+      final newExpiry = DateTime(
+        item.expiresAt.year + 1,
+        item.expiresAt.month,
+        item.expiresAt.day,
+      );
+      await DocumentScannerService.instance
+          .markAsRenewed(item.id, newExpiryDate: newExpiry);
+
+      if ((item.renewalFee ?? 0) > 0) {
+        await FinanceService.instance.addTransaction(
+          FinanceTransaction(
+            id: DateTime.now().microsecondsSinceEpoch.toString(),
+            collectionId: item.collectionId,
+            kind: FinanceKind.expense,
+            category: FinanceCategory.renewals,
+            title: '${item.displayName} renewal',
+            amount: item.renewalFee!,
+            occurredAt: DateTime.now(),
+            note: 'Logged from document renewal',
+            documentId: item.id,
+          ),
+        );
+      }
+
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${item.displayName} marked as renewed ✓'),
+          content: Text(
+            (item.renewalFee ?? 0) > 0
+                ? '${item.displayName} renewed — payment of '
+                    '${MoneyFormat.aed(item.renewalFee ?? 0)} logged ✓'
+                : '${item.displayName} renewed — now expires '
+                    '${ExpiryItem.formatDate(newExpiry)} ✓',
+          ),
           backgroundColor: Colors.green,
         ),
       );

@@ -2,8 +2,10 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show SupabaseClient;
 import 'package:uuid/uuid.dart';
 
+import '../models/document_collection.dart';
 import '../models/finance.dart';
 import 'auth_service.dart';
 import 'collection_service.dart';
@@ -27,12 +29,14 @@ class FinanceService extends ChangeNotifier {
 
   static const String _localStoreKey = 'financeRecords.v1';
 
-  final _client =
-      SupabaseService.hasCredentials ? SupabaseService.client : null;
+  /// Null in local-only mode (unconfigured, or Supabase not initialised —
+  /// e.g. unit tests). clientOrNull never throws.
+  final SupabaseClient? _client = SupabaseService.clientOrNull;
 
   final List<FinanceTransaction> _transactions = [];
   final List<CategoryBudget> _budgets = [];
   final List<SavingsEnvelope> _envelopes = [];
+  final List<RecurringTransaction> _recurring = [];
   final Map<String, double> _overallBudgets = {};
   bool _initialized = false;
 
@@ -58,6 +62,16 @@ class FinanceService extends ChangeNotifier {
     return _transactions.where((t) => t.collectionId == activeId).toList();
   }
 
+  /// Active collection id, guarding against the collection service not being
+  /// initialised yet (falls back to the built-in personal collection).
+  String get activeCollectionIdSafe {
+    try {
+      return DocumentCollectionService.instance.activeCollectionId;
+    } catch (_) {
+      return DocumentCollection.personalId;
+    }
+  }
+
   List<CategoryBudget> get activeBudgets {
     final activeId = DocumentCollectionService.instance.activeCollectionId;
     return _budgets.where((b) => b.collectionId == activeId).toList();
@@ -66,6 +80,15 @@ class FinanceService extends ChangeNotifier {
   List<SavingsEnvelope> get activeEnvelopes {
     final activeId = DocumentCollectionService.instance.activeCollectionId;
     return _envelopes.where((e) => e.collectionId == activeId).toList();
+  }
+
+  /// All recurring-transaction templates (across collections).
+  List<RecurringTransaction> get recurring => List.unmodifiable(_recurring);
+
+  /// Recurring templates scoped to the active collection.
+  List<RecurringTransaction> get activeRecurring {
+    final activeId = DocumentCollectionService.instance.activeCollectionId;
+    return _recurring.where((r) => r.collectionId == activeId).toList();
   }
 
   // ------------------------------------------------------------------
@@ -109,12 +132,33 @@ class FinanceService extends ChangeNotifier {
       _envelopes
         ..clear()
         ..addAll(envelopeRows.map(_envelopeRowToModel));
+
+      // Optional table — older projects may not have run the migration yet.
+      try {
+        final recurringRows = await client
+            .from('recurring_transactions')
+            .select()
+            .eq('owner_id', userId);
+        _recurring
+          ..clear()
+          ..addAll(recurringRows.map(_recurringRowToModel));
+      } catch (_) {
+        // Table missing — recurring stays local-only.
+      }
     } catch (_) {
       // Supabase unreachable or tables missing — fall back to local store
       // so the finance module keeps working offline.
       await _loadLocal();
     }
     notifyListeners();
+
+    // Auto-log any transactions that came due (also on refresh — this is
+    // what makes "monthly" templates keep working without the app running).
+    try {
+      await runDueRecurrences();
+    } catch (_) {
+      // Never block startup over auto-logging.
+    }
   }
 
   Future<void> refresh() async {
@@ -127,8 +171,139 @@ class FinanceService extends ChangeNotifier {
     _transactions.clear();
     _budgets.clear();
     _envelopes.clear();
+    _recurring.clear();
     _initialized = false;
     notifyListeners();
+  }
+
+  // ------------------------------------------------------------------
+  // Recurring transactions — auto-logging engine
+  // ------------------------------------------------------------------
+
+  /// Add a recurring template. [dayOfMonth] defaults to the day of [startDate].
+  Future<RecurringTransaction> addRecurring(
+    RecurringTransaction template,
+  ) async {
+    final scoped = template.collectionId.isEmpty
+        ? template.copyWith(
+            collectionId: DocumentCollectionService.instance.activeCollectionId)
+        : template;
+
+    final client = _client;
+    if (client != null && AuthService.instance.currentUserId != null) {
+      try {
+        await client.from('recurring_transactions').insert(
+              _recurringModelToRow(scoped,
+                  ownerId: AuthService.instance.currentUserId!),
+            );
+      } catch (_) {
+        // Non-fatal: keep the template locally.
+      }
+    }
+
+    _recurring.add(scoped);
+    await _persistLocal();
+    notifyListeners();
+    return scoped;
+  }
+
+  Future<void> updateRecurring(RecurringTransaction updated) async {
+    final client = _client;
+    if (client != null) {
+      try {
+        await client
+            .from('recurring_transactions')
+            .update(_recurringModelToRow(updated))
+            .eq('id', updated.id);
+      } catch (_) {
+        // Non-fatal.
+      }
+    }
+    final index = _recurring.indexWhere((r) => r.id == updated.id);
+    if (index != -1) {
+      _recurring[index] = updated;
+    } else {
+      _recurring.add(updated);
+    }
+    await _persistLocal();
+    notifyListeners();
+  }
+
+  /// Pause / resume a template.
+  Future<void> setRecurringActive(String id, bool active) async {
+    final index = _recurring.indexWhere((r) => r.id == id);
+    if (index == -1) return;
+    await updateRecurring(_recurring[index].copyWith(isActive: active));
+  }
+
+  Future<void> deleteRecurring(String id) async {
+    final client = _client;
+    if (client != null) {
+      try {
+        await client.from('recurring_transactions').delete().eq('id', id);
+      } catch (_) {
+        // Non-fatal.
+      }
+    }
+    _recurring.removeWhere((r) => r.id == id);
+    await _persistLocal();
+    notifyListeners();
+  }
+
+  /// Auto-log every transaction the active templates are due for, up to and
+  /// including [until] (default: now). Called on init/refresh so a user who
+  /// opens the app on the 3rd after missing the 1st still gets their rent
+  /// logged. Idempotent via [RecurringTransaction.lastLoggedAt]; back-fills
+  /// at most [_maxCatchUpCycles] missed cycles per template.
+  static const int _maxCatchUpCycles = 12;
+
+  Future<int> runDueRecurrences({DateTime? until}) async {
+    final untilDate = until ?? DateTime.now();
+    var logged = 0;
+    for (final template in List.of(_recurring)) {
+      if (!template.isActive) continue;
+      final effectiveUntil =
+          template.endDate != null && template.endDate!.isBefore(untilDate)
+              ? template.endDate!
+              : untilDate;
+      final occurrences = RecurrenceMath.dueOccurrences(
+        template,
+        template.frequency,
+        template.startDate,
+        effectiveUntil,
+        lastLoggedAt: template.lastLoggedAt,
+      );
+      // Cap the catch-up so reopening a years-old template doesn't dump
+      // hundreds of transactions into the log at once.
+      final bounded = occurrences.length > _maxCatchUpCycles
+          ? occurrences.sublist(occurrences.length - _maxCatchUpCycles)
+          : occurrences;
+      if (bounded.isEmpty) continue;
+
+      var latestLogged = template.lastLoggedAt;
+      for (final when in bounded) {
+        await addTransaction(
+          FinanceTransaction(
+            id: const Uuid().v4(),
+            collectionId: template.collectionId,
+            kind: template.kind,
+            category: template.category,
+            title: template.title,
+            amount: template.amount,
+            currency: template.currency,
+            occurredAt: when,
+            note: 'Auto-logged from recurring template',
+          ),
+        );
+        latestLogged = when;
+        logged++;
+      }
+
+      // lastLoggedAt needs the raw setter — copyWith only ever moves it
+      // forward, and clearing it back to null must stay impossible here.
+      await updateRecurring(template.copyWith(lastLoggedAt: latestLogged));
+    }
+    return logged;
   }
 
   // ------------------------------------------------------------------
@@ -367,6 +542,7 @@ class FinanceService extends ChangeNotifier {
         'transactions': _transactions.map((t) => t.toJson()).toList(),
         'budgets': _budgets.map((b) => b.toJson()).toList(),
         'envelopes': _envelopes.map((e) => e.toJson()).toList(),
+        'recurring': _recurring.map((r) => r.toJson()).toList(),
         'overallBudgets': _overallBudgets,
       }),
     );
@@ -402,6 +578,12 @@ class FinanceService extends ChangeNotifier {
           if (val is num) _overallBudgets[key] = val.toDouble();
         });
       }
+      _recurring
+        ..clear()
+        ..addAll(
+          (decoded['recurring'] as List<dynamic>? ?? const [])
+              .map((json) => RecurringTransaction.fromJson(json as Map<String, dynamic>)),
+        );
     } catch (_) {
       // Ignore malformed cache — start empty rather than crash.
     }
@@ -498,5 +680,53 @@ class FinanceService extends ChangeNotifier {
       'monthly_contribution': e.monthlyContribution,
       'document_id': e.documentId,
     };
+  }
+
+  static RecurringTransaction _recurringRowToModel(
+    Map<String, dynamic> row,
+  ) {
+    return RecurringTransaction(
+      id: row['id'] as String,
+      collectionId: row['collection_id'] as String? ?? 'personal',
+      kind: row['kind'] == 'income' ? FinanceKind.income : FinanceKind.expense,
+      category: FinanceCategoryX.fromName(row['category'] as String?),
+      title: row['title'] as String? ?? 'Recurring',
+      amount: (row['amount'] as num?)?.toDouble() ?? 0,
+      currency: row['currency'] as String? ?? 'AED',
+      frequency: RecurrenceFrequencyX.fromName(row['frequency'] as String?),
+      dayOfMonth: (row['day_of_month'] as num?)?.toInt() ?? 1,
+      startDate: DateTime.tryParse(row['start_date'] as String? ?? '') ??
+          DateTime.now(),
+      endDate: row['end_date'] == null
+          ? null
+          : DateTime.tryParse(row['end_date'] as String),
+      isActive: row['is_active'] as bool? ?? true,
+      lastLoggedAt: row['last_logged_at'] == null
+          ? null
+          : DateTime.tryParse(row['last_logged_at'] as String),
+    );
+  }
+
+  static Map<String, dynamic> _recurringModelToRow(
+    RecurringTransaction r, {
+    String? ownerId,
+  }) {
+    final row = <String, dynamic>{
+      'id': r.id,
+      'collection_id': r.collectionId,
+      'kind': r.kind.name,
+      'category': r.category.name,
+      'title': r.title,
+      'amount': r.amount,
+      'currency': r.currency,
+      'frequency': r.frequency.name,
+      'day_of_month': r.dayOfMonth,
+      'start_date': r.startDate.toIso8601String().split('T').first,
+      'end_date': r.endDate?.toIso8601String().split('T').first,
+      'is_active': r.isActive,
+      'last_logged_at': r.lastLoggedAt?.toIso8601String().split('T').first,
+    };
+    if (ownerId != null) row['owner_id'] = ownerId;
+    return row;
   }
 }

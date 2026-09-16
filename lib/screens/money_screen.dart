@@ -1,13 +1,16 @@
+import 'dart:async';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../models/document_type.dart';
 import '../models/expiry_item.dart';
 import '../models/finance.dart';
+import '../services/budget_alert_service.dart';
 import '../services/document_scanner_service.dart';
 import '../services/finance_service.dart';
 import '../theme/app_theme.dart';
+import 'package:uuid/uuid.dart';
 
 /// The Money tab: renewal cost outlook, monthly budget tracking, savings
 /// envelopes and a transaction log with CSV export.
@@ -22,21 +25,43 @@ class _MoneyScreenState extends State<MoneyScreen> {
   List<FinanceTransaction> _transactions = [];
   List<CategoryBudget> _budgets = [];
   List<SavingsEnvelope> _envelopes = [];
+  List<RecurringTransaction> _recurring = [];
   List<ExpiryItem> _items = [];
   double _renewalOutlook90 = 0;
   bool _loading = true;
+
+  StreamSubscription<BudgetAlertEvent>? _alertSub;
 
   @override
   void initState() {
     super.initState();
     FinanceService.instance.addListener(_reload);
+    _alertSub = BudgetAlertService.instance.stream.listen(_showBudgetAlert);
     _reload();
   }
 
   @override
   void dispose() {
     FinanceService.instance.removeListener(_reload);
+    _alertSub?.cancel();
     super.dispose();
+  }
+
+  /// In-app surfacing of the budget alerts the service fires. (An OS
+  /// notification is shown regardless — this is the "while the app is
+  /// open" path.)
+  void _showBudgetAlert(BudgetAlertEvent event) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${event.title}\n${event.body}'),
+        backgroundColor: event.isExceeded
+            ? Theme.of(context).colorScheme.error
+            : WazyColors.warning,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 4),
+      ),
+    );
   }
 
   Future<void> _reload() async {
@@ -47,6 +72,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
       _transactions = FinanceService.instance.activeTransactions;
       _budgets = FinanceService.instance.activeBudgets;
       _envelopes = FinanceService.instance.activeEnvelopes;
+      _recurring = FinanceService.instance.activeRecurring;
       _items = items;
       _renewalOutlook90 = FinanceMath.renewalOutlook(items, 90);
       _loading = false;
@@ -89,6 +115,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'money_add_record',
         onPressed: _showAddTransactionSheet,
         icon: const Icon(Icons.add_card_rounded),
         label: const Text('Add Fund / Record', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -115,6 +142,8 @@ class _MoneyScreenState extends State<MoneyScreen> {
                 _buildTopExpenses(theme),
                 const SizedBox(height: 24),
                 _buildBudgetsSection(theme, spendByCategory),
+                const SizedBox(height: 24),
+                _buildRecurringSection(theme),
                 const SizedBox(height: 24),
                 _buildEnvelopesSection(theme),
                 const SizedBox(height: 24),
@@ -882,6 +911,64 @@ class _MoneyScreenState extends State<MoneyScreen> {
   }
 
   // ------------------------------------------------------------------
+  // Recurring transactions
+  // ------------------------------------------------------------------
+
+  Widget _buildRecurringSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader(
+          theme,
+          'Recurring',
+          Icons.event_repeat_rounded,
+          actionLabel: 'Add',
+          actionKey: const Key('recurring-add'),
+          onAction: _showRecurringSheet,
+        ),
+        const SizedBox(height: 12),
+        if (_recurring.isEmpty)
+          _hintCard(
+            theme,
+            'Mark rent, salaries or software as monthly and they are auto-logged here — no manual repeats.',
+          )
+        else
+          ..._recurring.map(
+            (r) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _RecurringCard(
+                template: r,
+                transactions: _transactions,
+                onToggle: () => FinanceService.instance
+                    .setRecurringActive(r.id, !r.isActive),
+                onEdit: () => _showRecurringSheet(existing: r),
+                onDelete: () => FinanceService.instance.deleteRecurring(r.id),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _showRecurringSheet({RecurringTransaction? existing}) async {
+    final result = await showModalBottomSheet<RecurringTransaction>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _RecurringFormSheet(existing: existing),
+    );
+    if (result == null) return;
+    if (existing == null) {
+      await FinanceService.instance.addRecurring(result);
+    } else {
+      await FinanceService.instance.updateRecurring(result);
+    }
+  }
+
+  // ------------------------------------------------------------------
   // Envelopes
   // ------------------------------------------------------------------
 
@@ -988,6 +1075,59 @@ class _MoneyScreenState extends State<MoneyScreen> {
     );
     if (created == null) return;
     await FinanceService.instance.addTransaction(created);
+
+    // Tier glue: a renewals payment linked to a tracked document closes the
+    // loop — offer to mark that document as renewed right away.
+    if (created.kind == FinanceKind.expense &&
+        created.category == FinanceCategory.renewals &&
+        created.documentId != null) {
+      final item =
+          await DocumentScannerService.instance.getItemById(created.documentId!);
+      if (item != null && mounted) {
+        await _offerMarkAsRenewed(item, paymentAmount: created.amount);
+      }
+    }
+  }
+
+  /// Ask whether the just-logged payment completed the document's renewal.
+  /// Confirming moves the expiry forward a full year (or the fee-free
+  /// default of one year for unknown terms) and keeps reminders in sync.
+  Future<void> _offerMarkAsRenewed(
+    ExpiryItem item, {
+    double? paymentAmount,
+  }) async {
+    final renewed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Mark ${item.displayName} as renewed?'),
+        content: Text(
+          'You logged a ${paymentAmount != null ? MoneyFormat.aed(paymentAmount) : 'renewal'} payment '
+          'linked to this document. Renew it in place — the expiry date moves '
+          'forward one year and reminders are rescheduled.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Not yet'),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            icon: const Icon(Icons.check_circle_rounded, size: 18),
+            label: const Text('Mark renewed ✓'),
+          ),
+        ],
+      ),
+    );
+    if (renewed != true || !mounted) return;
+    final newExpiry = DateTime(item.expiresAt.year + 1, item.expiresAt.month, item.expiresAt.day);
+    await DocumentScannerService.instance.markAsRenewed(item.id, newExpiryDate: newExpiry);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${item.displayName} renewed — now expires ${ExpiryItem.formatDate(newExpiry)} ✓'),
+        backgroundColor: Colors.green,
+      ),
+    );
   }
 
   Future<void> _showOverallBudgetSheet() async {
@@ -1091,6 +1231,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
     IconData icon, {
     String? actionLabel,
     VoidCallback? onAction,
+    Key? actionKey,
   }) {
     return Row(
       children: [
@@ -1105,7 +1246,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
           ),
         ),
         if (actionLabel != null)
-          TextButton(onPressed: onAction, child: Text(actionLabel)),
+          TextButton(key: actionKey, onPressed: onAction, child: Text(actionLabel)),
       ],
     );
   }
@@ -1465,8 +1606,17 @@ class _TransactionFormSheet extends StatefulWidget {
 class _TransactionFormSheetState extends State<_TransactionFormSheet> {
   FinanceKind _kind = FinanceKind.expense;
   FinanceCategory _category = FinanceCategory.other;
+  bool _repeatMonthly = false;
+  ExpiryItem? _linkedDocument;
   final _titleController = TextEditingController();
   final _amountController = TextEditingController();
+
+  /// Active, non-expired documents offered as the payment's linked document.
+  List<ExpiryItem> _activeDocuments() => DocumentScannerService.instance
+      .getAllItemsSync()
+      .where((i) => i.isActive && !i.isExpired)
+      .toList()
+    ..sort((a, b) => a.expiresAt.compareTo(b.expiresAt));
 
   @override
   void dispose() {
@@ -1475,23 +1625,74 @@ class _TransactionFormSheetState extends State<_TransactionFormSheet> {
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     final amount = double.tryParse(_amountController.text.trim());
     final title = _titleController.text.trim();
     if (title.isEmpty || amount == null || amount <= 0) return;
 
-    Navigator.pop(
-      context,
-      FinanceTransaction(
-        id: DateTime.now().microsecondsSinceEpoch.toString(),
-        collectionId: '',
+    final now = DateTime.now();
+    final transaction = FinanceTransaction(
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      collectionId: '',
+      kind: _kind,
+      category: _category,
+      title: title,
+      amount: amount,
+      occurredAt: now,
+      documentId: _linkedDocument?.id,
+    );
+
+    if (_repeatMonthly) {
+      // Also create a monthly template so future periods log themselves.
+      final template = RecurringTransaction(
+        id: const Uuid().v4(),
+        collectionId: '', // scoped to the active collection on add
         kind: _kind,
         category: _category,
         title: title,
         amount: amount,
-        occurredAt: DateTime.now(),
-      ),
+        frequency: RecurrenceFrequency.monthly,
+        dayOfMonth: now.day,
+        startDate: DateTime(now.year, now.month, 1),
+      );
+      FinanceService.instance.addRecurring(template);
+    }
+
+    // Soft duplicate guard: same title + amount + day already logged in this
+    // collection → ask before saving. "Save anyway" keeps the record (a
+    // second same-day payment of the same amount is legitimate).
+    final duplicate = FinanceMath.findDuplicateTransaction(
+      FinanceService.instance.activeTransactions,
+      transaction,
     );
+    if (duplicate != null) {
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          icon: const Icon(Icons.copy_all_rounded),
+          title: const Text('Possible duplicate'),
+          content: Text(
+            '"${duplicate.title}" for ${MoneyFormat.aed(duplicate.amount)} '
+            'is already logged for ${duplicate.occurredAt.day}/${duplicate.occurredAt.month}. '
+            'Save this record anyway?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Discard'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Save anyway'),
+            ),
+          ],
+        ),
+      );
+      if (proceed != true || !mounted) return;
+    }
+
+    if (!mounted) return;
+    Navigator.pop(context, transaction);
   }
 
   @override
@@ -1574,12 +1775,395 @@ class _TransactionFormSheetState extends State<_TransactionFormSheet> {
                   .toList(),
               onChanged: (c) => setState(() => _category = c ?? FinanceCategory.other),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
+            if (_kind == FinanceKind.expense) ...[
+              DropdownButtonFormField<ExpiryItem?>(
+                initialValue: _linkedDocument,
+                decoration: const InputDecoration(
+                  labelText: 'Linked document (optional)',
+                  border: OutlineInputBorder(),
+                ),
+                items: [
+                  const DropdownMenuItem(value: null, child: Text('None')),
+                  ..._activeDocuments().map(
+                    (d) => DropdownMenuItem(
+                      value: d,
+                      child: Text(
+                        d.displayName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ],
+                onChanged: (d) => setState(() => _linkedDocument = d),
+              ),
+              const SizedBox(height: 12),
+            ],
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              value: _repeatMonthly,
+              onChanged: (v) => setState(() => _repeatMonthly = v),
+              title: const Text('Repeat monthly'),
+              subtitle: Text(
+                'Also create a monthly template — auto-logs this amount every month from now on.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.outline,
+                  fontSize: 11,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
             FilledButton(
               onPressed: _submit,
               child: const Text('Save'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ====================================================================
+// Recurring transaction card + form sheet
+// ====================================================================
+
+class _RecurringCard extends StatelessWidget {
+  final RecurringTransaction template;
+  final List<FinanceTransaction> transactions;
+  final VoidCallback onToggle;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const _RecurringCard({
+    required this.template,
+    required this.transactions,
+    required this.onToggle,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isIncome = template.kind == FinanceKind.income;
+    final amountColor = isIncome ? Colors.green : Colors.red;
+
+    // How many auto-logged entries this template has produced.
+    final loggedCount = transactions.where((t) => t.note != null && t.note!.contains('recurring template')).length;
+
+    final nextDue = RecurrenceMath.nextOccurrence(
+      template,
+      template.frequency,
+      DateTime.now(),
+    );
+
+    return InkWell(
+      onTap: onEdit,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Icon(template.category.icon,
+                    size: 18,
+                    color: template.isActive ? amountColor : theme.colorScheme.outline),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    template.title,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: template.isActive
+                          ? null
+                          : theme.colorScheme.outline,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Text(
+                  '${isIncome ? '+' : '-'}${MoneyFormat.aed(template.amount)}',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: template.isActive ? amountColor : theme.colorScheme.outline,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 16),
+                  visualDensity: VisualDensity.compact,
+                  onPressed: onDelete,
+                  tooltip: 'Delete template',
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Icon(
+                  template.isActive
+                      ? Icons.play_circle_outline_rounded
+                      : Icons.pause_circle_outline_rounded,
+                  size: 14,
+                  color: theme.colorScheme.outline,
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    template.isActive
+                        ? '${template.frequency.label} · day ${template.dayOfMonth} · next ${nextDue == null ? '—' : '${nextDue.day}/${nextDue.month}/${nextDue.year}'} · $loggedCount logged'
+                        : 'Paused · ${template.frequency.label} · day ${template.dayOfMonth}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.outline,
+                      fontSize: 11,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                TextButton(
+                  onPressed: onToggle,
+                  child: Text(template.isActive ? 'Pause' : 'Resume'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RecurringFormSheet extends StatefulWidget {
+  final RecurringTransaction? existing;
+
+  const _RecurringFormSheet({this.existing});
+
+  @override
+  State<_RecurringFormSheet> createState() => _RecurringFormSheetState();
+}
+
+class _RecurringFormSheetState extends State<_RecurringFormSheet> {
+  late FinanceKind _kind;
+  late FinanceCategory _category;
+  late RecurrenceFrequency _frequency;
+  late int _dayOfMonth;
+  late final TextEditingController _titleController;
+  late final TextEditingController _amountController;
+  DateTime? _endDate;
+
+  bool get _isEditing => widget.existing != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final existing = widget.existing;
+    _kind = existing?.kind ?? FinanceKind.expense;
+    _category = existing?.category ?? FinanceCategory.rent;
+    _frequency = existing?.frequency ?? RecurrenceFrequency.monthly;
+    _dayOfMonth = existing?.dayOfMonth ?? DateTime.now().day;
+    _endDate = existing?.endDate;
+    _titleController = TextEditingController(text: existing?.title ?? '');
+    _amountController = TextEditingController(
+      text: existing == null ? '' : existing.amount.toStringAsFixed(0),
+    );
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final amount = double.tryParse(_amountController.text.trim());
+    final title = _titleController.text.trim();
+    if (title.isEmpty || amount == null || amount <= 0) return;
+
+    final existing = widget.existing;
+    final now = DateTime.now();
+    Navigator.pop(
+      context,
+      RecurringTransaction(
+        id: existing?.id ?? const Uuid().v4(),
+        collectionId: existing?.collectionId ?? '',
+        kind: _kind,
+        category: _category,
+        title: title,
+        amount: amount,
+        currency: existing?.currency ?? 'AED',
+        frequency: _frequency,
+        dayOfMonth: _dayOfMonth,
+        startDate:
+            existing?.startDate ?? DateTime(now.year, now.month, 1),
+        endDate: _endDate,
+        isActive: existing?.isActive ?? true,
+        lastLoggedAt: existing?.lastLoggedAt,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          20,
+          20,
+          20 + MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                _isEditing ? 'Edit recurring' : 'New recurring transaction',
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Wazy auto-logs this amount on the chosen day — rent, salaries, subscriptions.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 16),
+              SegmentedButton<FinanceKind>(
+                segments: const [
+                  ButtonSegment(
+                    value: FinanceKind.expense,
+                    label: Text('Expense'),
+                    icon: Icon(Icons.arrow_outward_rounded),
+                  ),
+                  ButtonSegment(
+                    value: FinanceKind.income,
+                    label: Text('Income'),
+                    icon: Icon(Icons.arrow_downward_rounded),
+                  ),
+                ],
+                selected: {_kind},
+                onSelectionChanged: (selection) =>
+                    setState(() => _kind = selection.first),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Title',
+                  hintText: 'e.g. Office rent — Deira',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _amountController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Amount (AED)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<FinanceCategory>(
+                initialValue: _category,
+                decoration: const InputDecoration(
+                  labelText: 'Category',
+                  border: OutlineInputBorder(),
+                ),
+                items: FinanceCategory.values
+                    .map(
+                      (c) => DropdownMenuItem(
+                        value: c,
+                        child: Row(
+                          children: [
+                            Icon(c.icon, size: 18),
+                            const SizedBox(width: 8),
+                            Text(c.displayName),
+                          ],
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (c) => setState(() => _category = c ?? FinanceCategory.other),
+              ),
+              const SizedBox(height: 12),
+              SegmentedButton<RecurrenceFrequency>(
+                segments: RecurrenceFrequency.values
+                    .map(
+                      (f) => ButtonSegment(
+                        value: f,
+                        label: Text(f.label),
+                      ),
+                    )
+                    .toList(),
+                selected: {_frequency},
+                onSelectionChanged: (selection) =>
+                    setState(() => _frequency = selection.first),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<int>(
+                initialValue: _dayOfMonth,
+                decoration: const InputDecoration(
+                  labelText: 'Day of month',
+                  border: OutlineInputBorder(),
+                ),
+                items: List.generate(
+                  31,
+                  (i) => DropdownMenuItem(
+                    value: i + 1,
+                    child: Text('Day ${i + 1}'),
+                  ),
+                ).toList(),
+                onChanged: (d) => setState(() => _dayOfMonth = d ?? 1),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                leading: const Icon(Icons.event_available_rounded),
+                title: const Text('End date (optional)'),
+                subtitle: Text(
+                  _endDate == null
+                      ? 'Repeats forever'
+                      : 'Until ${_endDate!.day}/${_endDate!.month}/${_endDate!.year}',
+                ),
+                trailing: _endDate == null
+                    ? const Icon(Icons.chevron_right_rounded)
+                    : IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 18),
+                        onPressed: () => setState(() => _endDate = null),
+                      ),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _endDate ?? DateTime.now().add(const Duration(days: 365)),
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 3650)),
+                  );
+                  if (picked != null) setState(() => _endDate = picked);
+                },
+              ),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: _submit,
+                child: Text(_isEditing ? 'Save changes' : 'Create template'),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1894,15 +2478,17 @@ class _EnvelopeFormSheetState extends State<_EnvelopeFormSheet> {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'New savings envelope',
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w600),
-            ),
+        // Scrollable so the form also fits small screens.
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'New savings envelope',
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w600),
+              ),
             const SizedBox(height: 16),
             TextField(
               controller: _nameController,
@@ -1932,12 +2518,13 @@ class _EnvelopeFormSheetState extends State<_EnvelopeFormSheet> {
                 border: OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 20),
-            FilledButton(
-              onPressed: _submit,
-              child: const Text('Create envelope'),
-            ),
-          ],
+                  const SizedBox(height: 20),
+                  FilledButton(
+                    onPressed: _submit,
+                    child: const Text('Create envelope'),
+                  ),
+            ],
+          ),
         ),
       ),
     );

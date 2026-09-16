@@ -32,7 +32,8 @@ ExpiryItem _item({
   return ExpiryItem.create(
     id: 'doc-$inDays-$fee',
     displayName: 'Doc $inDays',
-    docType: DocumentType.tradeLicence,
+    docType: DocumentTypeRegistry.instance
+        .byEnum(DocumentType.tradeLicence),
     expiresAt: DateTime.now().add(Duration(days: inDays)),
     collectionId: collectionId,
     renewalFee: fee,
@@ -231,6 +232,208 @@ void main() {
         ),
         25000,
       );
+    });
+  });
+
+  group('BudgetStatusResult thresholds', () {
+    CategoryBudget budget(double limit, {String id = 'b'}) => CategoryBudget(
+          id: id,
+          collectionId: 'c1',
+          category: FinanceCategory.rent,
+          monthlyLimit: limit,
+        );
+
+    test('ratio below 80% is none', () {
+      final r = BudgetStatusResult(budget: budget(1000), spent: 799.99);
+      expect(r.status, BudgetAlertLevel.none);
+    });
+
+    test('ratio at exactly 80% is near', () {
+      final r = BudgetStatusResult(budget: budget(1000), spent: 800);
+      expect(r.status, BudgetAlertLevel.near);
+    });
+
+    test('ratio between 80% and 100% is near', () {
+      final r = BudgetStatusResult(budget: budget(1000), spent: 950);
+      expect(r.status, BudgetAlertLevel.near);
+    });
+
+    test('ratio at exactly 100% is exceeded', () {
+      final r = BudgetStatusResult(budget: budget(1000), spent: 1000);
+      expect(r.status, BudgetAlertLevel.exceeded);
+    });
+
+    test('ratio beyond 100% is exceeded', () {
+      final r = BudgetStatusResult(budget: budget(1000), spent: 1400);
+      expect(r.status, BudgetAlertLevel.exceeded);
+    });
+
+    test('zero limit never alerts', () {
+      final r = BudgetStatusResult(budget: budget(0), spent: 500);
+      expect(r.ratio, 0);
+      expect(r.status, BudgetAlertLevel.none);
+    });
+  });
+
+  group('Budget alerting / dedupe', () {
+    CategoryBudget budget(String id, double limit) => CategoryBudget(
+          id: id,
+          collectionId: 'c1',
+          category: FinanceCategory.rent,
+          monthlyLimit: limit,
+        );
+
+    test('shouldAlertAt fires once per threshold then dedupes', () {
+      final r = BudgetStatusResult(budget: budget('b1', 1000), spent: 850);
+      expect(r.shouldAlertAt(BudgetThresholds.near, {}), isTrue);
+      final key = r.alertKey(BudgetThresholds.near);
+      expect(r.shouldAlertAt(BudgetThresholds.near, {key}), isFalse);
+    });
+
+    test('below threshold never alerts', () {
+      final r = BudgetStatusResult(budget: budget('b1', 1000), spent: 500);
+      expect(r.shouldAlertAt(BudgetThresholds.near, {}), isFalse);
+      expect(r.shouldAlertAt(BudgetThresholds.exceeded, {}), isFalse);
+    });
+
+    test('dedupe keys are scoped per budget, month and threshold', () {
+      final a = BudgetStatusResult(budget: budget('b1', 1000), spent: 1000);
+      final b = BudgetStatusResult(budget: budget('b2', 1000), spent: 1000);
+      final month = DateTime.now();
+      final expectedSuffix =
+          '|${month.year}|${month.month}|${BudgetThresholds.exceeded}';
+      expect(a.alertKey(BudgetThresholds.exceeded), 'b1$expectedSuffix');
+      expect(b.alertKey(BudgetThresholds.exceeded), 'b2$expectedSuffix');
+    });
+  });
+
+  group('FinanceMath.findDuplicateTransaction', () {
+    FinanceTransaction tx(
+      String id,
+      String title,
+      double amount,
+      DateTime when, {
+      String collectionId = 'personal',
+    }) =>
+        FinanceTransaction(
+          id: id,
+          collectionId: collectionId,
+          kind: FinanceKind.expense,
+          category: FinanceCategory.rent,
+          title: title,
+          amount: amount,
+          occurredAt: when,
+        );
+
+    final day = DateTime(2026, 9, 10);
+
+    test('flags same title (case/space-insensitive), amount and day', () {
+      final existing = tx('a', 'DEWA bill', 350, day);
+      final candidate = tx('b', '  dewa BILL ', 350, day);
+      expect(
+        FinanceMath.findDuplicateTransaction([existing], candidate)?.id,
+        'a',
+      );
+    });
+
+    test('different amount, title or day is not a duplicate', () {
+      final existing = tx('a', 'DEWA bill', 350, day);
+      expect(
+        FinanceMath.findDuplicateTransaction(
+          [existing],
+          tx('b', 'DEWA bill', 400, day),
+        ),
+        isNull,
+      );
+      expect(
+        FinanceMath.findDuplicateTransaction(
+          [existing],
+          tx('b', 'SEWA bill', 350, day),
+        ),
+        isNull,
+      );
+      expect(
+        FinanceMath.findDuplicateTransaction(
+          [existing],
+          tx('b', 'DEWA bill', 350, day.add(const Duration(days: 1))),
+        ),
+        isNull,
+      );
+    });
+
+    test('other months or years do not match', () {
+      final existing = tx('a', 'DEWA bill', 350, day);
+      final nextMonth = tx('b', 'DEWA bill', 350, DateTime(2026, 10, 10));
+      final nextYear = tx('c', 'DEWA bill', 350, DateTime(2027, 9, 10));
+      expect(
+        FinanceMath.findDuplicateTransaction([existing], nextMonth),
+        isNull,
+      );
+      expect(
+        FinanceMath.findDuplicateTransaction([existing], nextYear),
+        isNull,
+      );
+    });
+
+    test('scoped per collection and ignores the candidate\'s own id', () {
+      final company = tx('a', 'DEWA bill', 350, day,
+          collectionId: 'company');
+      final candidate = tx('b', 'DEWA bill', 350, day);
+      expect(
+        FinanceMath.findDuplicateTransaction([company], candidate),
+        isNull,
+      );
+
+      // Editing an existing record must not self-match.
+      final edited = tx('a', 'DEWA bill', 350, day);
+      expect(
+        FinanceMath.findDuplicateTransaction([edited], edited),
+        isNull,
+      );
+    });
+  });
+
+  group('FinanceMath.budgetStatuses / worstBudgetStatus', () {
+    CategoryBudget budget(String id, FinanceCategory c, double limit) =>
+        CategoryBudget(
+          id: id,
+          collectionId: 'c1',
+          category: c,
+          monthlyLimit: limit,
+        );
+
+    test('maps spend onto each budget', () {
+      final budgets = [
+        budget('b1', FinanceCategory.rent, 1000),
+        budget('b2', FinanceCategory.software, 500),
+      ];
+      final spend = {FinanceCategory.rent: 900.0};
+      final results = FinanceMath.budgetStatuses(budgets, spend);
+      expect(results.length, 2);
+      expect(results[0].spent, 900);
+      expect(results[1].spent, 0);
+    });
+
+    test('worst picks exceeded over near, highest ratio wins ties', () {
+      final near = BudgetStatusResult(
+        budget: budget('near', FinanceCategory.rent, 1000),
+        spent: 850,
+      );
+      final exceeded = BudgetStatusResult(
+        budget: budget('over', FinanceCategory.software, 500),
+        spent: 600,
+      );
+      final worst = FinanceMath.worstBudgetStatus([near, exceeded]);
+      expect(worst?.budget.id, 'over');
+    });
+
+    test('worst returns null when nothing is ≥80%', () {
+      final ok = BudgetStatusResult(
+        budget: budget('ok', FinanceCategory.rent, 1000),
+        spent: 100,
+      );
+      expect(FinanceMath.worstBudgetStatus([ok]), isNull);
+      expect(FinanceMath.worstBudgetStatus(const []), isNull);
     });
   });
 }

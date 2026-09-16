@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'dart:async';
+
 import 'app.dart';
 import 'services/auth_service.dart';
+import 'services/budget_alert_service.dart';
 import 'services/collection_service.dart';
+import 'services/custom_document_type_service.dart';
 import 'services/document_scanner_service.dart';
 import 'services/finance_service.dart';
 import 'services/supabase_service.dart';
@@ -31,9 +35,13 @@ void main() async {
   );
 
   // Supabase must be initialised once, before any service that uses it.
-  // Credentials come from --dart-define build-time env vars (see .env.example
-  // and SupabaseService). Without them the app runs in local-only mode.
+  // Credentials come from AppCredentials (lib/config/app_credentials.dart).
+  // Without them the app runs in local-only mode.
   await SupabaseService.initialize();
+
+  // Budget alerts listen to finance data changes for the whole app lifetime
+  // (OS notifications + Money-tab badge + snackbars).
+  await BudgetAlertService.instance.init();
 
   // Prewarm services. Auth session is restored from secure storage by
   // supabase_flutter during Supabase.initialize, so by this point
@@ -52,10 +60,31 @@ Future<void> _prewarmServices() async {
   ]);
 
   if (AuthService.instance.isSignedIn) {
+    // Custom types must load before documents: rows are decoded into
+    // ExpiryItems during init and need the registry to resolve doc_type keys.
+    await CustomDocumentTypeService.instance.init();
     await Future.wait([
       DocumentCollectionService.instance.init(),
       DocumentScannerService.instance.init(),
       FinanceService.instance.init(),
     ]);
+
+    // Initial evaluation once finance data is loaded (catches thresholds
+    // crossed while the app was closed — e.g. an auto-logged rent payment
+    // pushing a budget past 100%).
+    unawaited(BudgetAlertService.instance.evaluateNow());
+
+    // Bring the OS-scheduled reminders back in sync with the loaded
+    // documents (clears stale entries, schedules the 90/60/30/7 ladder).
+    try {
+      final items = await DocumentScannerService.instance.getAllItems();
+      await NotificationService.instance.resyncAll(
+        items
+            .map((i) => (id: i.id, name: i.displayName, expiresAt: i.expiresAt))
+            .toList(),
+      );
+    } catch (_) {
+      // Best-effort: never block startup over reminders.
+    }
   }
 }

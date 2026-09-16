@@ -106,7 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
       return 'Too many attempts — wait a minute and try again.';
     }
     if (lower.contains('not configured')) {
-      return 'Supabase is not configured in this build (see .env.example).';
+      return 'Supabase is not configured in this build (see lib/config/app_credentials.dart).';
     }
     return 'Something went wrong. Please try again.';
   }

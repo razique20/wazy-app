@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'models/finance.dart';
 import 'theme/app_theme.dart';
 import 'models/expiry_item.dart';
+import 'services/budget_alert_service.dart';
 import 'services/document_scanner_service.dart';
 import 'services/finance_service.dart';
 import 'screens/login_screen.dart';
@@ -14,9 +15,11 @@ import 'screens/home_screen.dart';
 import 'screens/documents_screen.dart';
 import 'screens/document_scan_screen.dart';
 import 'screens/document_detail_screen.dart';
+import 'screens/expiry_list_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/money_screen.dart';
+import 'screens/global_search_screen.dart';
 import 'services/auth_service.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -71,6 +74,16 @@ final router = GoRouter(
         final id = state.pathParameters['id']!;
         return DocumentDetailScreen(documentId: id);
       },
+    ),
+    GoRoute(
+      path: '/search',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const GlobalSearchScreen(),
+    ),
+    GoRoute(
+      path: '/expiry-list',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const ExpiryListScreen(),
     ),
     // 4-tab bottom-nav shell:
     //   Home      — cross-tier dashboard (documents + money summary)
@@ -130,7 +143,7 @@ final router = GoRouter(
 ///
 /// Destinations carry live context:
 /// * Documents — red badge when any tracked document needs action (≤30 days).
-/// * Money — green/red dot reflecting this month's net position.
+/// * Money — amber dot when a budget is ≥80% used, red when ≥100%.
 class _AppShell extends StatefulWidget {
   final StatefulNavigationShell navigationShell;
 
@@ -142,18 +155,33 @@ class _AppShell extends StatefulWidget {
 
 class _AppShellState extends State<_AppShell> {
   List<ExpiryItem> _items = [];
+  BudgetStatusResult? _budgetStatus;
 
   @override
   void initState() {
     super.initState();
     _loadItems();
     DocumentScannerService.instance.addListener(_onItemsChanged);
+    FinanceService.instance.addListener(_onFinanceChanged);
+    _refreshBudgetStatus();
   }
 
   @override
   void dispose() {
     DocumentScannerService.instance.removeListener(_onItemsChanged);
+    FinanceService.instance.removeListener(_onFinanceChanged);
     super.dispose();
+  }
+
+  void _onFinanceChanged() {
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _refreshBudgetStatus();
+    });
+  }
+
+  void _refreshBudgetStatus() {
+    setState(() => _budgetStatus = BudgetAlertService.instance.worstStatus);
   }
 
   Future<void> _loadItems() async {
@@ -171,10 +199,6 @@ class _AppShellState extends State<_AppShell> {
   @override
   Widget build(BuildContext context) {
     final pendingDocs = _items.where((i) => i.daysRemaining <= 30).length;
-    final summary = FinanceMath.summaryForMonth(
-      FinanceService.instance.activeTransactions,
-      DateTime.now(),
-    );
 
     return Scaffold(
       body: widget.navigationShell,
@@ -223,13 +247,17 @@ class _AppShellState extends State<_AppShell> {
                 NavigationDestination(
                   icon: _BadgeIcon(
                     icon: Icons.account_balance_wallet_outlined,
-                    showDot: summary.net != 0,
-                    color: summary.net >= 0 ? WazyColors.safe : WazyColors.danger,
+                    showDot: _budgetStatus != null,
+                    color: _budgetStatus?.status == BudgetAlertLevel.exceeded
+                        ? WazyColors.danger
+                        : WazyColors.warning,
                   ),
                   selectedIcon: _BadgeIcon(
                     icon: Icons.account_balance_wallet_rounded,
-                    showDot: summary.net != 0,
-                    color: summary.net >= 0 ? WazyColors.safe : WazyColors.danger,
+                    showDot: _budgetStatus != null,
+                    color: _budgetStatus?.status == BudgetAlertLevel.exceeded
+                        ? WazyColors.danger
+                        : WazyColors.warning,
                   ),
                   label: 'Money',
                 ),

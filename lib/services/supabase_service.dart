@@ -1,27 +1,26 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../config/app_credentials.dart';
+
 /// Singleton Supabase client initialised once at app startup.
 ///
-/// Credentials are injected at build time via `--dart-define`:
-/// ```bash
-/// flutter run --dart-define-from-file=.env.local
-/// ```
-/// (copy `.env.example` → `.env.local` and fill in your project values —
-/// `.env.local` is gitignored).
+/// Credentials live in [AppCredentials] (lib/config/app_credentials.dart).
+/// Edit the constants there and rebuild — no env file or --dart-define
+/// needed.
 ///
 /// The anon (publishable) key is safe to bundle in the app binary. Never use
 /// the service_role key in the client.
 class SupabaseService {
   static Supabase? _instance;
 
-  /// True when real credentials were supplied via --dart-define.
+  /// True when real credentials have been filled in [AppCredentials].
   ///
   /// When false the app still runs, but auth and DB calls fail gracefully
   /// (services fall back to in-memory defaults) instead of throwing against
   /// the placeholder URL.
   static bool get hasCredentials {
-    const url = String.fromEnvironment('SUPABASE_URL');
-    const key = String.fromEnvironment('SUPABASE_ANON_KEY');
+    const url = AppCredentials.supabaseUrl;
+    const key = AppCredentials.supabaseAnonKey;
     return url.isNotEmpty &&
         key.isNotEmpty &&
         !url.contains('YOUR-PROJECT') &&
@@ -33,8 +32,8 @@ class SupabaseService {
     if (!hasCredentials) return;
 
     _instance ??= await Supabase.initialize(
-      url: const String.fromEnvironment('SUPABASE_URL'),
-      publishableKey: const String.fromEnvironment('SUPABASE_ANON_KEY'),
+      url: AppCredentials.supabaseUrl,
+      publishableKey: AppCredentials.supabaseAnonKey,
     );
   }
 
@@ -45,12 +44,18 @@ class SupabaseService {
     final instance = _instance;
     if (instance == null) {
       throw StateError(
-        'Supabase is not configured. Add SUPABASE_URL and SUPABASE_ANON_KEY '
-        'via --dart-define (see .env.example).',
+        'Supabase is not configured. Fill in supabaseUrl and supabaseAnonKey '
+        'in lib/config/app_credentials.dart.',
       );
     }
     return instance.client;
   }
+
+  /// The shared Supabase client, or null when Supabase isn't configured or
+  /// [initialize] hasn't run yet. Use this where services should degrade
+  /// gracefully to local-only mode (unit tests, offline mode); use [client]
+  /// where absence is a programming error.
+  static SupabaseClient? get clientOrNull => _instance?.client;
 
   static bool get isInitialized => _instance != null;
 

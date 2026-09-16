@@ -63,6 +63,32 @@ create table if not exists public.savings_envelopes (
 
 create index if not exists idx_envelopes_owner on public.savings_envelopes(owner_id);
 
+-- Recurring transaction templates (rent, salaries, software). The client
+-- auto-logs FinanceTransactions per template via RecurrenceMath; this table
+-- only stores the template (frequency, day-of-month, active window).
+create table if not exists public.recurring_transactions (
+  id uuid primary key,
+  owner_id uuid not null references auth.users(id) on delete cascade,
+  collection_id uuid not null references public.collections(id) on delete cascade,
+  kind text not null default 'expense' check (kind in ('expense','income')),
+  category text not null default 'other' check (category in (
+    'renewals','salaries','rent','utilities','suppliers','marketing',
+    'transport','software','sales','other')),
+  title text not null,
+  amount numeric(12,2) not null check (amount >= 0),
+  currency text not null default 'AED',
+  frequency text not null default 'monthly' check (frequency in ('monthly','quarterly','yearly')),
+  day_of_month int not null default 1 check (day_of_month between 1 and 31),
+  start_date date not null default current_date,
+  end_date date,
+  is_active boolean not null default true,
+  last_logged_at date,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_recurring_owner on public.recurring_transactions(owner_id);
+create index if not exists idx_recurring_collection on public.recurring_transactions(collection_id);
+
 -- ------------------------------------------------------------
 -- 2. Row Level Security — same owner-scoped model as the core tables
 -- ------------------------------------------------------------
@@ -70,6 +96,7 @@ create index if not exists idx_envelopes_owner on public.savings_envelopes(owner
 alter table public.finance_transactions enable row level security;
 alter table public.category_budgets enable row level security;
 alter table public.savings_envelopes enable row level security;
+alter table public.recurring_transactions enable row level security;
 
 -- Transactions: full access to own rows.
 drop policy if exists "own finance tx select" on public.finance_transactions;
@@ -123,4 +150,22 @@ create policy "own envelopes update" on public.savings_envelopes
 
 drop policy if exists "own envelopes delete" on public.savings_envelopes;
 create policy "own envelopes delete" on public.savings_envelopes
+  for delete using (auth.uid() = owner_id);
+
+-- Recurring templates: full access to own rows.
+drop policy if exists "own recurring select" on public.recurring_transactions;
+create policy "own recurring select" on public.recurring_transactions
+  for select using (auth.uid() = owner_id);
+
+drop policy if exists "own recurring insert" on public.recurring_transactions;
+create policy "own recurring insert" on public.recurring_transactions
+  for insert with check (auth.uid() = owner_id);
+
+drop policy if exists "own recurring update" on public.recurring_transactions;
+create policy "own recurring update" on public.recurring_transactions
+  for update using (auth.uid() = owner_id)
+  with check (auth.uid() = owner_id);
+
+drop policy if exists "own recurring delete" on public.recurring_transactions;
+create policy "own recurring delete" on public.recurring_transactions
   for delete using (auth.uid() = owner_id);

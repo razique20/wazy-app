@@ -25,8 +25,9 @@ class DocumentCollectionService {
 
   static const String _activeIdKey = 'activeCollectionId';
 
-  final _client =
-      SupabaseService.hasCredentials ? SupabaseService.client : null;
+  /// Null in local-only mode (unconfigured, or Supabase not initialised —
+  /// e.g. unit tests). clientOrNull never throws.
+  final _client = SupabaseService.clientOrNull;
 
   List<DocumentCollection> _collections = [];
   String _activeId = DocumentCollection.personalId;

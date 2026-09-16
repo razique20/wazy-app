@@ -38,20 +38,26 @@ class DepartmentLogo extends StatelessWidget {
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             style.icon,
             size: size * 0.42,
             color: style.textColor,
           ),
-          const SizedBox(height: 1),
-          Text(
-            style.acronym,
-            style: TextStyle(
-              color: style.textColor,
-              fontSize: size * 0.22,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0.5,
+          SizedBox(height: size * 0.02),
+          // FittedBox keeps the acronym inside the badge even when font
+          // metrics (e.g. Ahem font in widget tests) exceed the box.
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              style.acronym,
+              style: TextStyle(
+                color: style.textColor,
+                fontSize: size * 0.22,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5,
+              ),
             ),
           ),
         ],
@@ -63,7 +69,7 @@ class DepartmentLogo extends StatelessWidget {
     final loc = (item.location ?? '').toUpperCase();
     final type = item.docType;
 
-    if (loc.contains('DED') || loc.contains('DET') || loc.contains('SEDD') || loc.contains('ADDED') || type == DocumentType.tradeLicence) {
+    if (loc.contains('DED') || loc.contains('DET') || loc.contains('SEDD') || loc.contains('ADDED') || type.key == DocumentType.tradeLicence.name) {
       return const _DeptStyle(
         acronym: 'DED',
         icon: Icons.business_center_rounded,
@@ -73,7 +79,7 @@ class DepartmentLogo extends StatelessWidget {
       );
     }
 
-    if (loc.contains('RERA') || loc.contains('EJARI') || loc.contains('LAND') || type == DocumentType.ejari) {
+    if (loc.contains('RERA') || loc.contains('EJARI') || loc.contains('LAND') || type.key == DocumentType.ejari.name) {
       return const _DeptStyle(
         acronym: 'RERA',
         icon: Icons.home_work_rounded,
@@ -83,7 +89,7 @@ class DepartmentLogo extends StatelessWidget {
       );
     }
 
-    if (loc.contains('GDRFA') || loc.contains('RESIDENCY') || type == DocumentType.visa) {
+    if (loc.contains('GDRFA') || loc.contains('RESIDENCY') || type.key == DocumentType.visa.name) {
       return const _DeptStyle(
         acronym: 'GDRFA',
         icon: Icons.card_membership_rounded,
@@ -93,7 +99,7 @@ class DepartmentLogo extends StatelessWidget {
       );
     }
 
-    if (loc.contains('ICP') || loc.contains('IDENTITY') || type == DocumentType.emiratesId) {
+    if (loc.contains('ICP') || loc.contains('IDENTITY') || type.key == DocumentType.emiratesId.name) {
       return const _DeptStyle(
         acronym: 'ICP',
         icon: Icons.badge_rounded,
@@ -103,7 +109,7 @@ class DepartmentLogo extends StatelessWidget {
       );
     }
 
-    if (loc.contains('MOHRE') || loc.contains('LABOUR') || type == DocumentType.labourDocuments) {
+    if (loc.contains('MOHRE') || loc.contains('LABOUR') || type.key == DocumentType.labourDocuments.name) {
       return const _DeptStyle(
         acronym: 'MOHRE',
         icon: Icons.engineering_rounded,
@@ -113,7 +119,7 @@ class DepartmentLogo extends StatelessWidget {
       );
     }
 
-    if (loc.contains('RTA') || type == DocumentType.vehicleRegistration) {
+    if (loc.contains('RTA') || type.key == DocumentType.vehicleRegistration.name) {
       return const _DeptStyle(
         acronym: 'RTA',
         icon: Icons.directions_car_rounded,
@@ -123,7 +129,7 @@ class DepartmentLogo extends StatelessWidget {
       );
     }
 
-    if (loc.contains('DHA') || loc.contains('DOH') || type == DocumentType.insurance) {
+    if (loc.contains('DHA') || loc.contains('DOH') || type.key == DocumentType.insurance.name) {
       return const _DeptStyle(
         acronym: 'DHA',
         icon: Icons.health_and_safety_rounded,
@@ -153,7 +159,7 @@ class DepartmentLogo extends StatelessWidget {
       );
     }
 
-    if (loc.contains('TDRA') || loc.contains('TRA') || type == DocumentType.domainNames) {
+    if (loc.contains('TDRA') || loc.contains('TRA') || type.key == DocumentType.domainNames.name) {
       return const _DeptStyle(
         acronym: 'TDRA',
         icon: Icons.language_rounded,
@@ -163,7 +169,7 @@ class DepartmentLogo extends StatelessWidget {
       );
     }
 
-    if (type == DocumentType.softwareSubscriptions) {
+    if (type.key == DocumentType.softwareSubscriptions.name) {
       return const _DeptStyle(
         acronym: 'SAAS',
         icon: Icons.cloud_done_rounded,

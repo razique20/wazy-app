@@ -10,6 +10,7 @@ import '../models/document_collection.dart';
 import '../models/document_type.dart';
 import '../models/expiry_item.dart';
 import '../services/collection_service.dart';
+import '../services/custom_document_type_service.dart';
 import '../services/document_scanner_service.dart';
 
 enum UaeEmirate {
@@ -95,7 +96,8 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
   late final TextEditingController _locationController;
   late final TextEditingController _descriptionController;
 
-  DocumentType _docType = DocumentType.tradeLicence;
+  DocumentTypeMeta _docType =
+      DocumentTypeRegistry.instance.byEnum(DocumentType.tradeLicence);
   UaeEmirate _selectedEmirate = UaeEmirate.dubai;
   late String _selectedAuthority;
   bool _isCustomAuthority = false;
@@ -163,6 +165,126 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
     );
     if (picked != null) {
       setState(() => _expiresAt = picked);
+    }
+  }
+
+  /// Bottom sheet to define a new custom document type on the fly.
+  /// On save it registers the type and selects it for this document.
+  Future<void> _addCustomType() async {
+    final nameCtrl = TextEditingController();
+    final authorityCtrl = TextEditingController();
+    final daysCtrl = TextEditingController(text: '365');
+
+    final created = await showModalBottomSheet<DocumentTypeMeta>(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 20,
+          bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 20,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'New document type',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Create your own category beyond the built-in UAE types.',
+              style: TextStyle(color: Theme.of(sheetContext).hintColor),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: nameCtrl,
+              autofocus: true,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                labelText: 'Type name *',
+                hintText: 'e.g. Trade Licence Renewal Receipt',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: authorityCtrl,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                labelText: 'Renewal authority (optional)',
+                hintText: 'e.g. Dubai Municipality',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: daysCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Renewal cycle (days)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(sheetContext),
+                  child: const Text('Cancel'),
+                ),
+                const SizedBox(width: 8),
+                FilledButton(
+                  onPressed: () async {
+                    final name = nameCtrl.text.trim();
+                    if (name.isEmpty) return;
+                    try {
+                      final meta = await CustomDocumentTypeService.instance
+                          .create(
+                        name: name,
+                        renewalAuthority: authorityCtrl.text.trim(),
+                        typicalRenewalDays:
+                            int.tryParse(daysCtrl.text.trim()) ?? 365,
+                      );
+                      if (sheetContext.mounted) Navigator.pop(sheetContext, meta);
+                    } on ArgumentError catch (e) {
+                      ScaffoldMessenger.of(sheetContext).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            e.message.toString().replaceFirst('Bad state: ', ''),
+                          ),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    } catch (_) {
+                      if (sheetContext.mounted) {
+                        ScaffoldMessenger.of(sheetContext).showSnackBar(
+                          const SnackBar(
+                            content: Text('Could not save the document type'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  child: const Text('Create'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (created != null && mounted) {
+      setState(() => _docType = created);
     }
   }
 
@@ -405,27 +527,42 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField<DocumentType>(
+              DropdownButtonFormField<DocumentTypeMeta>(
                 initialValue: _docType,
+                isExpanded: true,
                 decoration: const InputDecoration(
                   labelText: 'Document Category',
                   border: OutlineInputBorder(),
                 ),
-                items: DocumentType.values.map((t) {
+                items: DocumentTypeRegistry.instance.typesForPicker.map((t) {
                   return DropdownMenuItem(
                     value: t,
                     child: Row(
                       children: [
                         Icon(t.icon, size: 20, color: t.primaryColor),
                         const SizedBox(width: 10),
-                        Text(t.displayName),
+                        Flexible(
+                          child: Text(
+                            t.displayName,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                       ],
                     ),
                   );
                 }).toList(),
-                onChanged: (val) {
-                  if (val != null) setState(() => _docType = val);
+                onChanged: (val) async {
+                  if (val == null) return;
+                  setState(() => _docType = val);
                 },
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: _addCustomType,
+                  icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
+                  label: const Text('New document type'),
+                ),
               ),
               const SizedBox(height: 16),
 

@@ -38,14 +38,13 @@ create index if not exists idx_collections_owner
   on public.collections(owner_id);
 
 -- Expiry-tracked documents, each inside exactly one collection.
+-- doc_type holds a built-in key (e.g. 'tradeLicence') or a user-defined
+-- 'custom-<uuid>' key referencing custom_document_types.
 create table if not exists public.documents (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users(id) on delete cascade,
   collection_id uuid not null references public.collections(id) on delete cascade,
-  doc_type text not null check (doc_type in (
-    'tradeLicence','ejari','visa','emiratesId','labourDocuments','insurance',
-    'vehicleRegistration','contracts','certificates','permits',
-    'domainNames','softwareSubscriptions','supplierAgreements')),
+  doc_type text not null,
   display_name text not null,
   expires_at date not null,
   reminder_days int not null default 30,
@@ -60,6 +59,11 @@ create table if not exists public.documents (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Existing installs: relax the legacy 13-value CHECK so custom type keys
+-- can be stored. Idempotent — the constraint may not exist.
+alter table public.documents
+  drop constraint if exists documents_doc_type_check;
 
 create index if not exists idx_documents_collection
   on public.documents(collection_id);
@@ -79,6 +83,21 @@ create table if not exists public.reminders (
 );
 
 create index if not exists idx_reminders_document on public.reminders(document_id);
+
+-- User-defined document types beyond the 13 built-ins. Referenced from
+-- documents.doc_type as 'custom-<id>'.
+create table if not exists public.custom_document_types (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null references auth.users(id) on delete cascade,
+  name text not null,
+  renewal_authority text,
+  renewal_days int not null default 365 check (renewal_days > 0),
+  created_at timestamptz not null default now(),
+  unique (owner_id, name)
+);
+
+create index if not exists idx_custom_document_types_owner
+  on public.custom_document_types(owner_id);
 
 -- ------------------------------------------------------------
 -- 2. updated_at auto-touch on documents
@@ -106,6 +125,7 @@ create trigger trg_documents_updated_at
 alter table public.collections enable row level security;
 alter table public.documents enable row level security;
 alter table public.reminders enable row level security;
+alter table public.custom_document_types enable row level security;
 
 -- Collections: full access to own rows.
 drop policy if exists "own collection select" on public.collections;
@@ -141,6 +161,24 @@ create policy "own documents update" on public.documents
 
 drop policy if exists "own documents delete" on public.documents;
 create policy "own documents delete" on public.documents
+  for delete using (auth.uid() = owner_id);
+
+-- Custom document types: full access to own rows.
+drop policy if exists "own custom types select" on public.custom_document_types;
+create policy "own custom types select" on public.custom_document_types
+  for select using (auth.uid() = owner_id);
+
+drop policy if exists "own custom types insert" on public.custom_document_types;
+create policy "own custom types insert" on public.custom_document_types
+  for insert with check (auth.uid() = owner_id);
+
+drop policy if exists "own custom types update" on public.custom_document_types;
+create policy "own custom types update" on public.custom_document_types
+  for update using (auth.uid() = owner_id)
+  with check (auth.uid() = owner_id);
+
+drop policy if exists "own custom types delete" on public.custom_document_types;
+create policy "own custom types delete" on public.custom_document_types
   for delete using (auth.uid() = owner_id);
 
 -- Reminders: access via the parent document's owner.

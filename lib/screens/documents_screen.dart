@@ -57,7 +57,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
   String _query = '';
   _DocFilter _filter = _DocFilter.all;
   _DocSort _sort = _DocSort.dueDate;
-  DocumentType? _typeFilter;
+  DocumentTypeMeta? _typeFilter;
   bool _showFilters = false;
 
   @override
@@ -86,7 +86,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
           !i.displayName.toLowerCase().contains(_query.toLowerCase())) {
         return false;
       }
-      if (_typeFilter != null && i.docType != _typeFilter) return false;
+      if (_typeFilter != null && i.docType.key != _typeFilter!.key) return false;
       switch (_filter) {
         case _DocFilter.all:
           return true;
@@ -181,6 +181,11 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
             ),
           ),
           IconButton(
+            icon: const Icon(Icons.travel_explore_rounded),
+            tooltip: 'Search all documents',
+            onPressed: () => context.push('/search'),
+          ),
+          IconButton(
             icon: Icon(
               _showFilters ? Icons.filter_alt : Icons.filter_alt_outlined,
             ),
@@ -272,7 +277,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                         child: Row(
                           children: [
                             _typeChip(theme, null, 'All types'),
-                            ...DocumentType.values
+                            ...DocumentTypeRegistry.instance.typesForPicker
                                 .map((t) => _typeChip(theme, t, t.displayName)),
                           ],
                         ),
@@ -356,6 +361,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
               ),
             ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'documents_add',
         onPressed: () async {
           await context.push('/scan');
           await _loadData();
@@ -444,9 +450,9 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     );
   }
 
-  Widget _typeChip(ThemeData theme, DocumentType? type, String label) {
+  Widget _typeChip(ThemeData theme, DocumentTypeMeta? type, String label) {
     final isDark = theme.brightness == Brightness.dark;
-    final selected = _typeFilter == type;
+    final selected = _typeFilter?.key == type?.key;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: FilterChip(
