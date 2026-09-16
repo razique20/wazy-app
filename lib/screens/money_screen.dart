@@ -4,6 +4,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:go_router/go_router.dart';
+
 import '../models/expiry_item.dart';
 import '../models/finance.dart';
 import '../services/budget_alert_service.dart';
@@ -239,12 +241,94 @@ class _MoneyScreenState extends State<MoneyScreen> {
   }
 
   Widget _buildCashFlowSection(ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
     final forecast = FinanceMath.calculate90DayCashFlow(
       transactions: _transactions,
       recurringTemplates: _recurring,
       expiryItems: _items,
     );
-    return CashFlowForecastCard(forecast: forecast);
+    final netPositive = forecast.netChange >= 0;
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withAlpha(80),
+        ),
+      ),
+      color: isDark ? const Color(0xFF1E2430) : Colors.white,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => context.push('/cash-flow-forecast'),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: WazyColors.violetAccent.withAlpha(30),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.show_chart_rounded,
+                  color: WazyColors.violetAccent,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'Cash-Flow Forecast',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: (netPositive ? WazyColors.safe : WazyColors.danger).withAlpha(25),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '${netPositive ? '+' : ''}${forecast.percentChange.toStringAsFixed(1)}% (90D)',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: netPositive ? WazyColors.safe : WazyColors.danger,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Projected 90D: ${MoneyFormat.aed(forecast.projectedEndBalance)} • Renewals: ${MoneyFormat.aed(forecast.totalRenewalOutflow)}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.outline,
+                        fontSize: 11,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Colors.grey,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   // ------------------------------------------------------------------

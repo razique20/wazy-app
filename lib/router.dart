@@ -19,6 +19,7 @@ import 'screens/expiry_list_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/money_screen.dart';
+import 'screens/cash_flow_forecast_screen.dart';
 import 'screens/global_search_screen.dart';
 import 'services/auth_service.dart';
 
@@ -84,6 +85,11 @@ final router = GoRouter(
       path: '/expiry-list',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const ExpiryListScreen(),
+    ),
+    GoRoute(
+      path: '/cash-flow-forecast',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const CashFlowForecastScreen(),
     ),
     // 4-tab bottom-nav shell:
     //   Home      — cross-tier dashboard (documents + money summary)
