@@ -10,6 +10,7 @@ import '../services/finance_service.dart';
 import '../services/custom_document_type_service.dart';
 import '../services/notification_service.dart';
 import '../services/supabase_service.dart';
+import '../services/theme_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/widgets.dart';
 
@@ -355,6 +356,65 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _buildAccountSection(theme, signedInEmail)
                   else
                     _buildLocalModeSection(theme),
+                  const SizedBox(height: 20),
+
+                  // Appearance / Dark Mode
+                  _buildSection(
+                    context,
+                    'Appearance',
+                    Icons.palette_outlined,
+                    theme,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Theme',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            width: double.infinity,
+                            child: SegmentedButton<ThemeMode>(
+                              segments: const [
+                                ButtonSegment(
+                                  value: ThemeMode.system,
+                                  icon: Icon(Icons.brightness_auto, size: 18),
+                                  label: Text('System'),
+                                ),
+                                ButtonSegment(
+                                  value: ThemeMode.light,
+                                  icon: Icon(Icons.light_mode, size: 18),
+                                  label: Text('Light'),
+                                ),
+                                ButtonSegment(
+                                  value: ThemeMode.dark,
+                                  icon: Icon(Icons.dark_mode, size: 18),
+                                  label: Text('Dark'),
+                                ),
+                              ],
+                              selected: {ThemeService.instance.mode},
+                              onSelectionChanged: (selected) {
+                                ThemeService.instance.setMode(selected.first);
+                                setState(() {}); // update selected highlight
+                              },
+                              showSelectedIcon: false,
+                              style: ButtonStyle(
+                                visualDensity: VisualDensity.compact,
+                                tapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
                   const SizedBox(height: 20),
 
                   // Notification settings

@@ -11,6 +11,7 @@ import 'services/custom_document_type_service.dart';
 import 'services/document_scanner_service.dart';
 import 'services/finance_service.dart';
 import 'services/supabase_service.dart';
+import 'services/theme_service.dart';
 import 'services/urgency_engine.dart';
 import 'services/notification_service.dart';
 
@@ -23,16 +24,8 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  // Set system UI style
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      statusBarBrightness: Brightness.light,
-      systemNavigationBarColor: Color(0xFFF8FAFC),
-      systemNavigationBarIconBrightness: Brightness.dark,
-    ),
-  );
+  // Load the user's theme preference before the first frame.
+  await ThemeService.instance.init();
 
   // Supabase must be initialised once, before any service that uses it.
   // Credentials come from AppCredentials (lib/config/app_credentials.dart).
