@@ -240,6 +240,8 @@ class DocumentScannerService extends ChangeNotifier {
       scoped.expiresAt,
       title: scoped.displayName,
     );
+    await _saveLocal();
+    notifyListeners();
   }
 
   Future<void> updateItem(ExpiryItem updatedItem) async {
@@ -273,6 +275,8 @@ class DocumentScannerService extends ChangeNotifier {
       updatedItem.expiresAt,
       title: updatedItem.displayName,
     );
+    await _saveLocal();
+    notifyListeners();
   }
 
   Future<void> removeItem(String id) async {
