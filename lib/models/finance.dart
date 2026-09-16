@@ -662,16 +662,16 @@ class FinanceMath {
   /// same title (case-insensitive, trimmed), same amount and the same
   /// calendar day, scoped to the candidate's collection. The candidate's
   /// own id is ignored so the edit flow doesn't self-match. Returns null
-  /// Returns the first existing transaction that [candidate] duplicates.
-  /// Matches on the same title (case-insensitive, trimmed) and kind (expense vs expense,
-  /// income vs income), scoped to the candidate's collection. The candidate's
-  /// own id is ignored so the edit flow doesn't self-match. Returns null
-  /// when the record looks unique — used as a soft "confirm before saving"
-  /// guard, not a hard block.
+  /// Returns the first existing expense transaction that [candidate] duplicates.
+  /// Matches on the same title (case-insensitive, trimmed) for expense records.
+  /// Duplicate warnings apply strictly to expenses; income records (e.g. multiple
+  /// salary or client payments) add without duplicate prompt friction.
   static FinanceTransaction? findDuplicateTransaction(
     List<FinanceTransaction> transactions,
     FinanceTransaction candidate,
   ) {
+    if (candidate.kind != FinanceKind.expense) return null;
+
     final title = candidate.title.trim().toLowerCase();
     if (title.isEmpty) return null;
 
@@ -680,7 +680,7 @@ class FinanceMath {
     for (final t in transactions) {
       if (t.id == candidate.id) continue;
       if (t.collectionId != candidate.collectionId) continue;
-      if (t.kind != candidate.kind) continue;
+      if (t.kind != FinanceKind.expense) continue;
       if (t.title.trim().toLowerCase() != title) continue;
 
       final sameDay = t.occurredAt.year == candidate.occurredAt.year &&

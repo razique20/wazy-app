@@ -365,6 +365,31 @@ void main() {
       );
     });
 
+    test('income records bypass duplicate warnings completely', () {
+      final existingIncome = FinanceTransaction(
+        id: 'inc1',
+        collectionId: 'personal',
+        kind: FinanceKind.income,
+        category: FinanceCategory.sales,
+        title: 'Salary Deposit',
+        amount: 6000,
+        occurredAt: day,
+      );
+      final candidateIncome = FinanceTransaction(
+        id: 'inc2',
+        collectionId: 'personal',
+        kind: FinanceKind.income,
+        category: FinanceCategory.sales,
+        title: 'Salary Deposit',
+        amount: 6000,
+        occurredAt: day,
+      );
+      expect(
+        FinanceMath.findDuplicateTransaction([existingIncome], candidateIncome),
+        isNull,
+      );
+    });
+
     test('scoped per collection and ignores the candidate\'s own id', () {
       final company = tx('a', 'DEWA bill', 350, day,
           collectionId: 'company');
