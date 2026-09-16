@@ -5,13 +5,22 @@ App: **Wazy** — a two-tier operations app for UAE SMEs:
 - **Tier 1 — Documents (Home tab):** expiry tracking, reminders, renewals.
 - **Tier 2 — Money (Money tab):** transaction log, category budgets, savings envelopes.
 
-**Already shipped:** home screen redesign with two-tier bottom nav, document
-tracking with urgency tiers, offline-first local cache + Supabase sync (outbox
-queue, LWW conflict resolution, offline renewal tombstones), transaction log,
-monthly budgets, savings envelopes, 90-day renewal outlook, CSV export,
-global search, expiry-list filters & sort.
-
-This file lists **only features still to be implemented**, split by category.
+**Already shipped:** 
+- Home screen redesign with two-tier bottom nav & minimal branding
+- Document tracking with 4 urgency tiers (Low, Medium, High, Critical)
+- Offline-first local cache + Supabase sync (outbox queue, LWW conflict resolution, offline tombstones)
+- Multi-device & shared collections
+- Transaction log, category budget caps, savings envelopes
+- 90-day renewal outlook & auto-calculated renewal fees
+- Scheduled local OS notifications (90/60/30/7-day ladder with Asia/Dubai timezone support)
+- Custom document types with dynamic icons, user creation flow, and Supabase sync
+- Full filters & sort suite in `/expiry-list` (types, urgency, status, collection, days remaining)
+- Global live search across documents & transactions with debounced inverted matcher
+- CSV & PDF report export via native share sheet
+- Recurring transaction templates (monthly/quarterly/yearly) with auto-logging & catch-up
+- Budget threshold alerts (80% & 100% warnings via OS notification, snackbars, & tab badge dots)
+- Renewal payment loop (Tier 1 & Tier 2 integration in both directions)
+- Duplicate transaction detection with soft warning dialogs
 
 ---
 
@@ -19,20 +28,20 @@ This file lists **only features still to be implemented**, split by category.
 
 ### Tier 1 — Documents (core loop)
 
-- [ ] **"Mark as renewed" flow** — one tap sets `expiresAt += typicalRenewalDays`, logs renewal history.
+- [x] **"Mark as renewed" flow** — ✅ implemented: one tap on Document Detail or Expiry List extends expiry by typical cycle (1 year), reschedules 90/60/30/7-day local notifications, and auto-logs a renewals expense to the Money tab if a renewal fee is defined.
 - [ ] **Renewal history timeline** per document (who renewed, when, cost).
 - [x] **Scheduled local notifications** (`flutter_local_notifications`) — ✅ implemented: exact OS reminders fire at 09:00 (Asia/Dubai) on the 90/60/30/7-day ladder, scheduled/cancelled automatically on document add/update/renew/delete, re-synced on startup, with runtime permission prompt on Android 13+.
 - [ ] **Per-document reminder overrides** — custom alert days (e.g. 45 days instead of the tier default).
-- [ ] **Archived / expired documents view** — expired docs are filtered out (`status = 'active'`) and vanish; give them a history view instead of deletion.
+- [x] **Archived / expired documents view** — ✅ implemented: status filter toggle (Active / Expired / All) on `/expiry-list` screen allows inspecting expired and archived documents without cluttering the main active documents list.
 - [x] **Custom document types** — ✅ implemented: users can define their own types from the scan screen (name, renewal authority, renewal cycle), stored in the `custom_document_types` Supabase table with a local fallback; they appear in the type picker and all filter chips alongside the 13 built-ins, and documents store a stable `custom-<uuid>` type key.
-- [ ] **Notes & attachments** per document (photos of receipts, PDFs).
-- [ ] **Cost fields** — `amount_due`, `last_paid_amount`, `currency` on `expiry_items` (powers the Money-tier payment loop).
+- [ ] **Notes & attachments** per document (photos of receipts, PDFs multi-attachment view).
+- [x] **Cost & fee tracking** — ✅ implemented: `renewalFee` on `ExpiryItem` tracks document renewal fees, driving renewal payment auto-logging and 90-day Money-tier outlook calculation.
 
 ### Tier 1 — Search, list & export
 
 - [x] **Filters & sort** in `/expiry-list` (type, status, collection, days remaining) — ✅ implemented: pure `ExpiryFilterSpec` (type, urgency tier, reminder status, lifecycle status active/expired/all, collection, days-remaining presets, free-text query) with 5 sort modes; the screen loads every collection so the collection filter is real; the filter sheet scrolls and renders active-filter chips.
 - [x] **Global search** across documents (name, number, notes) — ✅ implemented: `/search` screen with debounced live results over an inverted-field matcher (`DocumentScannerSearch.matchesQuery`: name, notes/record numbers, location, assignee, file name, type name); reachable from the Documents tab app bar; match rules unit-tested.
-- [x] **CSV export** of the expiry report (accountants love this) — ✅ implemented: share-sheet export (CSV via `FilePicker.saveFile` with clipboard fallback, PDF via `Printing.sharePdf`) from `/expiry-list`; the export honours the active filters, and an explicit status filter lets accountants include expired rows.
+- [x] **CSV & PDF export** of the expiry report (accountants love this) — ✅ implemented: share-sheet export (CSV via `FilePicker.saveFile` with clipboard fallback, PDF via `Printing.sharePdf`) from `/expiry-list`; the export honours the active filters, and an explicit status filter lets accountants include expired rows.
 
 ### Tier 2 — Money
 
@@ -74,9 +83,10 @@ needs an LLM budget or server-side calls.
 
 ## Suggested build order
 
-1. **Core loop:** "Mark as renewed" + scheduled local notifications.
-2. **Data hygiene:** archived/expired view, filters & sort, renewal history.
-3. **Money automation:** recurring transactions, categorization rules, budget alerts.
-4. **Tier glue:** renewal payment loop + auto-envelope from outlook.
+1. **Core loop:** "Mark as renewed" + scheduled local notifications. *(Completed)*
+2. **Data hygiene:** archived/expired view, filters & sort, renewal history. *(Filters, sort, & status views completed)*
+3. **Money automation:** recurring transactions, budget alerts, categorization rules. *(Recurring & budget alerts completed)*
+4. **Tier glue:** renewal payment loop + auto-envelope from outlook. *(Payment loop completed)*
 5. **AI:** OCR auto-fill + Arabic/English + type detection.
 6. **Polish:** app lock, dark mode, Arabic localization, VAT assistant, forecast chart.
+
