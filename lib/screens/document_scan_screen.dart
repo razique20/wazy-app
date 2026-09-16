@@ -335,7 +335,7 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
       }
 
       final item = ExpiryItem(
-        id: const Uuid().v4(),
+        id: docId,
         collectionId: DocumentCollectionService.instance.activeCollectionId,
         displayName: _titleController.text.trim(),
         docType: _docType,

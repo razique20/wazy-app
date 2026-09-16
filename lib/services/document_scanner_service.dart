@@ -668,7 +668,9 @@ class DocumentScannerService extends ChangeNotifier {
       'status': item.isExpired ? 'expired' : 'active',
       'assigned_to': item.assignedTo,
       'renewal_fee': item.renewalFee,
-      'notes': item.renewalWarning,
+      'notes': (item.description != null && item.description!.trim().isNotEmpty)
+          ? item.description!.trim()
+          : item.renewalWarning,
       'file_name': item.fileName,
       'file_path': item.filePath,
       'file_size': item.fileSize,
