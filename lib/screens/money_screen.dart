@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../models/expiry_item.dart';
 import '../models/finance.dart';
@@ -131,11 +132,11 @@ class _MoneyScreenState extends State<MoneyScreen> {
           : ListView(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
               children: [
-                _buildOutlookCard(theme),
-                const SizedBox(height: 16),
+                _buildFinancialOverviewCard(theme, summary),
+                const SizedBox(height: 12),
+                _buildSmallRenewalOutlookCard(theme),
+                const SizedBox(height: 12),
                 _buildCashFlowSection(theme),
-                const SizedBox(height: 16),
-                _buildMonthSummary(theme, summary),
                 const SizedBox(height: 16),
                 _buildPaceCard(theme, summary),
                 const SizedBox(height: 24),
@@ -160,17 +161,24 @@ class _MoneyScreenState extends State<MoneyScreen> {
   }
 
   // ------------------------------------------------------------------
-  // Renewal outlook
+  // Financial Overview (Month Income, Spend & Net)
   // ------------------------------------------------------------------
 
-  Widget _buildOutlookCard(ThemeData theme) {
+  Widget _buildFinancialOverviewCard(
+    ThemeData theme,
+    ({double income, double expense, double net}) summary,
+  ) {
+    final monthName = DateFormat('MMMM yyyy').format(DateTime.now());
+    const greenColor = Color(0xFF10B981);
+    const redColor = Color(0xFFEF4444);
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           colors: [
-            const Color(0xFF1E1B4B),
-            const Color(0xFF312E81),
+            Color(0xFF1E1B4B),
+            Color(0xFF312E81),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -187,56 +195,234 @@ class _MoneyScreenState extends State<MoneyScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header: Month Title & Add Record Button
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Icon(Icons.event_repeat_rounded,
-                  size: 20, color: WazyColors.cyanAccent),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text(
-                  'Renewal outlook (90 days)',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white70,
-                    fontSize: 14,
+              Row(
+                children: [
+                  const Icon(
+                    Icons.account_balance_rounded,
+                    size: 20,
+                    color: WazyColors.cyanAccent,
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '$monthName Overview',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
               ),
               ElevatedButton.icon(
                 onPressed: _showAddTransactionSheet,
                 icon: const Icon(Icons.add_rounded, size: 16),
-                label: const Text('Add Fund', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                label: const Text(
+                  'Add Record',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: WazyColors.cyanAccent,
                   foregroundColor: const Color(0xFF0A0E1A),
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   visualDensity: VisualDensity.compact,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
+
+          // Main Net Balance Display
+          const Text(
+            'Net Cash Flow',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.white60,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 2),
           Text(
-            MoneyFormat.aed(_renewalOutlook90),
-            style: const TextStyle(
-              fontSize: 32,
+            MoneyFormat.aed(summary.net),
+            style: TextStyle(
+              fontSize: 30,
               fontWeight: FontWeight.w800,
-              color: Colors.white,
+              color: summary.net >= 0 ? WazyColors.cyanAccent : Colors.redAccent,
               letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            _renewalOutlook90 > 0
-                ? 'Set this aside before the due dates hit.'
-                : 'No renewal fees recorded on upcoming documents.',
-            style: const TextStyle(
-              fontSize: 13,
-              color: Colors.white70,
-            ),
+          const SizedBox(height: 16),
+          const Divider(color: Colors.white12, height: 1),
+          const SizedBox(height: 14),
+
+          // Income vs Spend Sub-Row
+          Row(
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: greenColor.withAlpha(40),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_downward_rounded,
+                        size: 14,
+                        color: greenColor,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Income',
+                            style: TextStyle(fontSize: 11, color: Colors.white60),
+                          ),
+                          Text(
+                            MoneyFormat.aed(summary.income),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(height: 24, width: 1, color: Colors.white12),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: redColor.withAlpha(40),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_outward_rounded,
+                        size: 14,
+                        color: redColor,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Spend',
+                            style: TextStyle(fontSize: 11, color: Colors.white60),
+                          ),
+                          Text(
+                            MoneyFormat.aed(summary.expense),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // Small Renewal Outlook Card (under Financial Overview)
+  // ------------------------------------------------------------------
+
+  Widget _buildSmallRenewalOutlookCard(ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withAlpha(80),
+        ),
+      ),
+      color: isDark ? const Color(0xFF1E2430) : Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: WazyColors.caution.withAlpha(25),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.event_repeat_rounded,
+                color: WazyColors.caution,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '90-Day Renewal Outlook',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.outline,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    MoneyFormat.aed(_renewalOutlook90),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: (_renewalOutlook90 > 0 ? WazyColors.warning : WazyColors.safe)
+                    .withAlpha(20),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                _renewalOutlook90 > 0 ? 'Upcoming Fees' : 'Clear',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: _renewalOutlook90 > 0 ? WazyColors.warning : WazyColors.safe,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
