@@ -732,6 +732,150 @@ class FinanceMath {
     return total;
   }
 
+  /// Calculates a 90-day cash flow forecast simulating daily balances based on:
+  /// - Starting balance (historical net transactions up to [now])
+  /// - Upcoming recurring transactions (income & expense)
+  /// - Upcoming document renewal fees from [expiryItems]
+  static CashFlowForecast calculate90DayCashFlow({
+    required List<FinanceTransaction> transactions,
+    required List<RecurringTransaction> recurringTemplates,
+    required List<ExpiryItem> expiryItems,
+    double? initialBalance,
+    DateTime? now,
+    int days = 90,
+  }) {
+    final baseDate = now ?? DateTime.now();
+    final startDate = DateTime(baseDate.year, baseDate.month, baseDate.day);
+    final endDate = startDate.add(Duration(days: days));
+
+    // 1. Determine starting balance
+    double startBal = initialBalance ?? 0.0;
+    if (initialBalance == null) {
+      for (final t in transactions) {
+        final tDate = DateTime(t.occurredAt.year, t.occurredAt.month, t.occurredAt.day);
+        if (!tDate.isAfter(startDate)) {
+          if (t.kind == FinanceKind.income) {
+            startBal += t.amount;
+          } else {
+            startBal -= t.amount;
+          }
+        }
+      }
+    }
+
+    // Map of YYYY-MM-DD -> List<CashFlowEvent>
+    final eventsByDay = <String, List<CashFlowEvent>>{};
+
+    String dayKey(DateTime dt) =>
+        '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+
+    // 2. Add recurring transactions
+    for (final r in recurringTemplates) {
+      if (!r.isActive) continue;
+      final occurrences = RecurrenceMath.dueOccurrences(
+        r,
+        r.frequency,
+        startDate,
+        endDate,
+        lastLoggedAt: r.lastLoggedAt,
+      );
+      for (final occ in occurrences) {
+        final occKey = dayKey(occ);
+        eventsByDay.putIfAbsent(occKey, () => []).add(
+              CashFlowEvent(
+                title: r.title,
+                amount: r.amount,
+                kind: r.kind,
+                isDocumentRenewal: r.category == FinanceCategory.renewals,
+              ),
+            );
+      }
+    }
+
+    // 3. Add document renewal outflows
+    for (final doc in expiryItems) {
+      if (!doc.isActive) continue;
+      if (doc.renewalFee == null || doc.renewalFee! <= 0) continue;
+      final docExpiry = DateTime(doc.expiresAt.year, doc.expiresAt.month, doc.expiresAt.day);
+      if (docExpiry.isAfter(startDate) && !docExpiry.isAfter(endDate)) {
+        final docKey = dayKey(docExpiry);
+        eventsByDay.putIfAbsent(docKey, () => []).add(
+              CashFlowEvent(
+                title: '${doc.displayName} Renewal',
+                amount: doc.renewalFee!,
+                kind: FinanceKind.expense,
+                isDocumentRenewal: true,
+              ),
+            );
+      }
+    }
+
+    // 4. Build daily points
+    final points = <CashFlowPoint>[];
+    double currentBal = startBal;
+    double lowestBal = startBal;
+    DateTime lowestDate = startDate;
+    double totalInflow = 0.0;
+    double totalOutflow = 0.0;
+    double totalRenewal = 0.0;
+
+    for (int d = 0; d <= days; d++) {
+      final date = startDate.add(Duration(days: d));
+      final k = dayKey(date);
+      final dayEvents = eventsByDay[k] ?? const [];
+
+      double dayIn = 0.0;
+      double dayOut = 0.0;
+      double dayRenewalOut = 0.0;
+
+      for (final ev in dayEvents) {
+        if (ev.kind == FinanceKind.income) {
+          dayIn += ev.amount;
+        } else {
+          dayOut += ev.amount;
+          if (ev.isDocumentRenewal) {
+            dayRenewalOut += ev.amount;
+          }
+        }
+      }
+
+      currentBal = currentBal + dayIn - dayOut;
+      totalInflow += dayIn;
+      totalOutflow += dayOut;
+      totalRenewal += dayRenewalOut;
+
+      if (currentBal < lowestBal) {
+        lowestBal = currentBal;
+        lowestDate = date;
+      }
+
+      points.add(
+        CashFlowPoint(
+          date: date,
+          dayIndex: d,
+          balance: currentBal,
+          inflow: dayIn,
+          outflow: dayOut,
+          renewalOutflow: dayRenewalOut,
+          events: dayEvents,
+        ),
+      );
+    }
+
+    return CashFlowForecast(
+      startDate: startDate,
+      endDate: endDate,
+      startingBalance: startBal,
+      projectedEndBalance: currentBal,
+      lowestBalance: lowestBal,
+      lowestBalanceDate: lowestDate,
+      totalProjectedInflow: totalInflow,
+      totalProjectedOutflow: totalOutflow,
+      totalRenewalOutflow: totalRenewal,
+      points: points,
+    );
+  }
+
   static String _csvEscape(String value) {
     if (value.contains(',') || value.contains('"') || value.contains('\n')) {
       return '"${value.replaceAll('"', '""')}"';
@@ -758,3 +902,75 @@ class FinanceMath {
     return buffer.toString();
   }
 }
+
+/// Single cash-flow event in a forecast (e.g. document renewal or recurring item).
+class CashFlowEvent {
+  final String title;
+  final double amount;
+  final FinanceKind kind;
+  final bool isDocumentRenewal;
+
+  const CashFlowEvent({
+    required this.title,
+    required this.amount,
+    required this.kind,
+    this.isDocumentRenewal = false,
+  });
+}
+
+/// Projected state for one single day in the forecast window.
+class CashFlowPoint {
+  final DateTime date;
+  final int dayIndex;
+  final double balance;
+  final double inflow;
+  final double outflow;
+  final double renewalOutflow;
+  final List<CashFlowEvent> events;
+
+  const CashFlowPoint({
+    required this.date,
+    required this.dayIndex,
+    required this.balance,
+    required this.inflow,
+    required this.outflow,
+    required this.renewalOutflow,
+    required this.events,
+  });
+}
+
+/// Complete 90-day cash flow forecast data model. Pure calculation result.
+class CashFlowForecast {
+  final DateTime startDate;
+  final DateTime endDate;
+  final double startingBalance;
+  final double projectedEndBalance;
+  final double lowestBalance;
+  final DateTime lowestBalanceDate;
+  final double totalProjectedInflow;
+  final double totalProjectedOutflow;
+  final double totalRenewalOutflow;
+  final List<CashFlowPoint> points;
+
+  const CashFlowForecast({
+    required this.startDate,
+    required this.endDate,
+    required this.startingBalance,
+    required this.projectedEndBalance,
+    required this.lowestBalance,
+    required this.lowestBalanceDate,
+    required this.totalProjectedInflow,
+    required this.totalProjectedOutflow,
+    required this.totalRenewalOutflow,
+    required this.points,
+  });
+
+  /// Net projected change over the forecast period.
+  double get netChange => projectedEndBalance - startingBalance;
+
+  /// Percentage change relative to starting balance (0 if starting balance is 0).
+  double get percentChange => startingBalance == 0
+      ? 0
+      : (netChange / startingBalance.abs()) * 100;
+}
+

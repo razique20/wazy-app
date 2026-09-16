@@ -10,6 +10,7 @@ import '../services/budget_alert_service.dart';
 import '../services/document_scanner_service.dart';
 import '../services/finance_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/cash_flow_forecast_chart.dart';
 import 'package:uuid/uuid.dart';
 
 /// The Money tab: renewal cost outlook, monthly budget tracking, savings
@@ -129,6 +130,8 @@ class _MoneyScreenState extends State<MoneyScreen> {
               children: [
                 _buildOutlookCard(theme),
                 const SizedBox(height: 16),
+                _buildCashFlowSection(theme),
+                const SizedBox(height: 16),
                 _buildMonthSummary(theme, summary),
                 const SizedBox(height: 16),
                 _buildPaceCard(theme, summary),
@@ -233,6 +236,15 @@ class _MoneyScreenState extends State<MoneyScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildCashFlowSection(ThemeData theme) {
+    final forecast = FinanceMath.calculate90DayCashFlow(
+      transactions: _transactions,
+      recurringTemplates: _recurring,
+      expiryItems: _items,
+    );
+    return CashFlowForecastCard(forecast: forecast);
   }
 
   // ------------------------------------------------------------------

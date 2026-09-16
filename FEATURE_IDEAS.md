@@ -55,7 +55,7 @@ App: **Wazy** — a two-tier operations app for UAE SMEs:
 - [ ] **Auto-envelope from outlook** — one tap on the renewal outlook card creates/refreshes an envelope per upcoming renewal (target = renewal fee).
 - [ ] **Receipt photo attachment** per transaction (reuse `file_picker`).
 - [x] **Duplicate transaction detection** — ✅ implemented: `FinanceMath.findDuplicateTransaction` (pure, unit-tested) flags an existing record with the same title (case/space-insensitive), amount and calendar day, scoped to the candidate's collection and ignoring its own id for the edit flow. The Add Record sheet shows a "Possible duplicate" dialog before saving with Discard / Save anyway — a soft guard, since a second same-day payment of the same amount is legitimate.
-- [ ] **Cash-flow forecast chart** — 90-day line: projected balance vs upcoming renewal outflows.
+- [x] **Cash-flow forecast chart** — ✅ implemented: `FinanceMath.calculate90DayCashFlow` simulates 90 days of daily projected balances combining historical transaction balances, recurring income/expenses, and upcoming document renewal fees (`ExpiryItem.renewalFee`). Rendered on the Money tab via `CashFlowForecastCard` featuring a smooth `CustomPainter` line & area chart, visual renewal dip indicators, 90-day projected metrics, lowest-balance warning banner, and interactive tap/drag date inspection panel. Unit-tested in `test/cash_flow_test.dart` (4 tests).
 - [ ] **VAT assistant** — 5% input/output VAT fields per transaction with a quarterly summary (UAE VAT readiness; no filing claims).
 
 ### Platform & UX

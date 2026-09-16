@@ -6,3 +6,6 @@ export 'indicators/progress_ring.dart';
 export 'indicators/notification_pill.dart';
 export 'indicators/department_logo.dart';
 export 'indicators/wazy_logo.dart';
+export 'cash_flow_forecast_chart.dart';
+
+
