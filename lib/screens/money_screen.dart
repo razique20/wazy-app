@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import '../models/expiry_item.dart';
 import '../models/finance.dart';
 import '../services/budget_alert_service.dart';
+import '../services/collection_service.dart';
 import '../services/document_scanner_service.dart';
 import '../services/finance_service.dart';
 import '../theme/app_theme.dart';
@@ -1727,9 +1728,10 @@ class _TransactionFormSheetState extends State<_TransactionFormSheet> {
     if (title.isEmpty || amount == null || amount <= 0) return;
 
     final now = DateTime.now();
+    final activeCollectionId = DocumentCollectionService.instance.activeCollectionId;
     final transaction = FinanceTransaction(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
-      collectionId: '',
+      id: const Uuid().v4(),
+      collectionId: activeCollectionId,
       kind: _kind,
       category: _category,
       title: title,
