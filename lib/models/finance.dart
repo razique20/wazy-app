@@ -662,6 +662,10 @@ class FinanceMath {
   /// same title (case-insensitive, trimmed), same amount and the same
   /// calendar day, scoped to the candidate's collection. The candidate's
   /// own id is ignored so the edit flow doesn't self-match. Returns null
+  /// Returns the first existing transaction that [candidate] duplicates.
+  /// Matches on the same title (case-insensitive, trimmed) and kind (expense vs expense,
+  /// income vs income), scoped to the candidate's collection. The candidate's
+  /// own id is ignored so the edit flow doesn't self-match. Returns null
   /// when the record looks unique — used as a soft "confirm before saving"
   /// guard, not a hard block.
   static FinanceTransaction? findDuplicateTransaction(
@@ -669,18 +673,29 @@ class FinanceMath {
     FinanceTransaction candidate,
   ) {
     final title = candidate.title.trim().toLowerCase();
+    if (title.isEmpty) return null;
+
+    FinanceTransaction? fallbackMatch;
+
     for (final t in transactions) {
       if (t.id == candidate.id) continue;
       if (t.collectionId != candidate.collectionId) continue;
-      if (t.amount != candidate.amount) continue;
+      if (t.kind != candidate.kind) continue;
       if (t.title.trim().toLowerCase() != title) continue;
+
       final sameDay = t.occurredAt.year == candidate.occurredAt.year &&
           t.occurredAt.month == candidate.occurredAt.month &&
           t.occurredAt.day == candidate.occurredAt.day;
-      if (!sameDay) continue;
-      return t;
+      final sameAmount = t.amount == candidate.amount;
+
+      // Exact match (same day + same amount) is the highest priority candidate
+      if (sameDay && sameAmount) return t;
+
+      // Otherwise remember title match as fallback
+      fallbackMatch ??= t;
     }
-    return null;
+
+    return fallbackMatch;
   }
 
   /// Evaluates every category budget against [spendByCategory] and returns

@@ -327,7 +327,7 @@ void main() {
 
     final day = DateTime(2026, 9, 10);
 
-    test('flags same title (case/space-insensitive), amount and day', () {
+    test('flags same title (case/space-insensitive)', () {
       final existing = tx('a', 'DEWA bill', 350, day);
       final candidate = tx('b', '  dewa BILL ', 350, day);
       expect(
@@ -336,41 +336,31 @@ void main() {
       );
     });
 
-    test('different amount, title or day is not a duplicate', () {
+    test('same title flags duplicate even if amount or date differs', () {
       final existing = tx('a', 'DEWA bill', 350, day);
       expect(
         FinanceMath.findDuplicateTransaction(
           [existing],
           tx('b', 'DEWA bill', 400, day),
-        ),
-        isNull,
-      );
-      expect(
-        FinanceMath.findDuplicateTransaction(
-          [existing],
-          tx('b', 'SEWA bill', 350, day),
-        ),
-        isNull,
+        )?.id,
+        'a',
       );
       expect(
         FinanceMath.findDuplicateTransaction(
           [existing],
           tx('b', 'DEWA bill', 350, day.add(const Duration(days: 1))),
-        ),
-        isNull,
+        )?.id,
+        'a',
       );
     });
 
-    test('other months or years do not match', () {
+    test('different title or collection is not a duplicate', () {
       final existing = tx('a', 'DEWA bill', 350, day);
-      final nextMonth = tx('b', 'DEWA bill', 350, DateTime(2026, 10, 10));
-      final nextYear = tx('c', 'DEWA bill', 350, DateTime(2027, 9, 10));
       expect(
-        FinanceMath.findDuplicateTransaction([existing], nextMonth),
-        isNull,
-      );
-      expect(
-        FinanceMath.findDuplicateTransaction([existing], nextYear),
+        FinanceMath.findDuplicateTransaction(
+          [existing],
+          tx('b', 'SEWA bill', 350, day),
+        ),
         isNull,
       );
     });
