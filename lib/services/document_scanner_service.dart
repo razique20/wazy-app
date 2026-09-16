@@ -44,10 +44,15 @@ class DocumentScannerService extends ChangeNotifier {
 
     await _loadOutbox();
 
+    // Always hydrate from local storage first so that documents added while
+    // offline (or whose Supabase insert failed) survive a restart.  The
+    // subsequent _mergeRemote() will reconcile local ↔ remote; without this
+    // step the cache is empty and _mergeRemote() has nothing to reconcile.
+    await _loadLocal();
+
     final client = _client;
     final userId = AuthService.instance.currentUserId;
     if (client == null || userId == null) {
-      await _loadLocal();
       notifyListeners();
       return;
     }
@@ -67,9 +72,8 @@ class DocumentScannerService extends ChangeNotifier {
       await _flushOutbox();
       await _saveLocal();
     } catch (_) {
-      // Supabase unreachable — stay on the local cache; queued mutations
-      // will be flushed on a later refresh.
-      await _loadLocal();
+      // Supabase unreachable — stay on the local cache (already loaded above);
+      // queued mutations will be flushed on a later refresh.
     }
     notifyListeners();
   }
