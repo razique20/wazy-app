@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/document_type.dart';
 import '../../models/expiry_item.dart';
+import '../../theme/app_theme.dart';
 import '../indicators/department_logo.dart';
 
 class ExpiryCard extends StatelessWidget {
@@ -17,23 +18,13 @@ class ExpiryCard extends StatelessWidget {
   });
 
   Color _cardColor(BuildContext context) {
-    final theme = Theme.of(context);
-    if (!item.isActive) return theme.colorScheme.surfaceContainerHighest;
-    final days = item.daysRemaining;
-    if (days > 90) return theme.colorScheme.surface;
-    if (days > 60) return Colors.amber.shade50;
-    if (days > 30) return Colors.orange.shade50;
-    if (days > 7) return Colors.red.shade50;
-    return Colors.red.shade100;
+    final brightness = Theme.of(context).brightness;
+    if (!item.isActive) return Theme.of(context).colorScheme.surfaceContainerHighest;
+    return WazyColors.urgencyBg(item.daysRemaining, brightness: brightness);
   }
 
   Color _accentColor() {
-    if (!item.isActive) return Colors.grey;
-    final days = item.daysRemaining;
-    if (days <= 7) return Colors.red;
-    if (days <= 30) return Colors.orange;
-    if (days <= 60) return Colors.amber;
-    return Colors.green;
+    return WazyColors.urgencyColor(item.daysRemaining, isActive: item.isActive);
   }
 
   @override
@@ -46,16 +37,16 @@ class ExpiryCard extends StatelessWidget {
 
     return Material(
       color: _cardColor(context),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: accent.withOpacity(0.2),
+              color: accent.withOpacity(0.15),
             ),
           ),
           child: Row(
@@ -105,12 +96,14 @@ class ExpiryCard extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: accent,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       item.urgency.title,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: (accent == WazyColors.caution || item.daysRemaining > 30 && item.daysRemaining <= 60)
+                            ? const Color(0xFF0A0E1A)
+                            : Colors.white,
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),

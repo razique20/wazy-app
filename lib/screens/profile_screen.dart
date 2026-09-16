@@ -8,6 +8,7 @@ import '../services/collection_service.dart';
 import '../services/document_scanner_service.dart';
 import '../services/finance_service.dart';
 import '../services/supabase_service.dart';
+import '../theme/app_theme.dart';
 import '../widgets/widgets.dart';
 
 /// Personal settings: account, notification preferences, and management of
@@ -24,9 +25,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _activeId = DocumentCollection.personalId;
   bool _loading = true;
   bool _saving = false;
-  String _userName = 'Razique M K';
-  String _userRole = 'PRO / Document Admin';
-  String _userPhone = '+971 50 123 4567';
+  String _userName = 'Unknown User';
+  String _userRole = 'Document Admin';
+  String _userPhone = '';
   bool _notificationsEnabled = true;
   bool _whatsappAlertsEnabled = true;
   bool _emailAlertsEnabled = true;
@@ -57,14 +58,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     final email = AuthService.instance.userEmail;
-    final defaultName = email != null && email.contains('@')
-        ? email.split('@').first.replaceAll('.', ' ').toUpperCase()
-        : 'Razique M K';
+    final derivedName = email != null && email.contains('@')
+        ? email.split('@').first.replaceAll('.', ' ').replaceAll('_', ' ').toUpperCase()
+        : 'Unknown User';
 
     setState(() {
-      _userName = prefs.getString('userName') ?? defaultName;
-      _userRole = prefs.getString('userRole') ?? 'PRO / Document Admin';
-      _userPhone = prefs.getString('userPhone') ?? '+971 50 123 4567';
+      _userName = derivedName;
+      _userRole = prefs.getString('userRole') ?? 'Document Admin';
+      _userPhone = prefs.getString('userPhone') ?? '';
       _notificationsEnabled = prefs.getBool('notificationsEnabled') ?? true;
       _whatsappAlertsEnabled = prefs.getBool('whatsappAlertsEnabled') ?? true;
       _emailAlertsEnabled = prefs.getBool('emailAlertsEnabled') ?? true;
@@ -78,7 +79,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _saveSettings() async {
     setState(() => _saving = true);
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('userName', _userName);
+    // userName is always derived from Supabase email — not saved locally.
     await prefs.setString('userRole', _userRole);
     await prefs.setString('userPhone', _userPhone);
     await prefs.setBool('notificationsEnabled', _notificationsEnabled);
@@ -104,85 +105,91 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     await showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          top: 20,
-          bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 20,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.edit_note_rounded, size: 24),
-                const SizedBox(width: 8),
-                Text(
-                  'Edit User Profile',
-                  style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                Row(
+                  children: [
+                    const Icon(Icons.edit_note_rounded, size: 24),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Edit User Profile',
+                      style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
                 ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(ctx),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Full Name',
+                    prefixIcon: Icon(Icons.person_outline),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: roleCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Role / Designation',
+                    prefixIcon: Icon(Icons.badge_outlined),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: phoneCtrl,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'Phone Number (Optional)',
+                    hintText: '+971 50 000 0000',
+                    prefixIcon: Icon(Icons.phone_outlined),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _userName = nameCtrl.text.trim().isEmpty ? _userName : nameCtrl.text.trim();
+                        _userRole = roleCtrl.text.trim().isEmpty ? _userRole : roleCtrl.text.trim();
+                        _userPhone = phoneCtrl.text.trim();
+                      });
+                      Navigator.pop(ctx);
+                      _saveSettings();
+                    },
+                    icon: const Icon(Icons.check_circle_outline),
+                    label: const Text('Save Profile'),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Full Name',
-                prefixIcon: Icon(Icons.person_outline),
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: roleCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Role / Designation',
-                prefixIcon: Icon(Icons.badge_outlined),
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: phoneCtrl,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                labelText: 'Phone Number',
-                prefixIcon: Icon(Icons.phone_outlined),
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: () {
-                  setState(() {
-                    _userName = nameCtrl.text.trim().isEmpty ? _userName : nameCtrl.text.trim();
-                    _userRole = roleCtrl.text.trim().isEmpty ? _userRole : roleCtrl.text.trim();
-                    _userPhone = phoneCtrl.text.trim().isEmpty ? _userPhone : phoneCtrl.text.trim();
-                  });
-                  Navigator.pop(ctx);
-                  _saveSettings();
-                },
-                icon: const Icon(Icons.check_circle_outline),
-                label: const Text('Save Profile'),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -564,31 +571,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           colors: [
-            theme.colorScheme.primaryContainer.withOpacity(0.6),
-            theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+            WazyColors.navyPrimary,
+            WazyColors.navyPrimaryDark,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+          color: WazyColors.cyanSecondary.withOpacity(0.3),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: WazyColors.navyPrimary.withOpacity(0.35),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
           Row(
             children: [
+              // Avatar with Cyan Accent Gradient
               Container(
-                width: 60,
-                height: 60,
+                width: 56,
+                height: 56,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
+                  gradient: const LinearGradient(
                     colors: [
-                      theme.colorScheme.primary,
-                      theme.colorScheme.tertiary,
+                      WazyColors.cyanSecondary,
+                      Color(0xFF00B8D4),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -596,9 +611,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: theme.colorScheme.primary.withOpacity(0.3),
+                      color: WazyColors.cyanSecondary.withOpacity(0.3),
                       blurRadius: 8,
-                      offset: const Offset(0, 4),
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
@@ -606,8 +621,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Text(
                     initials.isEmpty ? 'U' : initials,
                     style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
+                      color: Color(0xFF0A0E1A),
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1.0,
                     ),
@@ -624,26 +639,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         Expanded(
                           child: Text(
                             _userName,
-                            style: theme.textTheme.titleMedium?.copyWith(
+                            style: const TextStyle(
                               fontWeight: FontWeight.bold,
-                              fontSize: 17,
+                              fontSize: 16,
+                              color: Colors.white,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        // Cloud Synced / Local Workspace Pill Badge (Navy & Cyan)
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
-                            vertical: 2,
+                            vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: isCloudSynced
-                                ? Colors.green.withOpacity(0.15)
-                                : Colors.teal.withOpacity(0.15),
+                            color: WazyColors.cyanSecondary.withOpacity(0.18),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: isCloudSynced ? Colors.green : Colors.teal,
+                              color: WazyColors.cyanSecondary.withOpacity(0.5),
                               width: 0.8,
                             ),
                           ),
@@ -652,22 +667,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             children: [
                               Icon(
                                 isCloudSynced
-                                    ? Icons.cloud_done
+                                    ? Icons.cloud_done_rounded
                                     : Icons.storage_rounded,
                                 size: 12,
-                                color: isCloudSynced
-                                    ? Colors.green.shade700
-                                    : Colors.teal.shade700,
+                                color: WazyColors.cyanSecondary,
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 isCloudSynced ? 'Cloud Synced' : 'Local Workspace',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
-                                  color: isCloudSynced
-                                      ? Colors.green.shade700
-                                      : Colors.teal.shade700,
+                                  color: WazyColors.cyanSecondary,
                                 ),
                               ),
                             ],
@@ -681,18 +692,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 6,
-                            vertical: 1,
+                            vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withOpacity(0.12),
+                            color: WazyColors.cyanSecondary.withOpacity(0.18),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             _userRole,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: theme.colorScheme.primary,
+                              color: WazyColors.cyanSecondary,
                             ),
                           ),
                         ),
@@ -701,31 +712,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        Icon(Icons.email_outlined,
-                            size: 13, color: theme.colorScheme.outline),
+                        const Icon(
+                          Icons.email_outlined,
+                          size: 13,
+                          color: WazyColors.cyanSecondary,
+                        ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             email ?? 'local@wazy.app',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.outline,
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.85),
                               fontSize: 11,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Icon(Icons.phone_outlined,
-                            size: 13, color: theme.colorScheme.outline),
-                        const SizedBox(width: 4),
-                        Text(
-                          _userPhone,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.outline,
-                            fontSize: 11,
+                        if (_userPhone.trim().isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          const Icon(
+                            Icons.phone_outlined,
+                            size: 13,
+                            color: WazyColors.cyanSecondary,
                           ),
-                        ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _userPhone,
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.85),
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ],
@@ -734,39 +753,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
           const SizedBox(height: 14),
-          const Divider(height: 1),
+          Divider(
+            height: 1,
+            color: Colors.white.withOpacity(0.15),
+          ),
           const SizedBox(height: 10),
           Row(
             children: [
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () => _editProfile(context),
-                  icon: const Icon(Icons.edit_outlined, size: 16),
-                  label: const Text('Edit Profile'),
+                  icon: const Icon(
+                    Icons.edit_outlined,
+                    size: 16,
+                    color: WazyColors.cyanSecondary,
+                  ),
+                  label: const Text(
+                    'Edit Profile',
+                    style: TextStyle(
+                      color: WazyColors.cyanSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   style: OutlinedButton.styleFrom(
                     visualDensity: VisualDensity.compact,
+                    side: BorderSide(
+                      color: WazyColors.cyanSecondary.withOpacity(0.5),
+                    ),
                   ),
                 ),
               ),
               const SizedBox(width: 10),
-              if (SupabaseService.hasCredentials &&
-                  AuthService.instance.isSignedIn)
+              if (AuthService.instance.isSignedIn)
                 OutlinedButton.icon(
                   onPressed: _signOut,
-                  icon: const Icon(Icons.logout, size: 16, color: Colors.red),
+                  icon: const Icon(Icons.logout, size: 16, color: Colors.redAccent),
                   label: const Text('Sign out',
-                      style: TextStyle(color: Colors.red)),
+                      style: TextStyle(color: Colors.redAccent)),
                   style: OutlinedButton.styleFrom(
                     visualDensity: VisualDensity.compact,
-                    side: BorderSide(color: Colors.red.shade300),
+                    side: BorderSide(color: Colors.redAccent.shade100.withOpacity(0.5)),
                   ),
                 )
-              else if (SupabaseService.hasCredentials)
+              else
                 FilledButton.icon(
                   onPressed: () => context.go('/login'),
                   icon: const Icon(Icons.login, size: 16),
                   label: const Text('Sign in'),
                   style: FilledButton.styleFrom(
+                    backgroundColor: WazyColors.cyanSecondary,
+                    foregroundColor: const Color(0xFF0A0E1A),
                     visualDensity: VisualDensity.compact,
                   ),
                 ),
@@ -927,7 +963,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 size: 20, color: theme.colorScheme.outline),
             const SizedBox(width: 8),
             Text(
-              'Account',
+              'Account & Authentication',
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -938,13 +974,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Card(
           child: ListTile(
             leading: const Icon(Icons.cloud_off_outlined),
-            title: const Text('Local-only mode'),
+            title: const Text('Local Workspace Mode'),
             subtitle: const Text(
-              'Supabase isn\'t configured in this build, so there\'s no '
-              'account to sign out of. Run with '
-              '--dart-define-from-file=.env.local to enable sign-in.',
+              'Operating in offline local mode. Tap to navigate to the Sign In page.',
             ),
-            isThreeLine: true,
+            trailing: FilledButton.icon(
+              onPressed: () => context.go('/login'),
+              icon: const Icon(Icons.login, size: 16),
+              label: const Text('Sign In'),
+              style: FilledButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
           ),
         ),
       ],

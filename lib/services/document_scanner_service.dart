@@ -77,76 +77,13 @@ class DocumentScannerService extends ChangeNotifier {
           ..clear()
           ..addAll(loaded);
       } else {
-        // Seed default UAE sample documents into local storage on first launch
-        _cache
-          ..clear()
-          ..addAll(_defaultSeedDocuments);
+        _cache.clear();
         await _saveLocal();
       }
     } catch (_) {
-      if (_cache.isEmpty) {
-        _cache.addAll(_defaultSeedDocuments);
-      }
+      _cache.clear();
     }
   }
-
-  static final List<ExpiryItem> _defaultSeedDocuments = [
-    ExpiryItem.create(
-      id: 'doc_ded_trade_licence',
-      displayName: 'Dubai Department of Economy & Tourism (DET) Trade License',
-      docType: DocumentType.tradeLicence,
-      expiresAt: DateTime.now().add(const Duration(days: 14)),
-      location: 'Dubai Commercial (DED)',
-      renewalFee: 12500,
-      renewalWarning: 'DET Trade License expires in 14 days. Activity will be suspended if renewed past deadline.',
-      fileName: 'det_commercial_license_2026.pdf',
-      fileSize: 485000,
-    ),
-    ExpiryItem.create(
-      id: 'doc_ejari_lease',
-      displayName: 'Office Lease & Ejari Registration',
-      docType: DocumentType.ejari,
-      expiresAt: DateTime.now().add(const Duration(days: 28)),
-      location: 'Dubai Land Department (RERA)',
-      renewalFee: 220,
-      renewalWarning: 'Ejari renewal required before trade license renewal.',
-      fileName: 'ejari_tenancy_contract.pdf',
-      fileSize: 312000,
-    ),
-    ExpiryItem.create(
-      id: 'doc_partner_visa',
-      displayName: 'Partner Residence Visa',
-      docType: DocumentType.visa,
-      expiresAt: DateTime.now().add(const Duration(days: 45)),
-      location: 'GDRFA Dubai',
-      renewalFee: 3800,
-      renewalWarning: 'Medical fitness test and Emirates ID biometric required for visa renewal.',
-      fileName: 'partner_residence_visa.pdf',
-      fileSize: 240000,
-    ),
-    ExpiryItem.create(
-      id: 'doc_emirates_id',
-      displayName: 'Emirates ID (UAE Citizen/Resident)',
-      docType: DocumentType.emiratesId,
-      expiresAt: DateTime.now().add(const Duration(days: 60)),
-      location: 'ICP UAE',
-      renewalFee: 370,
-      renewalWarning: 'ICP registration required. Ensure linked mobile number is active.',
-      fileName: 'emirates_identity_card.png',
-      fileSize: 185000,
-    ),
-    ExpiryItem.create(
-      id: 'doc_rta_vehicle',
-      displayName: 'Company Vehicle Registration (Mulkiya)',
-      docType: DocumentType.vehicleRegistration,
-      expiresAt: DateTime.now().add(const Duration(days: 5)),
-      location: 'RTA Dubai',
-      renewalFee: 450,
-      renewalWarning: 'RTA technical vehicle inspection required prior to renewal.',
-      fileName: 'rta_mulkiya_vehicle_card.pdf',
-      fileSize: 142000,
-    ),
-  ];
 
   Future<void> _saveLocal() async {
     try {

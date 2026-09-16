@@ -37,7 +37,14 @@ class DocumentCollectionService {
 
   /// Id of the active collection. Synchronous access is safe before [init]
   /// runs — it falls back to the built-in personal collection.
-  String get activeCollectionId => _activeId;
+  String get activeCollectionId {
+    if (_activeId == DocumentCollection.personalId || !_collections.any((c) => c.id == _activeId)) {
+      final personal = _collections.where((c) => c.isPersonal).firstOrNull;
+      if (personal != null) return personal.id;
+      if (_collections.isNotEmpty) return _collections.first.id;
+    }
+    return _activeId;
+  }
 
   /// The active collection (defaults to Personal).
   Future<DocumentCollection> getActiveCollection() async {
@@ -87,10 +94,15 @@ class DocumentCollectionService {
   /// Make [id] the active collection and persist the choice.
   Future<void> setActive(String id) async {
     await _ensureInitialized();
-    if (!_collections.any((c) => c.id == id)) return;
-    _activeId = id;
+    var targetId = id;
+    if (targetId == DocumentCollection.personalId) {
+      final personal = _collections.where((c) => c.isPersonal).firstOrNull;
+      if (personal != null) targetId = personal.id;
+    }
+    if (!_collections.any((c) => c.id == targetId)) return;
+    _activeId = targetId;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_activeIdKey, id);
+    await prefs.setString(_activeIdKey, targetId);
   }
 
   /// Create a new company collection named [name] and return it.
@@ -220,7 +232,8 @@ class DocumentCollectionService {
     if (stored != null && _collections.any((c) => c.id == stored)) {
       _activeId = stored;
     } else {
-      _activeId = DocumentCollection.personalId;
+      final personal = _collections.where((c) => c.isPersonal).firstOrNull;
+      _activeId = personal?.id ?? _collections.firstOrNull?.id ?? DocumentCollection.personalId;
     }
   }
 

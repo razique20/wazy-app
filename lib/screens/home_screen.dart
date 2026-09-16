@@ -6,9 +6,10 @@ import '../models/document_type.dart';
 import '../models/expiry_item.dart';
 import '../models/finance.dart';
 import '../services/collection_service.dart';
+import '../services/document_scanner_service.dart';
 import '../services/finance_service.dart';
 import '../services/urgency_engine.dart';
-import '../services/document_scanner_service.dart';
+import '../theme/app_theme.dart';
 import '../widgets/widgets.dart';
 
 /// Home tab: cross-tier dashboard.
@@ -167,6 +168,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.push('/scan'),
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Add Document'),
+        backgroundColor: WazyColors.cyanAccent,
+        foregroundColor: const Color(0xFF0A0E1A),
+      ),
       body: SafeArea(
         child: _loading
             ? const Center(child: CircularProgressIndicator())
@@ -174,9 +182,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 onRefresh: _loadData,
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 24),
+                  padding: const EdgeInsets.only(bottom: 80),
                   children: [
                     _buildHeader(theme),
+                    const SizedBox(height: 12),
+                    _buildQuickActionsRow(theme),
                     const SizedBox(height: 16),
                     _buildAttentionBanner(theme, urgency),
                     const SizedBox(height: 16),
@@ -192,6 +202,55 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionsRow(ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: () => context.push('/scan'),
+              icon: const Icon(Icons.add_task_rounded, size: 18),
+              label: const Text(
+                'Add Document',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: WazyColors.navyPrimary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 2,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: () => context.go('/money'),
+              icon: const Icon(Icons.add_card_rounded, size: 18),
+              label: const Text(
+                'Add Fund / Record',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: WazyColors.cyanSecondary,
+                foregroundColor: const Color(0xFF0A0E1A),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 2,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -266,47 +325,54 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildAttentionBanner(ThemeData theme, UrgencySnapshot urgency) {
     final pending = urgency.pendingActions;
+    final isDark = theme.brightness == Brightness.dark;
+
+    final bannerBg = pending.isEmpty
+        ? (isDark ? const Color(0xFF064E3B) : const Color(0xFFECFDF5))
+        : (isDark ? const Color(0xFF451A1A) : const Color(0xFFFEF2F2));
+    final bannerBorder = pending.isEmpty
+        ? (isDark ? const Color(0xFF059669).withOpacity(0.4) : const Color(0xFFA7F3D0))
+        : (isDark ? const Color(0xFFEF4444).withOpacity(0.4) : const Color(0xFFFCA5A5));
+    final iconColor = pending.isEmpty
+        ? (isDark ? const Color(0xFF34D399) : const Color(0xFF059669))
+        : (isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626));
+    final textColor = pending.isEmpty
+        ? (isDark ? Colors.white : const Color(0xFF065F46))
+        : (isDark ? Colors.white : const Color(0xFF991B1B));
+    final subtitleColor = pending.isEmpty
+        ? (isDark ? const Color(0xFFA7F3D0) : const Color(0xFF047857))
+        : (isDark ? const Color(0xFFFCA5A5) : const Color(0xFFB91C1C));
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: InkWell(
         onTap: () => context.go('/documents'),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: pending.isEmpty
-                ? Colors.green.withOpacity(0.08)
-                : theme.colorScheme.errorContainer,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: pending.isEmpty
-                  ? Colors.green.withOpacity(0.2)
-                  : theme.colorScheme.error.withOpacity(0.3),
-            ),
+            color: bannerBg,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: bannerBorder),
           ),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: pending.isEmpty
-                      ? Colors.green.withOpacity(0.15)
-                      : theme.colorScheme.error.withOpacity(0.2),
+                  color: iconColor.withOpacity(0.15),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   pending.isEmpty
-                      ? Icons.check_rounded
+                      ? Icons.check_circle_rounded
                       : Icons.warning_amber_rounded,
-                  color: pending.isEmpty
-                      ? Colors.green
-                      : theme.colorScheme.error,
-                  size: 20,
+                  color: iconColor,
+                  size: 22,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -315,14 +381,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       pending.isEmpty
                           ? 'All documents on track'
                           : '${pending.length} renewal${pending.length == 1 ? '' : 's'} need attention',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: pending.isEmpty
-                            ? null
-                            : theme.colorScheme.onErrorContainer,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: textColor,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Text(
                       pending.isEmpty
                           ? (_items.isEmpty
@@ -335,11 +400,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               (pending.length > 2
                                   ? ' +${pending.length - 2}'
                                   : ''),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: pending.isEmpty
-                            ? theme.colorScheme.outline
-                            : theme.colorScheme.onErrorContainer
-                                .withOpacity(0.7),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: subtitleColor,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -349,9 +412,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               Icon(
                 Icons.chevron_right_rounded,
-                color: pending.isEmpty
-                    ? theme.colorScheme.outline
-                    : theme.colorScheme.onErrorContainer,
+                color: textColor.withOpacity(0.7),
               ),
             ],
           ),
@@ -380,6 +441,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final healthRatio =
         totalLimit <= 0 ? null : (totalSpentOnBudgets / totalLimit).clamp(0.0, 1.0);
 
+    final isDark = theme.brightness == Brightness.dark;
+    final greenColor = isDark ? Colors.greenAccent : const Color(0xFF059669);
+    final redColor = isDark ? Colors.redAccent : const Color(0xFFDC2626);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
@@ -390,7 +455,7 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Icons.folder_open_rounded,
               value: '${_items.length}',
               label: 'Documents',
-              color: theme.colorScheme.primary,
+              valueColor: greenColor,
             ),
           ),
           const SizedBox(width: 8),
@@ -400,7 +465,7 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Icons.warning_amber_rounded,
               value: '${urgency.criticalCount}',
               label: 'Critical',
-              color: urgency.criticalCount > 0 ? Colors.red : Colors.green,
+              valueColor: urgency.criticalCount > 0 ? redColor : greenColor,
             ),
           ),
           const SizedBox(width: 8),
@@ -410,7 +475,7 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Icons.schedule_rounded,
               value: '${urgency.highCount}',
               label: '≤30 days',
-              color: urgency.highCount > 0 ? Colors.orange : Colors.green,
+              valueColor: urgency.highCount > 0 ? redColor : greenColor,
             ),
           ),
           const SizedBox(width: 8),
@@ -424,13 +489,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ? '—'
                   : '${(healthRatio * 100).toStringAsFixed(0)}%',
               label: 'Budget',
-              color: healthRatio == null
-                  ? theme.colorScheme.outline
-                  : healthRatio >= 1.0
-                      ? Colors.red
-                      : healthRatio >= 0.8
-                          ? Colors.orange
-                          : Colors.green,
+              valueColor: healthRatio != null && healthRatio >= 1.0 ? redColor : greenColor,
             ),
           ),
         ],
@@ -443,33 +502,42 @@ class _HomeScreenState extends State<HomeScreen> {
     required IconData icon,
     required String value,
     required String label,
-    required Color color,
+    required Color valueColor,
   }) {
+    final isDark = theme.brightness == Brightness.dark;
+    final neutralIconColor = isDark ? WazyColors.textSecondary : WazyColors.textSecondaryLight;
+    final neutralLabelColor = isDark ? WazyColors.textMuted : WazyColors.textMutedLight;
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: isDark ? WazyColors.slate : WazyColors.cloud,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.15)),
+        border: Border.all(
+          color: isDark
+              ? WazyColors.slateLight.withOpacity(0.3)
+              : WazyColors.fog,
+        ),
       ),
       child: Column(
         children: [
-          Icon(icon, size: 18, color: color),
+          Icon(icon, size: 18, color: neutralIconColor),
           const SizedBox(height: 4),
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
               value,
-              style: theme.textTheme.titleSmall?.copyWith(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: color,
+                fontSize: 14,
+                color: valueColor,
               ),
             ),
           ),
           Text(
             label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.outline,
+            style: TextStyle(
+              color: neutralLabelColor,
               fontSize: 10,
             ),
             maxLines: 1,
@@ -964,13 +1032,14 @@ class _UpcomingTile extends StatelessWidget {
               ),
               Text(
                 '${item.daysRemaining}d',
-                style: theme.textTheme.titleMedium?.copyWith(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
+                  fontSize: 16,
                   color: isCritical
-                      ? Colors.red
+                      ? WazyColors.danger
                       : item.daysRemaining <= 30
-                          ? Colors.amber.shade700
-                          : theme.colorScheme.primary,
+                          ? WazyColors.warning
+                          : WazyColors.safe,
                 ),
               ),
             ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_theme.dart';
 import 'document_collection.dart';
 import 'document_type.dart';
 
@@ -19,25 +20,25 @@ class UrgencyLevel {
   static const low = UrgencyLevel(
     title: 'Low',
     icon: Icons.check_circle_rounded,
-    color: Colors.green,
+    color: WazyColors.safe,
     priority: 0,
   );
   static const medium = UrgencyLevel(
     title: 'Medium',
     icon: Icons.schedule_rounded,
-    color: Colors.amber,
+    color: WazyColors.caution,
     priority: 1,
   );
   static const high = UrgencyLevel(
     title: 'High',
     icon: Icons.priority_high_rounded,
-    color: Colors.orange,
+    color: WazyColors.warning,
     priority: 2,
   );
   static const critical = UrgencyLevel(
     title: 'Critical',
     icon: Icons.warning_amber_rounded,
-    color: Colors.red,
+    color: WazyColors.danger,
     priority: 3,
   );
 
@@ -57,28 +58,28 @@ class UrgencyLevel {
         return UrgencyLevel(
           title: 'Reminder active',
           icon: Icons.notifications_active_rounded,
-          color: Colors.indigo,
+          color: WazyColors.violet,
           priority: 0,
         );
       case 2:
         return UrgencyLevel(
           title: 'Task active',
           icon: Icons.assignment_turned_in_rounded,
-          color: Colors.amber,
+          color: WazyColors.caution,
           priority: 1,
         );
       case 3:
         return UrgencyLevel(
           title: 'Escalation active',
           icon: Icons.priority_high_rounded,
-          color: Colors.orange,
+          color: WazyColors.warning,
           priority: 2,
         );
       case 4:
         return UrgencyLevel(
           title: 'WhatsApp sent',
           icon: Icons.whatshot_rounded,
-          color: Colors.red,
+          color: WazyColors.danger,
           priority: 3,
         );
       default:

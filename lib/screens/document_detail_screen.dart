@@ -1,6 +1,10 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../models/document_type.dart';
 import '../models/expiry_item.dart';
@@ -288,6 +292,102 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
     final fileSizeKb = item.fileSize != null ? (item.fileSize! / 1024).toStringAsFixed(0) : null;
     final ext = fileName.contains('.') ? fileName.split('.').last.toUpperCase() : 'FILE';
 
+    final path = item.filePath;
+    final isNetwork = path != null && (path.startsWith('http://') || path.startsWith('https://'));
+    final file = path != null && path.isNotEmpty && !isNetwork ? File(path) : null;
+    final exists = isNetwork || (file != null && file.existsSync());
+
+    if (!exists) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.amber.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.amber.shade300),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade100,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.devices_other_rounded,
+                    color: Colors.amber.shade900,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'File saved on another device',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.amber.shade900,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        fileName,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.amber.shade900,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'This document attachment was stored locally on a different device. You can re-upload the file on this device to view it here in the future.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: Colors.amber.shade900,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () => _reuploadAttachment(context, item),
+                  icon: const Icon(Icons.upload_file_rounded, size: 16),
+                  label: const Text('Re-upload File'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: theme.colorScheme.onPrimary,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton.icon(
+                  onPressed: () => _showFilePreview(context, item),
+                  icon: const Icon(Icons.info_outline, size: 16),
+                  label: const Text('Details'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.amber.shade900,
+                    side: BorderSide(color: Colors.amber.shade400),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -358,11 +458,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
           ),
           const SizedBox(width: 8),
           OutlinedButton.icon(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Attached file: $fileName')),
-              );
-            },
+            onPressed: () => _showFilePreview(context, item),
             icon: const Icon(Icons.remove_red_eye_outlined, size: 16),
             label: const Text('View'),
             style: OutlinedButton.styleFrom(
@@ -372,6 +468,189 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
         ],
       ),
     );
+  }
+
+  void _showFilePreview(BuildContext context, ExpiryItem item) {
+    final path = item.filePath;
+    final name = item.fileName ?? 'Attached Document';
+    final isNetwork = path != null && (path.startsWith('http://') || path.startsWith('https://'));
+    final file = path != null && path.isNotEmpty && !isNetwork ? File(path) : null;
+    final exists = isNetwork || (file != null && file.existsSync());
+
+    final lowerPath = (path ?? '').toLowerCase();
+    final isImage = exists && (
+      lowerPath.contains('.png') ||
+      lowerPath.contains('.jpg') ||
+      lowerPath.contains('.jpeg') ||
+      lowerPath.contains('.webp') ||
+      lowerPath.contains('.gif') ||
+      lowerPath.contains('.heic')
+    );
+
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              child: Row(
+                children: [
+                  const Icon(Icons.attach_file, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      name,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                  ),
+                ],
+              ),
+            ),
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.65,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: isImage
+                    ? InteractiveViewer(
+                        clipBehavior: Clip.none,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: isNetwork
+                              ? Image.network(
+                                  path!,
+                                  fit: BoxFit.contain,
+                                  loadingBuilder: (_, child, progress) {
+                                    if (progress == null) return child;
+                                    return const Center(child: CircularProgressIndicator());
+                                  },
+                                  errorBuilder: (_, __, ___) => const Center(
+                                    child: Text('Error loading cloud image.'),
+                                  ),
+                                )
+                              : Image.file(
+                                  file!,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) => const Center(
+                                    child: Text('Error loading local image file.'),
+                                  ),
+                                ),
+                        ),
+                      )
+                    : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            exists ? Icons.insert_drive_file_outlined : Icons.find_in_page_outlined,
+                            size: 64,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            name,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          if (item.fileSize != null)
+                            Text(
+                              'Size: ${(item.fileSize! / 1024).toStringAsFixed(1)} KB',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(context).colorScheme.outline,
+                              ),
+                            ),
+                          const SizedBox(height: 12),
+                          Text(
+                            exists
+                                ? 'File path: $path'
+                                : path != null && path.isNotEmpty
+                                    ? 'File was uploaded on another device ($path).'
+                                    : 'No file path stored for this document.',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Theme.of(context).colorScheme.outline,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _reuploadAttachment(BuildContext context, ExpiryItem item) async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'heic'],
+      );
+
+      if (result == null || result.files.isEmpty) return;
+      final file = result.files.first;
+
+      if (file.path == null || !File(file.path!).existsSync()) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not access the selected file.')),
+        );
+        return;
+      }
+
+      final appDocDir = await getApplicationDocumentsDirectory();
+      final targetDir = Directory('${appDocDir.path}/wazy/documents/${item.id}');
+      if (!targetDir.existsSync()) {
+        targetDir.createSync(recursive: true);
+      }
+      final targetPath = '${targetDir.path}/${file.name}';
+      final savedFile = await File(file.path!).copy(targetPath);
+
+      final updatedItem = item.copyWith(
+        fileName: file.name,
+        filePath: savedFile.path,
+        fileSize: file.size,
+      );
+
+      await DocumentScannerService.instance.updateItem(updatedItem);
+
+      if (!context.mounted) return;
+      setState(() {
+        _item = updatedItem;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Attachment "${file.name}" saved to this device'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error re-uploading file: $e')),
+      );
+    }
   }
 
   Widget _buildWarningCard(ThemeData theme, ExpiryItem item) {

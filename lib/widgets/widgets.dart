@@ -5,3 +5,4 @@ export 'dialogs/collection_dialogs.dart';
 export 'indicators/progress_ring.dart';
 export 'indicators/notification_pill.dart';
 export 'indicators/department_logo.dart';
+export 'indicators/wazy_logo.dart';

@@ -1,12 +1,15 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/document_collection.dart';
 import '../models/document_type.dart';
 import '../models/expiry_item.dart';
+import '../services/collection_service.dart';
 import '../services/document_scanner_service.dart';
 
 enum UaeEmirate {
@@ -191,9 +194,27 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
           ? '${_locationController.text.trim()} (${_selectedEmirate.displayName})'
           : _selectedAuthority;
 
+      final docId = const Uuid().v4();
+      String? localSavedPath = _attachedFile?.path;
+      if (_attachedFile?.path != null && File(_attachedFile!.path!).existsSync()) {
+        try {
+          final appDocDir = await getApplicationDocumentsDirectory();
+          final targetDir = Directory('${appDocDir.path}/wazy/documents/$docId');
+          if (!targetDir.existsSync()) {
+            targetDir.createSync(recursive: true);
+          }
+          final fileName = _attachedFile!.name;
+          final targetPath = '${targetDir.path}/$fileName';
+          final savedFile = await File(_attachedFile!.path!).copy(targetPath);
+          localSavedPath = savedFile.path;
+        } catch (_) {
+          localSavedPath = _attachedFile?.path;
+        }
+      }
+
       final item = ExpiryItem(
         id: const Uuid().v4(),
-        collectionId: DocumentCollection.personalId,
+        collectionId: DocumentCollectionService.instance.activeCollectionId,
         displayName: _titleController.text.trim(),
         docType: _docType,
         expiryDate: DateFormat('dd MMM yyyy').format(_expiresAt),
@@ -219,7 +240,7 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
         renewalWarning: daysOffset <= 30 ? 'Expires soon — renew to avoid penalties' : null,
         expiresAt: _expiresAt,
         fileName: _attachedFile?.name,
-        filePath: _attachedFile?.path,
+        filePath: localSavedPath,
         fileSize: _attachedFile?.size,
       );
 

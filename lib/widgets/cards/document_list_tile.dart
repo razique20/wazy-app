@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/document_type.dart';
 import '../../models/expiry_item.dart';
+import '../../theme/app_theme.dart';
 import '../indicators/department_logo.dart';
 
 class DocumentListTile extends StatelessWidget {
@@ -17,12 +18,7 @@ class DocumentListTile extends StatelessWidget {
   });
 
   Color _color() {
-    final days = item.daysRemaining;
-    if (!item.isActive) return Colors.grey;
-    if (days <= 7) return Colors.red.shade700;
-    if (days <= 30) return Colors.orange.shade700;
-    if (days <= 60) return Colors.amber.shade700;
-    return Colors.green.shade700;
+    return WazyColors.urgencyColor(item.daysRemaining, isActive: item.isActive);
   }
 
   String _label() {
@@ -93,8 +89,8 @@ class DocumentListTile extends StatelessWidget {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: _color().withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
+                      color: _color().withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       _label(),

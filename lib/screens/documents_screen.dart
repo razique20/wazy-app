@@ -7,6 +7,7 @@ import '../models/expiry_item.dart';
 import '../models/finance.dart';
 import '../services/document_scanner_service.dart';
 import '../services/urgency_engine.dart';
+import '../theme/app_theme.dart';
 import '../widgets/indicators/department_logo.dart';
 
 /// Documents tab (Tier 1): the full expiry-tracking workspace — search,
@@ -161,6 +162,24 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       appBar: AppBar(
         title: const Text('Documents'),
         actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: FilledButton.icon(
+              onPressed: () async {
+                await context.push('/scan');
+                await _loadData();
+              },
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: const Text('Add Document', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              style: FilledButton.styleFrom(
+                backgroundColor: WazyColors.cyanAccent,
+                foregroundColor: const Color(0xFF0A0E1A),
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ),
           IconButton(
             icon: Icon(
               _showFilters ? Icons.filter_alt : Icons.filter_alt_outlined,
@@ -267,9 +286,31 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                         child: Align(
                           alignment: Alignment.centerLeft,
                           child: ActionChip(
-                            avatar: const Icon(Icons.close, size: 16),
-                            label: const Text('Clear filters'),
+                            avatar: Icon(
+                              Icons.close,
+                              size: 16,
+                              color: theme.brightness == Brightness.dark
+                                  ? WazyColors.textSecondary
+                                  : WazyColors.textPrimaryLight,
+                            ),
+                            label: Text(
+                              'Clear filters',
+                              style: TextStyle(
+                                color: theme.brightness == Brightness.dark
+                                    ? WazyColors.textPrimary
+                                    : WazyColors.textPrimaryLight,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                             onPressed: _clearFilters,
+                            backgroundColor: theme.brightness == Brightness.dark
+                                ? WazyColors.slate
+                                : WazyColors.cloud,
+                            side: BorderSide(
+                              color: theme.brightness == Brightness.dark
+                                  ? WazyColors.slateLight.withOpacity(0.3)
+                                  : WazyColors.fog,
+                            ),
                           ),
                         ),
                       ),
@@ -327,20 +368,39 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
 
   Widget searchField() {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return TextField(
       onChanged: (v) => setState(() => _query = v),
+      style: TextStyle(
+        color: isDark ? WazyColors.textPrimary : WazyColors.textPrimaryLight,
+        fontSize: 14,
+      ),
       decoration: InputDecoration(
         isDense: true,
         hintText: 'Search documents…',
-        prefixIcon: const Icon(Icons.search, size: 20),
+        hintStyle: TextStyle(
+          color: isDark ? WazyColors.textMuted : WazyColors.textMutedLight,
+          fontSize: 14,
+        ),
+        prefixIcon: Icon(
+          Icons.search,
+          size: 20,
+          color: isDark ? WazyColors.textSecondary : WazyColors.textSecondaryLight,
+        ),
         suffixIcon: _query.isEmpty
             ? null
             : IconButton(
-                icon: const Icon(Icons.close, size: 18),
+                icon: Icon(
+                  Icons.close,
+                  size: 18,
+                  color: isDark ? WazyColors.textSecondary : WazyColors.textSecondaryLight,
+                ),
                 onPressed: () => setState(() => _query = ''),
               ),
         filled: true,
-        fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+        fillColor: isDark
+            ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.5)
+            : WazyColors.cloud,
         contentPadding: EdgeInsets.zero,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -352,30 +412,75 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
 
   Widget _statusChip(
       ThemeData theme, String label, _DocFilter filter, int count) {
+    final isDark = theme.brightness == Brightness.dark;
     final selected = _filter == filter;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: FilterChip(
-        label: Text('$label ($count)'),
+        label: Text(
+          '$label ($count)',
+          style: TextStyle(
+            color: selected
+                ? (isDark ? WazyColors.cyanSecondary : WazyColors.navyPrimary)
+                : (isDark ? WazyColors.textSecondary : WazyColors.textPrimaryLight),
+            fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+            fontSize: 12,
+          ),
+        ),
         selected: selected,
         onSelected: (_) => setState(() => _filter = filter),
         showCheckmark: false,
         labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+        backgroundColor: isDark ? WazyColors.slate : WazyColors.cloud,
+        selectedColor: isDark
+            ? WazyColors.navyPrimary.withOpacity(0.4)
+            : WazyColors.navyPrimary.withOpacity(0.12),
+        side: BorderSide(
+          color: selected
+              ? (isDark ? WazyColors.cyanSecondary : WazyColors.navyPrimary)
+              : (isDark ? WazyColors.slateLight.withOpacity(0.3) : WazyColors.fog),
+        ),
       ),
     );
   }
 
   Widget _typeChip(ThemeData theme, DocumentType? type, String label) {
+    final isDark = theme.brightness == Brightness.dark;
     final selected = _typeFilter == type;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: FilterChip(
-        avatar:
-            type != null ? Icon(type.icon, size: 16, color: type.primaryColor) : null,
-        label: Text(label),
+        avatar: type != null
+            ? Icon(
+                type.icon,
+                size: 16,
+                color: selected
+                    ? (isDark ? WazyColors.cyanSecondary : WazyColors.navyPrimary)
+                    : type.primaryColor,
+              )
+            : null,
+        label: Text(
+          label,
+          style: TextStyle(
+            color: selected
+                ? (isDark ? WazyColors.cyanSecondary : WazyColors.navyPrimary)
+                : (isDark ? WazyColors.textSecondary : WazyColors.textPrimaryLight),
+            fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+            fontSize: 12,
+          ),
+        ),
         selected: selected,
         onSelected: (_) => setState(() => _typeFilter = type),
         showCheckmark: false,
+        backgroundColor: isDark ? WazyColors.slate : WazyColors.cloud,
+        selectedColor: isDark
+            ? WazyColors.navyPrimary.withOpacity(0.4)
+            : WazyColors.navyPrimary.withOpacity(0.12),
+        side: BorderSide(
+          color: selected
+              ? (isDark ? WazyColors.cyanSecondary : WazyColors.navyPrimary)
+              : (isDark ? WazyColors.slateLight.withOpacity(0.3) : WazyColors.fog),
+        ),
       ),
     );
   }
@@ -633,6 +738,7 @@ class _InsightsHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final pending = urgency.pendingActions.length;
 
     return Padding(
@@ -641,8 +747,11 @@ class _InsightsHeader extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.35),
+          color: isDark
+              ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.35)
+              : WazyColors.cloud,
           borderRadius: BorderRadius.circular(14),
+          border: isDark ? null : Border.all(color: WazyColors.fog.withOpacity(0.5)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -654,8 +763,10 @@ class _InsightsHeader extends StatelessWidget {
                     pending == 0
                         ? '$count tracked · all on track'
                         : '$count tracked · $pending need attention',
-                    style: theme.textTheme.titleSmall?.copyWith(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: isDark ? WazyColors.textPrimary : WazyColors.textPrimaryLight,
                     ),
                   ),
                 ),
@@ -663,14 +774,14 @@ class _InsightsHeader extends StatelessWidget {
                   _insightPill(
                     theme,
                     '${urgency.criticalCount} critical',
-                    Colors.red,
+                    isDark ? Colors.redAccent : const Color(0xFFDC2626),
                   ),
                 if (urgency.highCount > 0) ...[
                   const SizedBox(width: 6),
                   _insightPill(
                     theme,
                     '${urgency.highCount} due ≤30d',
-                    Colors.orange,
+                    isDark ? Colors.orangeAccent : const Color(0xFFD97706),
                   ),
                 ],
               ],
@@ -731,9 +842,13 @@ class _InsightsHeader extends StatelessWidget {
     required String label,
     required String value,
   }) {
+    final isDark = theme.brightness == Brightness.dark;
+    final labelColor = isDark ? WazyColors.textMuted : WazyColors.textSecondaryLight;
+    final valueColor = isDark ? WazyColors.textPrimary : WazyColors.textPrimaryLight;
+
     return Row(
       children: [
-        Icon(icon, size: 16, color: theme.colorScheme.outline),
+        Icon(icon, size: 16, color: labelColor),
         const SizedBox(width: 6),
         Expanded(
           child: Column(
@@ -741,15 +856,18 @@ class _InsightsHeader extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.outline,
+                style: TextStyle(
+                  color: labelColor,
                   fontSize: 10,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               Text(
                 value,
-                style: theme.textTheme.bodySmall?.copyWith(
+                style: TextStyle(
+                  color: valueColor,
                   fontWeight: FontWeight.w600,
+                  fontSize: 12,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -777,13 +895,21 @@ class _DocumentCard extends StatelessWidget {
     required this.onAction,
   });
 
-  Color get _accent {
+  Color _accentColor(bool isDark) {
     final days = item.daysRemaining;
-    if (days < 0) return Colors.red;
-    if (days <= 7) return Colors.red;
-    if (days <= 30) return Colors.orange;
-    if (days <= 60) return Colors.amber.shade700;
-    return Colors.green;
+    if (isDark) {
+      if (days < 0) return WazyColors.danger;
+      if (days <= 7) return WazyColors.danger;
+      if (days <= 30) return WazyColors.warning;
+      if (days <= 60) return WazyColors.caution;
+      return WazyColors.safe;
+    } else {
+      if (days < 0) return const Color(0xFFDC2626); // Dark Red
+      if (days <= 7) return const Color(0xFFDC2626);
+      if (days <= 30) return const Color(0xFFD97706); // Dark Amber/Orange
+      if (days <= 60) return const Color(0xFFB45309); // Dark Ochre/Gold
+      return const Color(0xFF059669); // Dark Emerald Green
+    }
   }
 
   String get _statusLabel {
@@ -823,14 +949,28 @@ class _DocumentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final accent = _accentColor(isDark);
 
     return Material(
-      color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.35),
+      color: isDark
+          ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.35)
+          : Colors.white,
+      elevation: isDark ? 0 : 1,
+      shadowColor: Colors.black.withOpacity(0.06),
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
-        child: Padding(
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isDark
+                  ? WazyColors.slateLight.withOpacity(0.3)
+                  : WazyColors.fog.withOpacity(0.5),
+            ),
+          ),
           padding: const EdgeInsets.all(14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -849,8 +989,10 @@ class _DocumentCard extends StatelessWidget {
                       children: [
                         Text(
                           item.displayName,
-                          style: theme.textTheme.titleSmall?.copyWith(
+                          style: TextStyle(
                             fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: isDark ? WazyColors.textPrimary : WazyColors.textPrimaryLight,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -858,8 +1000,9 @@ class _DocumentCard extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           item.docType.displayName,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.outline,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark ? WazyColors.textMuted : WazyColors.textSecondaryLight,
                           ),
                         ),
                       ],
@@ -872,9 +1015,10 @@ class _DocumentCard extends StatelessWidget {
                         item.daysRemaining < 0
                             ? '${-item.daysRemaining}d overdue'
                             : '${item.daysRemaining}d left',
-                        style: theme.textTheme.titleMedium?.copyWith(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: _accent,
+                          fontSize: 15,
+                          color: accent,
                         ),
                       ),
                       Container(
@@ -884,7 +1028,7 @@ class _DocumentCard extends StatelessWidget {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: _accent.withOpacity(0.12),
+                          color: accent.withOpacity(isDark ? 0.15 : 0.10),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -892,7 +1036,7 @@ class _DocumentCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
-                            color: _accent,
+                            color: accent,
                           ),
                         ),
                       ),
@@ -907,9 +1051,10 @@ class _DocumentCard extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: _timeProgress,
                   minHeight: 5,
-                  backgroundColor:
-                      theme.colorScheme.surfaceContainerHighest,
-                  valueColor: AlwaysStoppedAnimation<Color>(_accent),
+                  backgroundColor: isDark
+                      ? theme.colorScheme.surfaceContainerHighest
+                      : WazyColors.mist,
+                  valueColor: AlwaysStoppedAnimation<Color>(accent),
                 ),
               ),
               const SizedBox(height: 4),
@@ -917,14 +1062,19 @@ class _DocumentCard extends StatelessWidget {
                 _timeProgress >= 1.0
                     ? 'Renewal window fully elapsed'
                     : '${(100 - _timeProgress * 100).toStringAsFixed(0)}% of the renewal window left',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.outline,
+                style: TextStyle(
+                  color: isDark ? WazyColors.textMuted : WazyColors.textMutedLight,
                   fontSize: 10,
                 ),
               ),
               // Detail rows
               const SizedBox(height: 10),
-              const Divider(height: 1),
+              Divider(
+                height: 1,
+                color: isDark
+                    ? WazyColors.slateLight.withOpacity(0.3)
+                    : WazyColors.fog.withOpacity(0.5),
+              ),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 12,
@@ -970,9 +1120,10 @@ class _DocumentCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   item.renewalWarning!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: _accent,
+                  style: TextStyle(
+                    color: accent,
                     fontSize: 11,
+                    fontWeight: FontWeight.w500,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -985,11 +1136,26 @@ class _DocumentCard extends StatelessWidget {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: onAction,
-                      icon: const Icon(Icons.more_horiz_rounded, size: 16),
-                      label: const Text('Actions'),
+                      icon: Icon(
+                        Icons.more_horiz_rounded,
+                        size: 16,
+                        color: isDark ? WazyColors.cyanSecondary : WazyColors.navyPrimary,
+                      ),
+                      label: Text(
+                        'Actions',
+                        style: TextStyle(
+                          color: isDark ? WazyColors.cyanSecondary : WazyColors.navyPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                       style: OutlinedButton.styleFrom(
                         visualDensity: VisualDensity.compact,
                         padding: const EdgeInsets.symmetric(vertical: 8),
+                        side: BorderSide(
+                          color: isDark
+                              ? WazyColors.cyanSecondary.withOpacity(0.4)
+                              : WazyColors.navyPrimary.withOpacity(0.3),
+                        ),
                       ),
                     ),
                   ),
@@ -1003,15 +1169,20 @@ class _DocumentCard extends StatelessWidget {
   }
 
   Widget _detail(ThemeData theme, IconData icon, String text) {
+    final isDark = theme.brightness == Brightness.dark;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 13, color: theme.colorScheme.outline),
+        Icon(
+          icon,
+          size: 13,
+          color: isDark ? WazyColors.textMuted : WazyColors.textSecondaryLight,
+        ),
         const SizedBox(width: 4),
         Text(
           text,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+          style: TextStyle(
+            color: isDark ? WazyColors.textSecondary : WazyColors.textPrimaryLight,
             fontSize: 12,
           ),
         ),

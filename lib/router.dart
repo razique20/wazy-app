@@ -1,7 +1,10 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'models/finance.dart';
+import 'theme/app_theme.dart';
 import 'models/expiry_item.dart';
 import 'services/document_scanner_service.dart';
 import 'services/finance_service.dart';
@@ -175,52 +178,70 @@ class _AppShellState extends State<_AppShell> {
 
     return Scaffold(
       body: widget.navigationShell,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: widget.navigationShell.currentIndex,
-        onDestinationSelected: (index) => widget.navigationShell.goBranch(
-          index,
-          initialLocation: index == widget.navigationShell.currentIndex,
+      extendBody: true,
+      bottomNavigationBar: ClipRRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? WazyColors.cyan.withOpacity(0.08)
+                      : WazyColors.fog.withOpacity(0.5),
+                  width: 0.5,
+                ),
+              ),
+            ),
+            child: NavigationBar(
+              selectedIndex: widget.navigationShell.currentIndex,
+              onDestinationSelected: (index) => widget.navigationShell.goBranch(
+                index,
+                initialLocation: index == widget.navigationShell.currentIndex,
+              ),
+              destinations: [
+                const NavigationDestination(
+                  icon: Icon(Icons.dashboard_outlined),
+                  selectedIcon: Icon(Icons.dashboard_rounded),
+                  label: 'Home',
+                ),
+                NavigationDestination(
+                  icon: _BadgeIcon(
+                    icon: Icons.folder_outlined,
+                    showDot: pendingDocs > 0,
+                    color: WazyColors.danger,
+                    tooltip: '$pendingDocs need attention',
+                  ),
+                  selectedIcon: _BadgeIcon(
+                    icon: Icons.folder_rounded,
+                    showDot: pendingDocs > 0,
+                    color: WazyColors.danger,
+                    tooltip: '$pendingDocs need attention',
+                  ),
+                  label: 'Documents',
+                ),
+                NavigationDestination(
+                  icon: _BadgeIcon(
+                    icon: Icons.account_balance_wallet_outlined,
+                    showDot: summary.net != 0,
+                    color: summary.net >= 0 ? WazyColors.safe : WazyColors.danger,
+                  ),
+                  selectedIcon: _BadgeIcon(
+                    icon: Icons.account_balance_wallet_rounded,
+                    showDot: summary.net != 0,
+                    color: summary.net >= 0 ? WazyColors.safe : WazyColors.danger,
+                  ),
+                  label: 'Money',
+                ),
+                const NavigationDestination(
+                  icon: Icon(Icons.person_outline_rounded),
+                  selectedIcon: Icon(Icons.person_rounded),
+                  label: 'Profile',
+                ),
+              ],
+            ),
+          ),
         ),
-        destinations: [
-          const NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard_rounded),
-            label: 'Home',
-          ),
-          NavigationDestination(
-            icon: _BadgeIcon(
-              icon: Icons.folder_outlined,
-              showDot: pendingDocs > 0,
-              color: Colors.red,
-              tooltip: '$pendingDocs need attention',
-            ),
-            selectedIcon: _BadgeIcon(
-              icon: Icons.folder_rounded,
-              showDot: pendingDocs > 0,
-              color: Colors.red,
-              tooltip: '$pendingDocs need attention',
-            ),
-            label: 'Documents',
-          ),
-          NavigationDestination(
-            icon: _BadgeIcon(
-              icon: Icons.account_balance_wallet_outlined,
-              showDot: summary.net != 0,
-              color: summary.net >= 0 ? Colors.green : Colors.red,
-            ),
-            selectedIcon: _BadgeIcon(
-              icon: Icons.account_balance_wallet_rounded,
-              showDot: summary.net != 0,
-              color: summary.net >= 0 ? Colors.green : Colors.red,
-            ),
-            label: 'Money',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.person_outline_rounded),
-            selectedIcon: Icon(Icons.person_rounded),
-            label: 'Profile',
-          ),
-        ],
       ),
     );
   }

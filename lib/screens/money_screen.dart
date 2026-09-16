@@ -7,6 +7,7 @@ import '../models/expiry_item.dart';
 import '../models/finance.dart';
 import '../services/document_scanner_service.dart';
 import '../services/finance_service.dart';
+import '../theme/app_theme.dart';
 
 /// The Money tab: renewal cost outlook, monthly budget tracking, savings
 /// envelopes and a transaction log with CSV export.
@@ -65,6 +66,21 @@ class _MoneyScreenState extends State<MoneyScreen> {
       appBar: AppBar(
         title: const Text('Money'),
         actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: FilledButton.icon(
+              onPressed: _showAddTransactionSheet,
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: const Text('Add Fund / Record', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              style: FilledButton.styleFrom(
+                backgroundColor: WazyColors.violetAccent,
+                foregroundColor: Colors.white,
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.ios_share_rounded),
             tooltip: 'Export CSV',
@@ -74,8 +90,10 @@ class _MoneyScreenState extends State<MoneyScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddTransactionSheet,
-        icon: const Icon(Icons.add),
-        label: const Text('Add record'),
+        icon: const Icon(Icons.add_card_rounded),
+        label: const Text('Add Fund / Record', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: WazyColors.violetAccent,
+        foregroundColor: Colors.white,
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -112,31 +130,53 @@ class _MoneyScreenState extends State<MoneyScreen> {
 
   Widget _buildOutlookCard(ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            theme.colorScheme.primaryContainer,
-            theme.colorScheme.primaryContainer.withOpacity(0.6),
+            const Color(0xFF1E1B4B),
+            const Color(0xFF312E81),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF312E81).withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.event_repeat_rounded,
-                  size: 20, color: theme.colorScheme.onPrimaryContainer),
+              const Icon(Icons.event_repeat_rounded,
+                  size: 20, color: WazyColors.cyanAccent),
               const SizedBox(width: 8),
-              Text(
-                'Renewal outlook (90 days)',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.onPrimaryContainer,
+              const Expanded(
+                child: Text(
+                  'Renewal outlook (90 days)',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: _showAddTransactionSheet,
+                icon: const Icon(Icons.add_rounded, size: 16),
+                label: const Text('Add Fund', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: WazyColors.cyanAccent,
+                  foregroundColor: const Color(0xFF0A0E1A),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  visualDensity: VisualDensity.compact,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
               ),
             ],
@@ -144,9 +184,11 @@ class _MoneyScreenState extends State<MoneyScreen> {
           const SizedBox(height: 12),
           Text(
             MoneyFormat.aed(_renewalOutlook90),
-            style: theme.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onPrimaryContainer,
+            style: const TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              letterSpacing: -0.5,
             ),
           ),
           const SizedBox(height: 4),
@@ -154,8 +196,9 @@ class _MoneyScreenState extends State<MoneyScreen> {
             _renewalOutlook90 > 0
                 ? 'Set this aside before the due dates hit.'
                 : 'No renewal fees recorded on upcoming documents.',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onPrimaryContainer.withOpacity(0.7),
+            style: const TextStyle(
+              fontSize: 13,
+              color: Colors.white70,
             ),
           ),
         ],
@@ -171,13 +214,17 @@ class _MoneyScreenState extends State<MoneyScreen> {
     ThemeData theme,
     ({double income, double expense, double net}) summary,
   ) {
+    final isDark = theme.brightness == Brightness.dark;
+    final greenColor = isDark ? Colors.greenAccent : const Color(0xFF059669);
+    final redColor = isDark ? Colors.redAccent : const Color(0xFFDC2626);
+
     return Row(
       children: [
         Expanded(
           child: _SummaryCard(
             label: 'Income',
             value: MoneyFormat.aed(summary.income),
-            color: Colors.green,
+            valueColor: greenColor,
             icon: Icons.arrow_downward_rounded,
           ),
         ),
@@ -186,7 +233,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
           child: _SummaryCard(
             label: 'Spent',
             value: MoneyFormat.aed(summary.expense),
-            color: Colors.red,
+            valueColor: redColor,
             icon: Icons.arrow_outward_rounded,
           ),
         ),
@@ -195,7 +242,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
           child: _SummaryCard(
             label: 'Net',
             value: MoneyFormat.aed(summary.net),
-            color: summary.net >= 0 ? Colors.teal : Colors.deepOrange,
+            valueColor: summary.net >= 0 ? greenColor : redColor,
             icon: Icons.account_balance_wallet_rounded,
           ),
         ),
@@ -1088,45 +1135,55 @@ class _MoneyScreenState extends State<MoneyScreen> {
 class _SummaryCard extends StatelessWidget {
   final String label;
   final String value;
-  final Color color;
+  final Color valueColor;
   final IconData icon;
 
   const _SummaryCard({
     required this.label,
     required this.value,
-    required this.color,
+    required this.valueColor,
     required this.icon,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final neutralIconColor = isDark ? WazyColors.textSecondary : WazyColors.textSecondaryLight;
+    final neutralLabelColor = isDark ? WazyColors.textMuted : WazyColors.textMutedLight;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: isDark ? WazyColors.slate : WazyColors.cloud,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(
+          color: isDark
+              ? WazyColors.slateLight.withOpacity(0.3)
+              : WazyColors.fog,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 16, color: color),
+          Icon(icon, size: 16, color: neutralIconColor),
           const SizedBox(height: 8),
           FittedBox(
             child: Text(
               value,
-              style: theme.textTheme.titleSmall?.copyWith(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: color,
+                fontSize: 13,
+                color: valueColor,
               ),
             ),
           ),
           const SizedBox(height: 2),
           Text(
             label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.outline,
+            style: TextStyle(
+              color: neutralLabelColor,
+              fontSize: 10,
             ),
           ),
         ],

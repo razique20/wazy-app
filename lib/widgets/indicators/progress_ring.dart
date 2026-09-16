@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
+import '../../theme/app_theme.dart';
+
 class ProgressRing extends StatefulWidget {
   final DateTime expiresAt;
   final double size;
@@ -62,11 +64,11 @@ class _ProgressRingState extends State<ProgressRing>
 
   Color _fillColor() {
     final days = _remaining.inDays;
-    if (days < 0) return Colors.grey;
-    if (days <= 7) return Colors.red.shade400;
-    if (days <= 30) return Colors.amber.shade700;
-    if (days <= 60) return Colors.orange.shade700;
-    return widget.color ?? Colors.green.shade700;
+    if (days < 0) return WazyColors.textMuted;
+    if (days <= 7) return WazyColors.danger;
+    if (days <= 30) return WazyColors.warning;
+    if (days <= 60) return WazyColors.caution;
+    return widget.color ?? WazyColors.safe;
   }
 
   @override

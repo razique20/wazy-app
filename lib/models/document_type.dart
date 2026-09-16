@@ -82,31 +82,31 @@ extension DocumentTypeExtension on DocumentType {
   Color get primaryColor {
     switch (this) {
       case DocumentType.tradeLicence:
-        return Colors.indigo;
+        return const Color(0xFF5C6BC0); // Indigo 400
       case DocumentType.ejari:
-        return Colors.teal;
+        return const Color(0xFF26A69A); // Teal 400
       case DocumentType.visa:
-        return Colors.blue;
+        return const Color(0xFF42A5F5); // Blue 400
       case DocumentType.emiratesId:
-        return Colors.purple;
+        return const Color(0xFFAB47BC); // Purple 400
       case DocumentType.labourDocuments:
-        return Colors.brown;
+        return const Color(0xFF8D6E63); // Brown 400
       case DocumentType.insurance:
-        return Colors.green;
+        return const Color(0xFF66BB6A); // Green 400
       case DocumentType.vehicleRegistration:
-        return Colors.orange;
+        return const Color(0xFFFFA726); // Orange 400
       case DocumentType.contracts:
-        return Colors.blueGrey;
+        return const Color(0xFF78909C); // BlueGrey 400
       case DocumentType.certificates:
-        return Colors.pink;
+        return const Color(0xFFEC407A); // Pink 400
       case DocumentType.permits:
-        return Colors.amber;
+        return const Color(0xFFFFCA28); // Amber 400
       case DocumentType.domainNames:
-        return Colors.cyan;
+        return const Color(0xFF26C6DA); // Cyan 400
       case DocumentType.softwareSubscriptions:
-        return Colors.lime;
+        return const Color(0xFF7C4DFF); // Deep Purple A200
       case DocumentType.supplierAgreements:
-        return Colors.orange.shade700;
+        return const Color(0xFFEF6C00); // Orange 800
     }
   }
 
