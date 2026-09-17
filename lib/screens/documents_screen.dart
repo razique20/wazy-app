@@ -163,32 +163,6 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       appBar: AppBar(
         title: const Text('Documents'),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: FilledButton.icon(
-              onPressed: () async {
-                await context.push('/scan');
-                await _loadData();
-              },
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('Add Document', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-              style: FilledButton.styleFrom(
-                backgroundColor: WazyColors.cyanAccent,
-                foregroundColor: const Color(0xFF0A0E1A),
-                visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.bolt_rounded, color: Colors.amber),
-            tooltip: 'Natural-Language Quick Add',
-            onPressed: () async {
-              final created = await NaturalLanguageAddDialog.show(context);
-              if (created != null) _loadData();
-            },
-          ),
           IconButton(
             icon: const Icon(Icons.travel_explore_rounded),
             tooltip: 'Search all documents',

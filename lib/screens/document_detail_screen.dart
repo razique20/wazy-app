@@ -107,7 +107,11 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: Text(item.displayName),
+        title: Text(
+          item.displayName,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined),
