@@ -356,7 +356,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                     )
                   else
                     SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 140),
                       sliver: SliverList(
                         delegate: SliverChildBuilderDelegate(
                           (context, index) => Padding(
@@ -379,32 +379,35 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                 ],
               ),
             ),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          FloatingActionButton.extended(
-            heroTag: 'nl_quick_add',
-            onPressed: () async {
-              final created = await NaturalLanguageAddDialog.show(context);
-              if (created != null) await _loadData();
-            },
-            icon: const Icon(Icons.bolt_rounded, color: Colors.amber),
-            label: const Text('Quick Add (NL)'),
-            backgroundColor: WazyColors.navyPrimary,
-            foregroundColor: Colors.white,
-          ),
-          const SizedBox(height: 8),
-          FloatingActionButton.extended(
-            heroTag: 'documents_add',
-            onPressed: () async {
-              await context.push('/scan');
-              await _loadData();
-            },
-            icon: const Icon(Icons.add_rounded),
-            label: const Text('Full Form / Upload'),
-          ),
-        ],
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 75),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            FloatingActionButton.extended(
+              heroTag: 'nl_quick_add',
+              onPressed: () async {
+                final created = await NaturalLanguageAddDialog.show(context);
+                if (created != null) await _loadData();
+              },
+              icon: const Icon(Icons.bolt_rounded, color: Colors.amber),
+              label: const Text('Quick Add (NL)'),
+              backgroundColor: WazyColors.navyPrimary,
+              foregroundColor: Colors.white,
+            ),
+            const SizedBox(height: 8),
+            FloatingActionButton.extended(
+              heroTag: 'documents_add',
+              onPressed: () async {
+                await context.push('/scan');
+                await _loadData();
+              },
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Full Form / Upload'),
+            ),
+          ],
+        ),
       ),
     );
   }
