@@ -30,13 +30,20 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
   void initState() {
     super.initState();
     _runSearch('');
+    DocumentScannerService.instance.addListener(_onServiceChanged);
   }
 
   @override
   void dispose() {
+    DocumentScannerService.instance.removeListener(_onServiceChanged);
     _controller.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  void _onServiceChanged() {
+    if (!mounted) return;
+    _runSearch(_controller.text);
   }
 
   Future<void> _runSearch(String query) async {

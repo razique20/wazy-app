@@ -53,7 +53,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => context.go('/home'),
+            onPressed: () => context.canPop() ? context.pop() : context.go('/documents'),
           ),
           title: const Text('Loading...'),
         ),
@@ -67,7 +67,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => context.go('/home'),
+            onPressed: () => context.canPop() ? context.pop() : context.go('/documents'),
           ),
         ),
         body: Center(
@@ -89,8 +89,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
               ),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: () => context.go('/home'),
-                child: const Text('Back to home'),
+                onPressed: () => context.canPop() ? context.pop() : context.go('/documents'),
+                child: const Text('Back to documents'),
               ),
             ],
           ),
@@ -1180,7 +1180,11 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
           backgroundColor: Colors.green,
         ),
       );
-      context.go('/home');
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/documents');
+      }
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1202,7 +1206,11 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
           backgroundColor: Colors.red,
         ),
       );
-      context.go('/home');
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/documents');
+      }
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

@@ -36,6 +36,18 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
   void initState() {
     super.initState();
     _loadData();
+    DocumentScannerService.instance.addListener(_onServiceChanged);
+  }
+
+  @override
+  void dispose() {
+    DocumentScannerService.instance.removeListener(_onServiceChanged);
+    super.dispose();
+  }
+
+  void _onServiceChanged() {
+    if (!mounted) return;
+    _loadData();
   }
 
   Future<void> _loadData() async {

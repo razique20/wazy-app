@@ -34,12 +34,19 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _loadData();
     FinanceService.instance.addListener(_reloadMoney);
+    DocumentScannerService.instance.addListener(_onServiceChanged);
   }
 
   @override
   void dispose() {
     FinanceService.instance.removeListener(_reloadMoney);
+    DocumentScannerService.instance.removeListener(_onServiceChanged);
     super.dispose();
+  }
+
+  void _onServiceChanged() {
+    if (!mounted) return;
+    _loadData();
   }
 
   void _reloadMoney() {
