@@ -14,7 +14,7 @@ A curated roadmap of **Basic to Hard AI Features** tailored for **Wazy** (UAE SM
   - *Description*: Calculates an "Expiry Urgency & Risk Score" based on document authority (e.g., RTA vs GDRFA vs Ejari) and alerts users earlier for high-penalty documents (e.g., Late Ejari renewal vs Visa overstay fine calculation).
   - *Tech/Implementation*: Rule-based heuristic engine with authority fine lookup tables.
 
-- [ ] **Bill Spike & Anomaly Detection** `[Basic]`
+- [x] **Bill Spike & Anomaly Detection** `[Basic]`
   - *Description*: Automatically detects unusual price hikes in recurring expenses (e.g., "DEWA utility bill is 35% higher than your 3-month average").
   - *Tech/Implementation*: Statistical moving average & standard deviation anomaly detection.
 

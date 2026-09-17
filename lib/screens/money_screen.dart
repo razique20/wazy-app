@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 
 import '../models/expiry_item.dart';
 import '../models/finance.dart';
+import '../services/anomaly_detection_service.dart';
 import '../services/budget_alert_service.dart';
 import '../services/collection_service.dart';
 import '../services/document_scanner_service.dart';
@@ -138,6 +139,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
                 _buildFinancialOverviewCard(theme, summary),
                 const SizedBox(height: 12),
                 _buildSmallRenewalOutlookCard(theme),
+                _buildBillSpikeAlertsSection(theme),
                 const SizedBox(height: 12),
                 _buildCashFlowSection(theme),
                 const SizedBox(height: 16),
@@ -353,6 +355,128 @@ class _MoneyScreenState extends State<MoneyScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildBillSpikeAlertsSection(ThemeData theme) {
+    final anomalies = AnomalyDetectionService.instance
+        .detectRecentAnomalies(_transactions, recentDays: 30);
+    if (anomalies.isEmpty) return const SizedBox.shrink();
+
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 12),
+        Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: WazyColors.warning.withOpacity(0.5),
+            ),
+          ),
+          color: isDark
+              ? const Color(0xFF2A2118)
+              : WazyColors.warning.withOpacity(0.08),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: WazyColors.warning.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.trending_up_rounded,
+                        color: WazyColors.warning,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Bill Spike Alert${anomalies.length > 1 ? "s" : ""}',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.amberAccent : Colors.orange.shade900,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: WazyColors.warning.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '${anomalies.length} Spike${anomalies.length > 1 ? "s" : ""}',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: WazyColors.warning,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                for (var i = 0; i < anomalies.length; i++) ...[
+                  if (i > 0) const Divider(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              anomalies[i].transaction.title,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              anomalies[i].message,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.outline,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          anomalies[i].severity.badgeText,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.redAccent,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
