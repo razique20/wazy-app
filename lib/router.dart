@@ -93,8 +93,8 @@ final router = GoRouter(
     ),
     // 4-tab bottom-nav shell:
     //   Home      — cross-tier dashboard (documents + money summary)
-    //   Documents — Tier 1: full expiry tracking
     //   Money     — Tier 2: budgets, envelopes, transactions
+    //   Documents — Tier 1: full expiry tracking
     //   Profile   — settings, collections, account
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) => _AppShell(
@@ -111,20 +111,20 @@ final router = GoRouter(
           ],
         ),
         StatefulShellBranch(
-          navigatorKey: _documentsShellKey,
-          routes: [
-            GoRoute(
-              path: '/documents',
-              builder: (context, state) => const DocumentsScreen(),
-            ),
-          ],
-        ),
-        StatefulShellBranch(
           navigatorKey: _moneyShellKey,
           routes: [
             GoRoute(
               path: '/money',
               builder: (context, state) => const MoneyScreen(),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          navigatorKey: _documentsShellKey,
+          routes: [
+            GoRoute(
+              path: '/documents',
+              builder: (context, state) => const DocumentsScreen(),
             ),
           ],
         ),
@@ -237,21 +237,6 @@ class _AppShellState extends State<_AppShell> {
                 ),
                 NavigationDestination(
                   icon: _BadgeIcon(
-                    icon: Icons.folder_outlined,
-                    showDot: pendingDocs > 0,
-                    color: WazyColors.danger,
-                    tooltip: '$pendingDocs need attention',
-                  ),
-                  selectedIcon: _BadgeIcon(
-                    icon: Icons.folder_rounded,
-                    showDot: pendingDocs > 0,
-                    color: WazyColors.danger,
-                    tooltip: '$pendingDocs need attention',
-                  ),
-                  label: 'Documents',
-                ),
-                NavigationDestination(
-                  icon: _BadgeIcon(
                     icon: Icons.account_balance_wallet_outlined,
                     showDot: _budgetStatus != null,
                     color: _budgetStatus?.status == BudgetAlertLevel.exceeded
@@ -266,6 +251,21 @@ class _AppShellState extends State<_AppShell> {
                         : WazyColors.warning,
                   ),
                   label: 'Money',
+                ),
+                NavigationDestination(
+                  icon: _BadgeIcon(
+                    icon: Icons.folder_outlined,
+                    showDot: pendingDocs > 0,
+                    color: WazyColors.danger,
+                    tooltip: '$pendingDocs need attention',
+                  ),
+                  selectedIcon: _BadgeIcon(
+                    icon: Icons.folder_rounded,
+                    showDot: pendingDocs > 0,
+                    color: WazyColors.danger,
+                    tooltip: '$pendingDocs need attention',
+                  ),
+                  label: 'Documents',
                 ),
                 const NavigationDestination(
                   icon: Icon(Icons.person_outline_rounded),

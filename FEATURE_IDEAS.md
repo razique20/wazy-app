@@ -46,9 +46,9 @@ A curated roadmap of **Basic to Hard AI Features** tailored for **Wazy** (UAE SM
   - *Description*: Scans uploaded Ejari contracts, insurance policies, or commercial leases to extract key clauses (notice period before renewal, security deposit conditions, cancellation terms).
   - *Tech/Implementation*: Gemini API document vision / PDF text prompt summarization.
 
-- [ ] **AI Monthly Financial Executive Summary** `[Advanced]`
+- [x] **AI Monthly Financial Executive Summary** `[Advanced]`
   - *Description*: Generates a monthly natural language financial report (e.g., *"In August, spending rose by 12% due to office rent and trade license renewal. You are on track to save AED 4,500 in your envelope."*).
-  - *Tech/Implementation*: LLM prompt generation based on monthly summary data & budget trends.
+  - *Tech/Implementation*: LLM prompt generation based on monthly summary data & budget trends. *(Shipped: `MonthlySummaryService` aggregates this-vs-last month spend, top movers, budget overruns & envelope projections; template narrative works offline, optional Gemini LLM polish pass via `GeminiApiService` when a user-supplied key is set in Profile; `MonthlySummaryCard` renders it on the Money screen.)*
 
 ---
 

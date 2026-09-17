@@ -6,6 +6,7 @@ import 'dart:async';
 import 'app.dart';
 import 'services/auth_service.dart';
 import 'services/budget_alert_service.dart';
+import 'services/gemini_api_service.dart';
 import 'services/collection_service.dart';
 import 'services/custom_document_type_service.dart';
 import 'services/document_scanner_service.dart';
@@ -35,6 +36,7 @@ void main() async {
   // Budget alerts listen to finance data changes for the whole app lifetime
   // (OS notifications + Money-tab badge + snackbars).
   await BudgetAlertService.instance.init();
+  unawaited(GeminiApiService.instance.load()); // optional LLM key for AI features
 
   // Prewarm services. Auth session is restored from secure storage by
   // supabase_flutter during Supabase.initialize, so by this point

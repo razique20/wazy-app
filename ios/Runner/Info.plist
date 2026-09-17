@@ -28,6 +28,24 @@
 	<string>Wazy uses the microphone so you can add expenses and document renewals hands-free by speaking (e.g. "Paid 450 AED for DEWA yesterday").</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Wazy uses speech recognition to transcribe your spoken expenses and document details into the quick-add form.</string>
+	<!-- AI Executive Summary: allow HTTPS call to Google Gemini API -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>generativelanguage.googleapis.com</key>
+			<dict>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<false/>
+				<key>NSExceptionRequiresForwardSecrecy</key>
+				<false/>
+			</dict>
+		</dict>
+	</dict>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

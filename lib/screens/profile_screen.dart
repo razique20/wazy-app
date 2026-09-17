@@ -8,6 +8,7 @@ import '../services/collection_service.dart';
 import '../services/document_scanner_service.dart';
 import '../services/finance_service.dart';
 import '../services/custom_document_type_service.dart';
+import '../services/gemini_api_service.dart';
 import '../services/notification_service.dart';
 import '../services/supabase_service.dart';
 import '../services/theme_service.dart';
@@ -37,6 +38,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int _taskCadence = 60;
   int _escalationCadence = 30;
   int _whatsappCadence = 7;
+  String _geminiKey = '';
 
   @override
   void initState() {
@@ -74,7 +76,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _taskCadence = prefs.getInt('taskCadence') ?? 60;
       _escalationCadence = prefs.getInt('escalationCadence') ?? 30;
       _whatsappCadence = prefs.getInt('whatsappCadence') ?? 7;
+      _geminiKey = prefs.getString('gemini.apiKey.v1') ?? '';
     });
+  }
+
+  /// Prompt for / clear the Gemini API key used by the AI executive summary.
+  Future<void> _editGeminiKey() async {
+    final controller = TextEditingController(text: _geminiKey);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Gemini API key'),
+        content: TextField(
+          controller: controller,
+          obscureText: true,
+          decoration: const InputDecoration(
+            hintText: 'AIza…',
+            helperText:
+                'Stored only on this device. Get a free key at aistudio.google.com',
+          ),
+        ),
+        actions: [
+          if (_geminiKey.isNotEmpty)
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, ''),
+              child: const Text('Remove'),
+            ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (result == null || !mounted) return;
+    setState(() => _geminiKey = result);
+    if (result.isEmpty) {
+      await GeminiApiService.instance.clearApiKey();
+    } else {
+      await GeminiApiService.instance.setApiKey(result);
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          result.isEmpty
+              ? 'Gemini key removed — summaries use built-in templates'
+              : 'Gemini key saved — summaries will be AI-polished',
+        ),
+      ),
+    );
   }
 
   Future<void> _saveSettings() async {
@@ -592,6 +647,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           subtitle: const Text(
                               'Remove every tracked document in the active collection'),
                           onTap: () => _confirmClearAll(context),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // AI Executive Summary — Gemini API key configuration.
+                  // Key stays on-device (SharedPreferences) and only gates the
+                  // LLM polish pass; the summary itself works without it.
+                  _buildSection(
+                    context,
+                    'AI Executive Summary',
+                    Icons.auto_awesome_motion_rounded,
+                    theme,
+                    child: Column(
+                      children: [
+                        ListTile(
+                          leading: const CircleAvatar(
+                            backgroundColor: Colors.deepPurple,
+                            child: Icon(Icons.auto_awesome_rounded,
+                                color: Colors.white, size: 18),
+                          ),
+                          title: const Text('Gemini API key'),
+                          subtitle: Text(
+                            _geminiKey.isEmpty
+                                ? 'Not set — summaries use built-in templates'
+                                : 'Configured — summaries are AI-polished',
+                          ),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.edit_rounded, size: 20),
+                            onPressed: _editGeminiKey,
+                          ),
                         ),
                       ],
                     ),

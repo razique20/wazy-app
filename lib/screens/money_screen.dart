@@ -18,6 +18,7 @@ import '../services/smart_category_engine.dart';
 import '../theme/app_theme.dart';
 import '../widgets/cash_flow_forecast_chart.dart';
 import '../widgets/dialogs/natural_language_money_add_dialog.dart';
+import '../widgets/cards/monthly_summary_card.dart';
 import 'package:uuid/uuid.dart';
 
 /// The Money tab: renewal cost outlook, monthly budget tracking, savings
@@ -133,34 +134,47 @@ class _MoneyScreenState extends State<MoneyScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 180),
+          : RefreshIndicator(
+              onRefresh: _reload,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 180),
               children: [
+                // 1. Key numbers: net / income / spend.
                 _buildFinancialOverviewCard(theme, summary),
-                const SizedBox(height: 12),
-                _buildSmallRenewalOutlookCard(theme),
+                // 2. Urgent anomalies (section adds its own top spacing).
                 _buildBillSpikeAlertsSection(theme),
                 const SizedBox(height: 12),
-                _buildCashFlowSection(theme),
-                const SizedBox(height: 16),
+                // 3. Budget control.
+                _buildBudgetsSection(theme, spendByCategory),
+                const SizedBox(height: 24),
+                // 4. Spending analysis.
                 _buildPaceCard(theme, summary),
                 const SizedBox(height: 24),
                 _buildWeeklyChart(theme),
-                const SizedBox(height: 24),
-                _buildRenewalBreakdown(theme),
                 const SizedBox(height: 24),
                 _buildCategoryBreakdown(theme, spendByCategory, summary.expense),
                 const SizedBox(height: 24),
                 _buildTopExpenses(theme),
                 const SizedBox(height: 24),
-                _buildBudgetsSection(theme, spendByCategory),
+                // 5. Compact AI summary, below the spending story it reports on.
+                const MonthlySummaryCard(),
                 const SizedBox(height: 24),
+                // 6. Upcoming renewals & forecast.
+                _buildSmallRenewalOutlookCard(theme),
+                const SizedBox(height: 24),
+                _buildRenewalBreakdown(theme),
+                const SizedBox(height: 24),
+                _buildCashFlowSection(theme),
+                const SizedBox(height: 24),
+                // 7. Planning & history.
                 _buildRecurringSection(theme),
                 const SizedBox(height: 24),
                 _buildEnvelopesSection(theme),
                 const SizedBox(height: 24),
                 _buildTransactionsSection(theme),
               ],
+            ),
             ),
     );
   }

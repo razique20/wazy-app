@@ -163,6 +163,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     await DocumentScannerService.instance.refresh();
+    // Notify the Money tab too: FinanceService filters by the active
+    // collection and MoneyScreen listens to its ChangeNotifier.
+    await FinanceService.instance.refresh();
     await _loadData();
   }
 
