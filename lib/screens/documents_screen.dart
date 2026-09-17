@@ -9,6 +9,7 @@ import '../services/document_scanner_service.dart';
 import '../services/urgency_engine.dart';
 import '../theme/app_theme.dart';
 import '../widgets/indicators/department_logo.dart';
+import '../widgets/dialogs/natural_language_add_dialog.dart';
 
 /// Documents tab (Tier 1): the full expiry-tracking workspace — search,
 /// filters and detailed cards with inline actions.
@@ -179,6 +180,14 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.bolt_rounded, color: Colors.amber),
+            tooltip: 'Natural-Language Quick Add',
+            onPressed: () async {
+              final created = await NaturalLanguageAddDialog.show(context);
+              if (created != null) _loadData();
+            },
           ),
           IconButton(
             icon: const Icon(Icons.travel_explore_rounded),

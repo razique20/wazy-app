@@ -210,44 +210,70 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildQuickActionsRow(ThemeData theme) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () => context.push('/scan'),
-              icon: const Icon(Icons.add_task_rounded, size: 18),
-              label: const Text(
-                'Add Document',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: WazyColors.navyPrimary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => context.push('/scan'),
+                  icon: const Icon(Icons.add_task_rounded, size: 18),
+                  label: const Text(
+                    'Add Document',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: WazyColors.navyPrimary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 2,
+                  ),
                 ),
-                elevation: 2,
               ),
-            ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => context.go('/money'),
+                  icon: const Icon(Icons.add_card_rounded, size: 18),
+                  label: const Text(
+                    'Add Fund / Record',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: WazyColors.cyanSecondary,
+                    foregroundColor: const Color(0xFF0A0E1A),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 2,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () => context.go('/money'),
-              icon: const Icon(Icons.add_card_rounded, size: 18),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                final created = await NaturalLanguageAddDialog.show(context);
+                if (created != null) _loadData();
+              },
+              icon: const Icon(Icons.bolt_rounded, size: 18, color: Colors.amber),
               label: const Text(
-                'Add Fund / Record',
+                '⚡ Quick Add with Natural Language',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: WazyColors.cyanSecondary,
-                foregroundColor: const Color(0xFF0A0E1A),
-                padding: const EdgeInsets.symmetric(vertical: 12),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 11),
+                side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.5)),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                elevation: 2,
               ),
             ),
           ),

@@ -77,7 +77,7 @@ needs an LLM budget or server-side calls.
 - [x] **OCR scan → auto-fill** — ✅ implemented: `google_mlkit_text_recognition` scans uploaded document images (Trade License, Visa, Ejari, Mulkiya, Emirates ID) and extracts title, document number, document category, expiry date (with UAE date format support), emirate, and issuing authority. Forms are auto-filled with visual "⚡ Auto-filled" badges, and the user must review and explicitly tap **Confirm & Save Document** before saving.
 - [ ] **Arabic + English OCR** — ML Kit supports both scripts; bilingual extraction is a real differentiator for UAE documents.
 - [x] **Auto document-type detection** — ✅ implemented: automatic classification of OCR text into Wazy document categories (`tradeLicence`, `residencyVisa`, `ejari`, `vehicleRegistration`, `emiratesId`, `establishmentCard`, `healthInsurance`, `civilDefense`).
-- [ ] **Natural-language add** — "Add my trade licence, expires 12 March 2027" → parsed into an `ExpiryItem` (regex/date parser).
+- [x] **Natural-language add** — ✅ implemented: `NaturalLanguageParserService` parses freeform English prompts (e.g. *"Add my trade licence, expires 12 March 2027 cost 1500 AED Dubai"*) into structured Wazy `ExpiryItem` fields (Title, Category, Expiry Date, Emirate, Issuing Authority, Fee). Interactive `NaturalLanguageAddDialog` renders live field previews as you type with quick sample chips and 1-tap **Confirm & Save**.
 
 ---
 
