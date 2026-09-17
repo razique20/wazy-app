@@ -109,6 +109,16 @@ class DepartmentLogo extends StatelessWidget {
       );
     }
 
+    if (loc.contains('MOI') || loc.contains('INTERIOR') || type.key == DocumentType.passport.name) {
+      return const _DeptStyle(
+        acronym: 'MOI',
+        icon: Icons.flight_takeoff_rounded,
+        bgColor: Color(0xFF1B2631), // Midnight Navy
+        textColor: Color(0xFFD4AF37), // Gold
+        borderColor: Color(0xFF2E4053),
+      );
+    }
+
     if (loc.contains('MOHRE') || loc.contains('LABOUR') || type.key == DocumentType.labourDocuments.name) {
       return const _DeptStyle(
         acronym: 'MOHRE',
@@ -119,7 +129,7 @@ class DepartmentLogo extends StatelessWidget {
       );
     }
 
-    if (loc.contains('RTA') || type.key == DocumentType.vehicleRegistration.name) {
+    if (loc.contains('RTA') || type.key == DocumentType.vehicleRegistration.name || type.key == DocumentType.drivingLicence.name) {
       return const _DeptStyle(
         acronym: 'RTA',
         icon: Icons.directions_car_rounded,

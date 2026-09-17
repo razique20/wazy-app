@@ -68,6 +68,41 @@ End Date: 30 SEP 2026
       expect(res.expiryDate, equals(DateTime(2026, 9, 30)));
     });
 
+    test('Parses UAE Passport sample text', () {
+      const rawText = '''
+GOVERNMENT OF THE UNITED ARAB EMIRATES
+PASSPORT
+Passport No: A12345678
+Name: JOHN PETER DOE
+Date of Issue: 10/05/2023
+Date of Expiry: 09/05/2028
+MINISTRY OF INTERIOR
+      ''';
+
+      final res = parser.parseText(rawText);
+
+      expect(res.documentNumber, equals('A12345678'));
+      expect(res.documentType?.displayName, equals(DocumentType.passport.displayName));
+      expect(res.expiryDate, equals(DateTime(2028, 5, 9)));
+    });
+
+    test('Parses Dubai Driving Licence card text', () {
+      const rawText = '''
+GOVERNMENT OF DUBAI
+ROADS & TRANSPORT AUTHORITY
+DRIVING LICENCE
+Licence No: 4471985
+Name: JOHN PETER DOE
+Expiry Date: 14/08/2028
+RTA DUBAI
+      ''';
+
+      final res = parser.parseText(rawText);
+
+      expect(res.documentType?.displayName, equals(DocumentType.drivingLicence.displayName));
+      expect(res.expiryDate, equals(DateTime(2028, 8, 14)));
+    });
+
     test('Parses Abu Dhabi Vehicle Mulkiya card text', () {
       const rawText = '''
 ABU DHABI POLICE

@@ -5,9 +5,11 @@ enum DocumentType {
   tradeLicence,
   ejari,
   visa,
+  passport,
   emiratesId,
   labourDocuments,
   insurance,
+  drivingLicence,
   vehicleRegistration,
   contracts,
   certificates,
@@ -26,12 +28,16 @@ extension DocumentTypeExtension on DocumentType {
         return 'Ejari';
       case DocumentType.visa:
         return 'Work Visa';
+      case DocumentType.passport:
+        return 'Passport';
       case DocumentType.emiratesId:
         return 'Emirates ID';
       case DocumentType.labourDocuments:
         return 'Labour Documents';
       case DocumentType.insurance:
         return 'Insurance';
+      case DocumentType.drivingLicence:
+        return 'Driving Licence';
       case DocumentType.vehicleRegistration:
         return 'Vehicle Registration';
       case DocumentType.contracts:
@@ -57,12 +63,16 @@ extension DocumentTypeExtension on DocumentType {
         return Icons.home_rounded;
       case DocumentType.visa:
         return Icons.badge_rounded;
+      case DocumentType.passport:
+        return Icons.flight_takeoff_rounded;
       case DocumentType.emiratesId:
         return Icons.credit_card_rounded;
       case DocumentType.labourDocuments:
         return Icons.work_rounded;
       case DocumentType.insurance:
         return Icons.health_and_safety_rounded;
+      case DocumentType.drivingLicence:
+        return Icons.credit_score_rounded;
       case DocumentType.vehicleRegistration:
         return Icons.directions_car_rounded;
       case DocumentType.contracts:
@@ -88,12 +98,16 @@ extension DocumentTypeExtension on DocumentType {
         return const Color(0xFF26A69A); // Teal 400
       case DocumentType.visa:
         return const Color(0xFF42A5F5); // Blue 400
+      case DocumentType.passport:
+        return const Color(0xFF00897B); // Teal 600
       case DocumentType.emiratesId:
         return const Color(0xFFAB47BC); // Purple 400
       case DocumentType.labourDocuments:
         return const Color(0xFF8D6E63); // Brown 400
       case DocumentType.insurance:
         return const Color(0xFF66BB6A); // Green 400
+      case DocumentType.drivingLicence:
+        return const Color(0xFF5C6BC0); // Indigo 400
       case DocumentType.vehicleRegistration:
         return const Color(0xFFFFA726); // Orange 400
       case DocumentType.contracts:
@@ -119,12 +133,16 @@ extension DocumentTypeExtension on DocumentType {
         return 'RERA / Dubai Land Department';
       case DocumentType.visa:
         return 'GDRFA / ICP / MOHRE';
+      case DocumentType.passport:
+        return 'MOI / GDRFA (visa stamping)';
       case DocumentType.emiratesId:
         return 'ICP / GDRFA';
       case DocumentType.labourDocuments:
         return 'MOHRE / GDRFA';
       case DocumentType.insurance:
         return 'UAE Insurance Authority';
+      case DocumentType.drivingLicence:
+        return 'RTA / Traffic Departments';
       case DocumentType.vehicleRegistration:
         return 'RTA / Dubai Police';
       case DocumentType.contracts:
@@ -150,12 +168,16 @@ extension DocumentTypeExtension on DocumentType {
         return 365;
       case DocumentType.visa:
         return 365;
+      case DocumentType.passport:
+        return 1825; // ~5-year passport validity
       case DocumentType.emiratesId:
         return 365;
       case DocumentType.labourDocuments:
         return 365;
       case DocumentType.insurance:
         return 365;
+      case DocumentType.drivingLicence:
+        return 1825; // Dubai licences renew every 5 years
       case DocumentType.vehicleRegistration:
         return 365;
       case DocumentType.contracts:
@@ -257,6 +279,8 @@ class DocumentTypeMeta {
         return 'Ejari expired → Contract invalid. Cannot renew without valid Ejari.';
       case DocumentType.visa:
         return 'Visa expired → Employee must leave UAE or apply for renewal. Grace period: 6 months.';
+      case DocumentType.passport:
+        return 'Passport expired → Cannot travel. Many services require 6 months validity.';
       case DocumentType.insurance:
         return 'Insurance lapsed → No coverage. Claims denied.';
       case DocumentType.contracts:
@@ -271,6 +295,8 @@ class DocumentTypeMeta {
         return 'Labour card expired → Work permit invalid. Employee cannot work.';
       case DocumentType.vehicleRegistration:
         return 'Registration expired → Fine AED 500+. Vehicle may be impounded.';
+      case DocumentType.drivingLicence:
+        return 'Driving licence expired → Driving is illegal. Fine AED 500 + 12 black points.';
       case DocumentType.permits:
         return 'Permit expired → Business activity not authorized.';
       case DocumentType.certificates:
@@ -281,7 +307,7 @@ class DocumentTypeMeta {
   }
 }
 
-/// Registry of every document type available in the app: the 13 built-ins
+/// Registry of every document type available in the app: the 15 built-ins
 /// plus any user-defined custom types loaded from Supabase/local storage.
 ///
 /// Resolution is key-based ([byKey]) so DB rows and JSON with unknown or

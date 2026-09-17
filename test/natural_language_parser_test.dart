@@ -12,7 +12,7 @@ void main() {
       final res = parser.parse(prompt);
 
       expect(res.title, equals('Driving License'));
-      expect(res.docType.displayName, equals(DocumentType.vehicleRegistration.displayName));
+      expect(res.docType.displayName, equals(DocumentType.drivingLicence.displayName));
       expect(res.expiryDate.year, equals(2027));
       expect(res.expiryDate.month, equals(10));
       expect(res.expiryDate.day, equals(12));
@@ -25,7 +25,7 @@ void main() {
       const prompt = 'drving lisence ending Nov 15 2026 fee 1.5k AED';
       final res = parser.parse(prompt);
 
-      expect(res.docType.displayName, equals(DocumentType.vehicleRegistration.displayName));
+      expect(res.docType.displayName, equals(DocumentType.drivingLicence.displayName));
       expect(res.expiryDate.year, equals(2026));
       expect(res.expiryDate.month, equals(11));
       expect(res.expiryDate.day, equals(15));
@@ -59,6 +59,23 @@ void main() {
       expect(res.emirate, equals(UaeEmirate.abuDhabi));
       expect(res.expiryDate, equals(DateTime(2026, 12, 25)));
       expect(res.renewalFee, equals(750.0));
+    });
+
+    test('Parses prompt with "passport" & ISO date', () {
+      const prompt = 'passport renewal expires 2027-08-15 fee 1200 aed';
+      final res = parser.parse(prompt);
+
+      expect(res.docType.displayName, equals(DocumentType.passport.displayName));
+      expect(res.expiryDate, equals(DateTime(2027, 8, 15)));
+      expect(res.renewalFee, equals(1200.0));
+    });
+
+    test('Parses prompt with typo "passprt" as passport, not visa', () {
+      const prompt = 'passprt of Ahmed valid until 15/03/2028';
+      final res = parser.parse(prompt);
+
+      expect(res.docType.displayName, equals(DocumentType.passport.displayName));
+      expect(res.expiryDate, equals(DateTime(2028, 3, 15)));
     });
 
     test('Parses prompt with "emiratesid" & Month-Year date', () {

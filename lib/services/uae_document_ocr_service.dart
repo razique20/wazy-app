@@ -126,6 +126,18 @@ class UaeDocumentOcrService {
       return registry.byEnum(DocumentType.ejari);
     }
 
+    if (upper.contains('PASSPORT') ||
+        upper.contains('جواز سفر')) {
+      return registry.byEnum(DocumentType.passport);
+    }
+
+    if (upper.contains('DRIVING LICENCE') ||
+        upper.contains('DRIVING LICENSE') ||
+        upper.contains('DRIVER PERMIT') ||
+        upper.contains('رخصة قيادة')) {
+      return registry.byEnum(DocumentType.drivingLicence);
+    }
+
     if (upper.contains('RESIDENCE PERMIT') ||
         upper.contains('RESIDENCY PERMIT') ||
         upper.contains('EMPLOYMENT VISA') ||
@@ -350,6 +362,7 @@ class UaeDocumentOcrService {
       final lUpper = line.toUpperCase();
       if (lUpper.contains('LICENCE NO') ||
           lUpper.contains('LICENSE NO') ||
+          lUpper.contains('PASSPORT NO') ||
           lUpper.contains('REGISTRATION NO') ||
           lUpper.contains('CONTRACT NO') ||
           lUpper.contains('FILE NO') ||

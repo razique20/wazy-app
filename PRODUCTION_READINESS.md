@@ -111,8 +111,8 @@ create table documents (
   id uuid primary key default gen_random_uuid(),
   company_id uuid not null references companies(id) on delete cascade,
   doc_type text not null check (doc_type in (
-    'tradeLicence','ejari','visa','emiratesId','labourDocuments','insurance',
-    'vehicleRegistration','contracts','certificates','permits',
+    'tradeLicence','ejari','visa','passport','emiratesId','labourDocuments','insurance',
+    'drivingLicence','vehicleRegistration','contracts','certificates','permits',
     'domainNames','softwareSubscriptions','supplierAgreements')),
   display_name text not null,
   expires_at date not null,

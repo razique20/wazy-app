@@ -282,12 +282,18 @@ class NaturalLanguageParserService {
   DocumentTypeMeta _extractDocumentType(String lower) {
     final registry = DocumentTypeRegistry.instance;
 
-    // Driving License & Vehicle / Mulkiya / RTA Card (including typos like drving, driver, driveing, lisence, mulkya)
+    // Driving Licence (including typos like drving, driver, driveing, lisence) —
+    // checked before vehicle registration so "driving licence" never lands there.
     if (lower.contains('driving') ||
         lower.contains('driver') ||
         lower.contains('drving') ||
         lower.contains('driveing') ||
-        lower.contains('mulkiya') ||
+        lower.contains("driver's")) {
+      return registry.byEnum(DocumentType.drivingLicence);
+    }
+
+    // Vehicle / Mulkiya / RTA Card (including typos like mulkya, vehical)
+    if (lower.contains('mulkiya') ||
         lower.contains('mulkya') ||
         lower.contains('moolkiya') ||
         lower.contains('vehicle') ||
@@ -310,15 +316,20 @@ class NaturalLanguageParserService {
       return registry.byEnum(DocumentType.ejari);
     }
 
-    // Visa & Residence / Residency (including typos like viza, residancy, passprt)
+    // Passport (checked before visa so "passport" doesn't land on visa)
+    if (lower.contains('passport') ||
+        lower.contains('passprt') ||
+        lower.contains('pasport')) {
+      return registry.byEnum(DocumentType.passport);
+    }
+
+    // Visa & Residence / Residency (including typos like viza, residancy)
     if (lower.contains('visa') ||
         lower.contains('viza') ||
         lower.contains('residency') ||
         lower.contains('residancy') ||
         lower.contains('residence') ||
-        lower.contains('entry permit') ||
-        lower.contains('passport') ||
-        lower.contains('passprt')) {
+        lower.contains('entry permit')) {
       return registry.byEnum(DocumentType.visa);
     }
 
