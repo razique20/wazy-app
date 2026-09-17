@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 
 import '../models/expiry_item.dart';
 import '../models/finance.dart';
+import '../services/alert_preferences_service.dart';
 import '../services/anomaly_detection_service.dart';
 import '../services/budget_alert_service.dart';
 import '../services/collection_service.dart';
@@ -39,6 +40,11 @@ class _MoneyScreenState extends State<MoneyScreen> {
   double _renewalOutlook90 = 0;
   bool _loading = true;
 
+  /// Bill-spike transaction ids the user dismissed this session; keeps the
+  /// card hidden until a *new* anomaly appears. Cleared when the user
+  /// re-enables bill spike alerts in Profile.
+  final Set<String> _dismissedSpikeIds = {};
+
   StreamSubscription<BudgetAlertEvent>? _alertSub;
 
   @override
@@ -60,6 +66,8 @@ class _MoneyScreenState extends State<MoneyScreen> {
   /// notification is shown regardless — this is the "while the app is
   /// open" path.)
   void _showBudgetAlert(BudgetAlertEvent event) {
+    // Respect the Profile toggle: no snackbar when budget alerts are off.
+    if (!AlertPreferencesService.instance.budgetAlertsEnabled) return;
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -373,8 +381,15 @@ class _MoneyScreenState extends State<MoneyScreen> {
   }
 
   Widget _buildBillSpikeAlertsSection(ThemeData theme) {
+    // Master switch: user turned bill spike alerts off in Profile.
+    if (!AlertPreferencesService.instance.billSpikesEnabled) {
+      return const SizedBox.shrink();
+    }
+
     final anomalies = AnomalyDetectionService.instance
-        .detectRecentAnomalies(_transactions, recentDays: 30);
+        .detectRecentAnomalies(_transactions, recentDays: 30)
+        .where((a) => !_dismissedSpikeIds.contains(a.transaction.id))
+        .toList();
     if (anomalies.isEmpty) return const SizedBox.shrink();
 
     final isDark = theme.brightness == Brightness.dark;
@@ -436,6 +451,23 @@ class _MoneyScreenState extends State<MoneyScreen> {
                           fontWeight: FontWeight.bold,
                           color: WazyColors.warning,
                         ),
+                      ),
+                    ),
+                    // Dismiss the whole card this session; re-appears when
+                    // a different spike is detected.
+                    SizedBox(
+                      width: 32,
+                      height: 32,
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        iconSize: 18,
+                        tooltip: 'Dismiss alert',
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => setState(() {
+                          _dismissedSpikeIds.addAll(
+                            anomalies.map((a) => a.transaction.id),
+                          );
+                        }),
                       ),
                     ),
                   ],

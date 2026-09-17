@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'dart:async';
 
 import 'app.dart';
+import 'services/alert_preferences_service.dart';
 import 'services/auth_service.dart';
 import 'services/budget_alert_service.dart';
 import 'services/gemini_api_service.dart';
@@ -32,6 +33,10 @@ void main() async {
   // Credentials come from AppCredentials (lib/config/app_credentials.dart).
   // Without them the app runs in local-only mode.
   await SupabaseService.initialize();
+
+  // Alert toggles must load before the budget alert engine starts
+  // evaluating, so a disabled alert never fires on cold start.
+  await AlertPreferencesService.instance.load();
 
   // Budget alerts listen to finance data changes for the whole app lifetime
   // (OS notifications + Money-tab badge + snackbars).

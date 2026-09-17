@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/document_collection.dart';
+import '../services/alert_preferences_service.dart';
 import '../services/auth_service.dart';
 import '../services/collection_service.dart';
 import '../services/document_scanner_service.dart';
@@ -33,6 +34,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _userRole = 'Document Admin';
   String _userPhone = '';
   bool _notificationsEnabled = true;
+  bool _billSpikesEnabled = true;
+  bool _budgetAlertsEnabled = true;
   bool _whatsappAlertsEnabled = false; // kept so the pref survives; WhatsApp is inactive
   int _reminderCadence = 90;
   int _taskCadence = 60;
@@ -71,6 +74,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _userRole = prefs.getString('userRole') ?? 'Document Admin';
       _userPhone = prefs.getString('userPhone') ?? '';
       _notificationsEnabled = prefs.getBool('notificationsEnabled') ?? true;
+      _billSpikesEnabled = AlertPreferencesService.instance.billSpikesEnabled;
+      _budgetAlertsEnabled = AlertPreferencesService.instance.budgetAlertsEnabled;
       _whatsappAlertsEnabled = prefs.getBool('whatsappAlertsEnabled') ?? true;
       _reminderCadence = prefs.getInt('reminderCadence') ?? 90;
       _taskCadence = prefs.getInt('taskCadence') ?? 60;
@@ -487,6 +492,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           onChanged: (value) {
                             setState(() => _notificationsEnabled = value);
                             _markDirty();
+                          },
+                        ),
+                        const Divider(height: 1),
+                        // Saved immediately; takes effect without pressing Save.
+                        SwitchListTile(
+                          title: const Text('Bill spike alerts'),
+                          subtitle: const Text(
+                              'Flag bills unusually higher than your average'),
+                          value: _billSpikesEnabled,
+                          onChanged: (value) async {
+                            setState(() => _billSpikesEnabled = value);
+                            await AlertPreferencesService.instance
+                                .setBillSpikesEnabled(value);
+                          },
+                        ),
+                        const Divider(height: 1),
+                        // Saved immediately: silences the snackbar, the OS
+                        // budget notification and the Money tab badge.
+                        SwitchListTile(
+                          title: const Text('Budget alerts'),
+                          subtitle: const Text(
+                              'Warn when spending nears a category budget'),
+                          value: _budgetAlertsEnabled,
+                          onChanged: (value) async {
+                            setState(() => _budgetAlertsEnabled = value);
+                            await AlertPreferencesService.instance
+                                .setBudgetAlertsEnabled(value);
                           },
                         ),
                         const Divider(height: 1),

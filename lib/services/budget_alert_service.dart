@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/finance.dart';
+import 'alert_preferences_service.dart';
 import 'finance_service.dart';
 import 'notification_service.dart';
 
@@ -119,6 +120,10 @@ class BudgetAlertService {
   }
 
   Future<void> _evaluate() async {
+    // User disabled budget alerts: no notifications, no stream events, no
+    // fired-key bookkeeping. The Money-tab badge reads the same pref.
+    if (!AlertPreferencesService.instance.budgetAlertsEnabled) return;
+
     final budgets = FinanceService.instance.activeBudgets;
     if (budgets.isEmpty) return;
 
