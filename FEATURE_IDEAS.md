@@ -27,6 +27,8 @@ App: **Wazy** — a two-tier operations app for UAE SMEs:
 - Auto document-type detection from OCR text
 - Natural-language quick add ("Add my trade licence, expires 12 March 2027 cost 1500 AED") with parser & interactive dialog
 - Dark mode & system theme switching (`ThemeService`)
+- Renewal history timeline per document (logs past renewal dates, fees, notes, and renewed-by user)
+- Per-document reminder overrides (custom alert days preset chip picker & OS notification rescheduling)
 
 ---
 
@@ -34,8 +36,6 @@ App: **Wazy** — a two-tier operations app for UAE SMEs:
 
 ### Tier 1 — Documents (core loop)
 
-- [ ] **Renewal history timeline** per document (who renewed, when, cost).
-- [ ] **Per-document reminder overrides** — custom alert days (e.g. 45 days instead of the tier default).
 - [ ] **Notes & attachments** per document (photos of receipts, PDFs multi-attachment view).
 
 ### Tier 2 — Money
@@ -62,6 +62,6 @@ App: **Wazy** — a two-tier operations app for UAE SMEs:
 ## Suggested Next Build Priority
 
 1. **Security:** App lock (PIN / Face ID).
-2. **Document Enhancements:** Renewal history timeline & multi-attachment viewer.
+2. **Document Enhancements:** Multi-attachment viewer.
 3. **Money Automations:** Categorization rules & VAT assistant.
 4. **Localization:** Arabic (RTL) support & bilingual Arabic/English OCR.

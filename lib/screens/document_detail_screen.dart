@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../models/expiry_item.dart';
 import '../models/finance.dart';
+import '../models/renewal_record.dart';
 import '../services/finance_service.dart';
 import '../services/document_scanner_service.dart';
 import '../services/notification_service.dart';
@@ -165,8 +166,18 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
 
             const SizedBox(height: 20),
 
+            // Per-document reminder overrides
+            _buildReminderOverridesCard(theme, item),
+
+            const SizedBox(height: 20),
+
             // Renewal process
             _buildRenewalProcess(theme, item),
+
+            const SizedBox(height: 20),
+
+            // Renewal history timeline
+            _buildRenewalHistoryTimeline(theme, item),
 
             const SizedBox(height: 20),
 
@@ -1058,6 +1069,314 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
     );
   }
 
+  Widget _buildReminderOverridesCard(ThemeData theme, ExpiryItem item) {
+    final customDays = item.customReminderDays;
+    final hasCustom = customDays != null && customDays.isNotEmpty;
+    final daysText = hasCustom
+        ? customDays.map((d) => '$d days').join(', ')
+        : '90, 60, 30, 7 days (default ladder)';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: hasCustom
+              ? theme.colorScheme.primary.withOpacity(0.5)
+              : theme.colorScheme.outlineVariant,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.notification_add_rounded,
+                color: theme.colorScheme.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Reminder Overrides',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              if (hasCustom)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    'Custom Alert Days',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            hasCustom
+                ? 'OS notifications scheduled $daysText before expiry date.'
+                : 'Standard 90, 60, 30, and 7-day alert ladder active.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              onPressed: () => _showCustomReminderDaysDialog(context, item),
+              icon: const Icon(Icons.tune_rounded, size: 16),
+              label: Text(hasCustom ? 'Edit Alert Days' : 'Set Custom Alert Days'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCustomReminderDaysDialog(BuildContext context, ExpiryItem item) {
+    final availablePresets = [90, 60, 45, 30, 15, 7, 3, 1];
+    final selected = Set<int>.from(item.customReminderDays ?? [90, 60, 30, 7]);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return AlertDialog(
+            title: const Text('Custom Reminder Alerts'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Select notification alert days before expiry date:',
+                  style: TextStyle(fontSize: 13),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: availablePresets.map((days) {
+                    final isSel = selected.contains(days);
+                    return FilterChip(
+                      label: Text('$days days'),
+                      selected: isSel,
+                      onSelected: (val) {
+                        setModalState(() {
+                          if (val) {
+                            selected.add(days);
+                          } else {
+                            selected.remove(days);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  selected.isEmpty
+                      ? 'No days selected (resets to standard 90/60/30/7 ladder).'
+                      : 'Alerts will fire at: ${selected.toList()..sort((a, b) => b.compareTo(a))} days before expiry.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () async {
+                  final sorted = selected.toList()..sort((a, b) => b.compareTo(a));
+                  final updated = item.copyWith(customReminderDays: sorted.isEmpty ? null : sorted);
+                  await DocumentScannerService.instance.updateItem(updated);
+                  if (!context.mounted) return;
+                  Navigator.pop(ctx);
+                  setState(() {
+                    _item = updated;
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        sorted.isEmpty
+                            ? 'Reset to standard reminder ladder (90/60/30/7 days)'
+                            : 'Custom alert days updated: ${sorted.join(', ')} days',
+                      ),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                },
+                child: const Text('Save Alerts'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildRenewalHistoryTimeline(ThemeData theme, ExpiryItem item) {
+    final history = item.renewalHistory ?? [];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Renewal history',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '${history.length}',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (history.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.history_rounded,
+                  color: theme.colorScheme.outline,
+                  size: 22,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'No past renewals recorded yet. Tap "Mark as renewed" when you complete a renewal to log cost and history.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: history.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final rec = history[history.length - 1 - index]; // Newest first
+              return Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: theme.colorScheme.outlineVariant),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.event_available, color: Colors.green, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Renewed on ${rec.formattedRenewedAt}',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Spacer(),
+                        if (rec.fee != null && rec.fee! > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              'AED ${rec.fee!.toStringAsFixed(0)}',
+                              style: const TextStyle(
+                                color: Colors.green,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Extended: ${rec.formattedPreviousExpiry}  ➔  ${rec.formattedNewExpiry}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    if (rec.renewedBy != null && rec.renewedBy!.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'By: ${rec.renewedBy}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.outline,
+                        ),
+                      ),
+                    ],
+                    if (rec.note != null && rec.note!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Note: "${rec.note}"',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontStyle: FontStyle.italic,
+                          color: theme.colorScheme.outline,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            },
+          ),
+      ],
+    );
+  }
+
   Widget _buildActions(ThemeData theme, ExpiryItem item) {
     return Column(
       children: [
@@ -1108,7 +1427,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
     );
   }
 
-  /// Schedules OS-level local notifications on the 90/60/30/7-day ladder
+  /// Schedules OS-level local notifications on the ladder
   /// for this document (only tiers still in the future fire).
   Future<void> _scheduleReminders(
     BuildContext context,
@@ -1120,6 +1439,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
         item.id,
         item.expiresAt,
         title: item.displayName,
+        customReminderDays: item.customReminderDays,
       );
       if (item.reminderStatus == 0) {
         await DocumentScannerService.instance.setReminderStatus(item.id, 1);
@@ -1127,7 +1447,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            'Reminders scheduled for ${item.displayName} (90/60/30/7 days)',
+            'Reminders scheduled for ${item.displayName}',
           ),
           backgroundColor: Colors.green,
         ),
@@ -1140,18 +1460,98 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
   }
 
   Future<void> _markAsRenewed(BuildContext context, ExpiryItem item) async {
+    final feeController = TextEditingController(
+      text: item.renewalFee != null ? item.renewalFee!.toStringAsFixed(0) : '',
+    );
+    final byController = TextEditingController(text: item.assignedTo ?? '');
+    final noteController = TextEditingController();
+
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Renew ${item.displayName}'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Current Expiry: ${ExpiryItem.formatDate(item.expiresAt)}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: feeController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Renewal fee / cost (AED)',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: byController,
+                decoration: const InputDecoration(
+                  labelText: 'Renewed by (Person / Dept)',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: noteController,
+                decoration: const InputDecoration(
+                  labelText: 'Notes (optional)',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.green),
+            onPressed: () {
+              final feeVal = double.tryParse(feeController.text.trim());
+              Navigator.pop(ctx, {
+                'fee': feeVal,
+                'renewedBy': byController.text.trim(),
+                'note': noteController.text.trim(),
+              });
+            },
+            child: const Text('Confirm Renewal'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == null) return;
+
     try {
-      // Tier glue: renewing in place also offers to log the renewal payment
-      // against the Money tier, closing the loop from either direction.
+      final fee = result['fee'] as double?;
+      final renewedBy = result['renewedBy'] as String?;
+      final note = result['note'] as String?;
+
       final newExpiry = DateTime(
         item.expiresAt.year + 1,
         item.expiresAt.month,
         item.expiresAt.day,
       );
-      await DocumentScannerService.instance
-          .markAsRenewed(item.id, newExpiryDate: newExpiry);
 
-      if ((item.renewalFee ?? 0) > 0) {
+      await DocumentScannerService.instance.markAsRenewed(
+        item.id,
+        newExpiryDate: newExpiry,
+        fee: fee,
+        renewedBy: renewedBy,
+        note: note,
+      );
+
+      if ((fee ?? 0) > 0) {
         await FinanceService.instance.addTransaction(
           FinanceTransaction(
             id: DateTime.now().microsecondsSinceEpoch.toString(),
@@ -1159,32 +1559,31 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
             kind: FinanceKind.expense,
             category: FinanceCategory.renewals,
             title: '${item.displayName} renewal',
-            amount: item.renewalFee!,
+            amount: fee!,
             occurredAt: DateTime.now(),
-            note: 'Logged from document renewal',
+            note: note ?? 'Logged from document renewal',
             documentId: item.id,
           ),
         );
       }
 
+      final updated = await DocumentScannerService.instance.getItemById(item.id);
+
       if (!context.mounted) return;
+      setState(() {
+        _item = updated;
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            (item.renewalFee ?? 0) > 0
-                ? '${item.displayName} renewed — payment of '
-                    '${MoneyFormat.aed(item.renewalFee ?? 0)} logged ✓'
-                : '${item.displayName} renewed — now expires '
-                    '${ExpiryItem.formatDate(newExpiry)} ✓',
+            (fee ?? 0) > 0
+                ? '${item.displayName} renewed — payment of ${MoneyFormat.aed(fee!)} logged & history saved ✓'
+                : '${item.displayName} renewed — now expires ${ExpiryItem.formatDate(newExpiry)} ✓',
           ),
           backgroundColor: Colors.green,
         ),
       );
-      if (context.canPop()) {
-        context.pop();
-      } else {
-        context.go('/documents');
-      }
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

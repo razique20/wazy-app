@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import 'document_collection.dart';
 import 'document_type.dart';
+import 'renewal_record.dart';
 
 class UrgencyLevel {
   final String title;
@@ -124,6 +125,8 @@ class ExpiryItem {
   final String? fileName;
   final String? filePath;
   final int? fileSize;
+  final List<RenewalRecord>? renewalHistory;
+  final List<int>? customReminderDays;
 
   /// Last local/remote mutation timestamp. Used by the offline-first sync
   /// (see DocumentScannerService) for last-writer-wins conflict resolution.
@@ -157,6 +160,8 @@ class ExpiryItem {
     this.fileName,
     this.filePath,
     this.fileSize,
+    this.renewalHistory,
+    this.customReminderDays,
     this.updatedAt,
   });
 
@@ -192,6 +197,11 @@ class ExpiryItem {
       fileName: json['fileName'] as String?,
       filePath: json['filePath'] as String?,
       fileSize: json['fileSize'] as int?,
+      renewalHistory: (json['renewalHistory'] as List<dynamic>?)
+          ?.map((e) => RenewalRecord.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      customReminderDays: (json['customReminderDays'] as List<dynamic>?)
+          ?.cast<int>(),
       updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? ''),
     );
   }
@@ -222,6 +232,8 @@ class ExpiryItem {
       'fileName': fileName,
       'filePath': filePath,
       'fileSize': fileSize,
+      'renewalHistory': renewalHistory?.map((e) => e.toJson()).toList(),
+      'customReminderDays': customReminderDays,
       'updatedAt': updatedAt?.toIso8601String(),
     };
   }
@@ -247,6 +259,8 @@ class ExpiryItem {
     String? fileName,
     String? filePath,
     int? fileSize,
+    List<RenewalRecord>? renewalHistory,
+    List<int>? customReminderDays,
   }) {
     final daysRemaining = expiresAt.difference(DateTime.now()).inDays;
     final urgency = UrgencyLevel.fromDays(daysRemaining);
@@ -274,6 +288,8 @@ class ExpiryItem {
       fileName: fileName,
       filePath: filePath,
       fileSize: fileSize,
+      renewalHistory: renewalHistory,
+      customReminderDays: customReminderDays,
     );
   }
 
@@ -319,6 +335,8 @@ class ExpiryItem {
     String? fileName,
     String? filePath,
     int? fileSize,
+    List<RenewalRecord>? renewalHistory,
+    List<int>? customReminderDays,
     DateTime? updatedAt,
   }) {
     return ExpiryItem(
@@ -346,6 +364,8 @@ class ExpiryItem {
       fileName: fileName ?? this.fileName,
       filePath: filePath ?? this.filePath,
       fileSize: fileSize ?? this.fileSize,
+      renewalHistory: renewalHistory ?? this.renewalHistory,
+      customReminderDays: customReminderDays ?? this.customReminderDays,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }

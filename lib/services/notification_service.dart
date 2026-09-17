@@ -163,16 +163,19 @@ class NotificationService {
     }
   }
 
-  /// Schedule the default escalation ladder for a document:
-  /// 90 / 60 / 30 / 7 days before expiry (only the windows still in the
-  /// future are scheduled).
+  /// Schedule the escalation ladder for a document:
+  /// Default: 90 / 60 / 30 / 7 days before expiry, or custom alert days if provided.
   Future<List<int>> scheduleEscalationLadder(
     String itemId,
     DateTime expiresAt, {
     String? title,
+    List<int>? customReminderDays,
   }) async {
     final scheduled = <int>[];
-    for (final days in const [90, 60, 30, 7]) {
+    final daysList = (customReminderDays != null && customReminderDays.isNotEmpty)
+        ? customReminderDays
+        : const [90, 60, 30, 7];
+    for (final days in daysList) {
       final id = await scheduleReminder(
         itemId,
         days,
@@ -185,10 +188,13 @@ class NotificationService {
     return scheduled;
   }
 
-  /// Cancel every pending reminder for [itemId] (all ladder tiers).
-  Future<void> cancelReminders(String itemId) async {
+  /// Cancel every pending reminder for [itemId] (all ladder tiers or custom offsets).
+  Future<void> cancelReminders(String itemId, {List<int>? customReminderDays}) async {
     await init();
-    for (final days in const [90, 60, 30, 7]) {
+    final daysList = (customReminderDays != null && customReminderDays.isNotEmpty)
+        ? customReminderDays
+        : const [90, 60, 30, 7, 45, 15, 3, 1];
+    for (final days in daysList) {
       try {
         await _plugin.cancel(_notificationId(itemId, days));
         // ignore: avoid_catches_without_on_var_annotations

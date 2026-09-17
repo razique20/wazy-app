@@ -3,9 +3,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:uuid/uuid.dart';
+
 import '../models/expiry_item.dart';
 import '../models/document_type.dart';
 import '../models/document_collection.dart';
+import '../models/renewal_record.dart';
 import 'auth_service.dart';
 import 'collection_service.dart';
 import 'doc_sync.dart';
@@ -308,35 +311,96 @@ class DocumentScannerService extends ChangeNotifier {
 
   /// Mark a document as renewed.
   ///
-  /// When [newExpiryDate] is given the document is *renewed in place*: the
-  /// expiry moves forward, reminders are rescheduled on the 90/60/30/7
-  /// ladder, and the document stays active (the "tier glue" loop — see
-  /// FEATURE_IDEAS.md). Without it the legacy behaviour applies: the
-  /// document is archived (status 'renewed' server-side, removed from the
-  /// active cache locally).
-  Future<void> markAsRenewed(String id, {DateTime? newExpiryDate}) async {
+  /// When [newExpiryDate], [fee], [renewedBy] or [note] is given, the document is
+  /// *renewed in place*: expiry moves forward, a [RenewalRecord] is logged to
+  /// [renewalHistory], and OS reminders are rescheduled. When called with no
+  /// arguments, the legacy archiving behaviour applies: status 'renewed' is set and
+  /// the document leaves the active cache.
+  Future<void> markAsRenewed(
+    String id, {
+    DateTime? newExpiryDate,
+    double? fee,
+    String? renewedBy,
+    String? note,
+  }) async {
     await _ensureInitialized();
     final client = _client;
 
-    if (newExpiryDate != null) {
-      await updateExpiryDate(id, newExpiryDate);
+    final index = _cache.indexWhere((item) => item.id == id);
+    if (index == -1) return;
+
+    final oldItem = _cache[index];
+    final bool renewInPlace = newExpiryDate != null || fee != null || renewedBy != null || note != null;
+
+    if (!renewInPlace) {
+      if (client != null) {
+        try {
+          await client
+              .from('documents')
+              .update({'status': 'renewed'}).eq('id', id);
+        } catch (_) {
+          _enqueueDelete(id);
+        }
+      }
+      await NotificationService.instance.cancelReminders(id);
+      _cache.removeWhere((existing) => existing.id == id);
+      await _saveLocal();
+      notifyListeners();
       return;
     }
 
+    final targetExpiry = newExpiryDate ??
+        DateTime(
+          oldItem.expiresAt.year + 1,
+          oldItem.expiresAt.month,
+          oldItem.expiresAt.day,
+        );
+    final days = targetExpiry.difference(DateTime.now()).inDays;
+    final record = RenewalRecord(
+      id: const Uuid().v4(),
+      renewedAt: DateTime.now(),
+      previousExpiryDate: oldItem.expiresAt,
+      newExpiryDate: targetExpiry,
+      fee: fee ?? oldItem.renewalFee,
+      renewedBy: renewedBy ?? oldItem.assignedTo ?? 'User',
+      note: note ?? 'Document renewed',
+    );
+    final history = <RenewalRecord>[...(oldItem.renewalHistory ?? []), record];
+
+    final updated = oldItem.copyWith(
+      expiresAt: targetExpiry,
+      expiryDate: ExpiryItem.formatDate(targetExpiry),
+      daysRemaining: days,
+      isExpired: days < 0,
+      isActive: true,
+      urgency: UrgencyLevel.fromDays(days),
+      renewalHistory: history,
+      updatedAt: DateTime.now().toUtc(),
+    );
+
+    _cache[index] = updated;
+    _enqueueUpsert(updated);
+
     if (client != null) {
       try {
-        await client
-            .from('documents')
-            .update({'status': 'renewed'}).eq('id', id);
-      } catch (_) {
-        // Offline: queue a delete op so the next sync removes the row
-        // server-side too. Without this the pull phase would resurrect the
-        // renewed document as an active row on the next refresh.
-        _enqueueDelete(id);
-      }
+        await client.from('documents').update({
+          'expires_at': _dateOnly(targetExpiry),
+          'status': 'active',
+        }).eq('id', id);
+        _outbox.removeWhere((op) => op.id == id);
+        await _saveOutbox();
+      } catch (_) {}
     }
-    await NotificationService.instance.cancelReminders(id);
-    _cache.removeWhere((existing) => existing.id == id);
+
+    await NotificationService.instance.cancelReminders(id, customReminderDays: updated.customReminderDays);
+    if (!updated.isExpired) {
+      await NotificationService.instance.scheduleEscalationLadder(
+        id,
+        targetExpiry,
+        title: updated.displayName,
+        customReminderDays: updated.customReminderDays,
+      );
+    }
     await _saveLocal();
     notifyListeners();
   }
