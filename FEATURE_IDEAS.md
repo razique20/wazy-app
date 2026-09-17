@@ -1,67 +1,76 @@
-# Implementation Backlog
+# Wazy AI Features Roadmap & Backlog
 
-App: **Wazy** — a two-tier operations app for UAE SMEs:
-
-- **Tier 1 — Documents (Home & Documents tabs):** expiry tracking, reminders, renewals, OCR scanning & natural-language input.
-- **Tier 2 — Money (Money tab):** transaction log, category budgets, savings envelopes, 90-day cash flow forecast.
-
-**Already shipped:** 
-- Home screen redesign with two-tier bottom nav & minimal branding
-- Document tracking with 4 urgency tiers (Low, Medium, High, Critical)
-- Offline-first local cache + Supabase sync (outbox queue, LWW conflict resolution, offline tombstones)
-- Multi-device & shared collections
-- Transaction log, category budget caps, savings envelopes
-- 90-day renewal outlook & auto-calculated renewal fees
-- Scheduled local OS notifications (90/60/30/7-day ladder with Asia/Dubai timezone support)
-- Custom document types with dynamic icons, user creation flow, and Supabase sync
-- Full filters & sort suite in `/expiry-list` (types, urgency, status, collection, days remaining)
-- Archived & expired documents view with status filter toggles
-- Global live search across documents & transactions with debounced inverted matcher
-- CSV & PDF report export via native share sheet
-- Recurring transaction templates (monthly/quarterly/yearly) with auto-logging & catch-up
-- Budget threshold alerts (80% & 100% warnings via OS notification, snackbars, & tab badge dots)
-- Renewal payment loop (Tier 1 & Tier 2 integration in both directions)
-- Duplicate transaction detection with soft warning dialogs
-- Cash-flow 90-day forecast chart with daily balance projections & renewal dips
-- OCR scan → auto-fill (Google ML Kit text recognition for UAE Trade License, Visa, Ejari, Mulkiya, Emirates ID) with pre-fill review & user confirmation
-- Auto document-type detection from OCR text
-- Natural-language quick add ("Add my trade licence, expires 12 March 2027 cost 1500 AED") with parser & interactive dialog
-- Dark mode & system theme switching (`ThemeService`)
-- Renewal history timeline per document (logs past renewal dates, fees, notes, and renewed-by user)
-- Per-document reminder overrides (custom alert days preset chip picker & OS notification rescheduling)
+A curated roadmap of **Basic to Hard AI Features** tailored for **Wazy** (UAE SME Document Operations & Money Tracking App).
 
 ---
 
-## Remaining Backlog & Feature Ideas
+## 🟢 Level 1: Basic AI Features (Quick Wins & Smart Heuristics)
 
-### Tier 1 — Documents (core loop)
+- [ ] **Smart Auto-Categorization & Tagging Engine** `[Basic]`
+  - *Description*: Uses TF-IDF / fuzzy string matching and user historical habits to automatically classify unstructured transactions into categories (e.g., "Talabat" → Food & Dining, "Salik" → Transport).
+  - *Tech/Implementation*: Pure Dart string matching / Levenshtein distance & category memory index.
 
-- [ ] **Notes & attachments** per document (photos of receipts, PDFs multi-attachment view).
+- [ ] **Dynamic Expiry Risk & Penalty Predictor** `[Basic]`
+  - *Description*: Calculates an "Expiry Urgency & Risk Score" based on document authority (e.g., RTA vs GDRFA vs Ejari) and alerts users earlier for high-penalty documents (e.g., Late Ejari renewal vs Visa overstay fine calculation).
+  - *Tech/Implementation*: Rule-based heuristic engine with authority fine lookup tables.
 
-### Tier 2 — Money
-
-- [ ] **Categorization rules** — "any title containing DEWA → Utilities"; runs on save and can retro-apply to existing records.
-- [ ] **Auto-envelope from outlook** — one tap on the renewal outlook card creates/refreshes an envelope per upcoming renewal (target = renewal fee).
-- [ ] **Receipt photo attachment** per transaction (reuse `file_picker`).
-- [ ] **VAT assistant** — 5% input/output VAT fields per transaction with a quarterly summary (UAE VAT readiness; no filing claims).
-
-### Platform & UX
-
-- [ ] **Arabic localization (RTL)** — table stakes for the UAE market.
-
-### Security
-
-- [ ] **App lock** — PIN / Face ID via `local_auth` (documents are sensitive).
-
-### AI features
-
-- [ ] **Arabic + English OCR** — ML Kit supports both scripts; bilingual extraction is a real differentiator for UAE documents.
+- [ ] **Bill Spike & Anomaly Detection** `[Basic]`
+  - *Description*: Automatically detects unusual price hikes in recurring expenses (e.g., "DEWA utility bill is 35% higher than your 3-month average").
+  - *Tech/Implementation*: Statistical moving average & standard deviation anomaly detection.
 
 ---
 
-## Suggested Next Build Priority
+## 🟡 Level 2: Intermediate AI Features (On-Device ML & Vision)
 
-1. **Security:** App lock (PIN / Face ID).
-2. **Document Enhancements:** Multi-attachment viewer.
-3. **Money Automations:** Categorization rules & VAT assistant.
-4. **Localization:** Arabic (RTL) support & bilingual Arabic/English OCR.
+- [ ] **Bilingual Arabic + English OCR & Document Extraction** `[Intermediate]`
+  - *Description*: On-device multi-script OCR extracting bilingual fields (Arabic & English names, Trade License numbers, authority stamps, Ejari tenancy terms) from UAE official documents.
+  - *Tech/Implementation*: `google_mlkit_text_recognition` with Arabic script recognition package.
+
+- [ ] **Smart Camera Receipt & Invoice Scanner** `[Intermediate]`
+  - *Description*: Users point camera at paper receipts or upload PDF invoices to automatically extract vendor name, total amount, 5% UAE VAT portion, and date.
+  - *Tech/Implementation*: Crop & edge detection (`image_picker` / `edge_detection`) + ML Kit text bounding box parsing.
+
+- [ ] **Voice-to-Record Assistant (Speech-to-Text NL)** `[Intermediate]`
+  - *Description*: Hands-free natural language quick add via voice. User speaks: *"Paid 450 AED for DEWA yesterday"*, and the app transcribes & auto-populates the transaction/document form.
+  - *Tech/Implementation*: `speech_to_text` Flutter package combined with `NaturalLanguageParserService`.
+
+---
+
+## 🟠 Level 3: Advanced AI Features (Generative AI & LLMs)
+
+- [ ] **Wazy AI Copilot (UAE SME Compliance & Renewal Advisor)** `[Advanced]`
+  - *Description*: In-app AI chat assistant that answers UAE business compliance questions (e.g., *"What documents do I need to renew a Dubai DED Trade License?"*, *"What is the penalty for late Ejari renewal?"*).
+  - *Tech/Implementation*: Gemini 1.5 Flash API integration + RAG (Retrieval-Augmented Generation) on UAE business guidelines.
+
+- [ ] **AI Smart Contract & Policy Summarizer** `[Advanced]`
+  - *Description*: Scans uploaded Ejari contracts, insurance policies, or commercial leases to extract key clauses (notice period before renewal, security deposit conditions, cancellation terms).
+  - *Tech/Implementation*: Gemini API document vision / PDF text prompt summarization.
+
+- [ ] **AI Monthly Financial Executive Summary** `[Advanced]`
+  - *Description*: Generates a monthly natural language financial report (e.g., *"In August, spending rose by 12% due to office rent and trade license renewal. You are on track to save AED 4,500 in your envelope."*).
+  - *Tech/Implementation*: LLM prompt generation based on monthly summary data & budget trends.
+
+---
+
+## 🔴 Level 4: Hard / Complex AI Features (Predictive Analytics & Agents)
+
+- [ ] **Predictive 12-Month Cash Flow & Runway Engine** `[Hard]`
+  - *Description*: Machine learning time-series model predicting future cash balances, cash dips, and SME runway up to 12 months ahead by modeling seasonal revenue, recurring bills, and scheduled document renewal peaks.
+  - *Tech/Implementation*: Regression / ARIMA / Exponential Smoothing model implemented in Dart / ONNX Runtime Flutter plugin.
+
+- [ ] **Autonomous Document Renewal Agent** `[Hard]`
+  - *Description*: An autonomous AI agent workflow that monitors expiring documents, auto-drafts pre-filled renewal applications, generates step-by-step checklist tasks, calculates exact government fees, and sets intelligent reminder cascades.
+  - *Tech/Implementation*: Multi-step agent workflow engine with tool calling and state persistence.
+
+- [ ] **AI Receipt Audit & Fraud/Duplicate Detection Engine** `[Hard]`
+  - *Description*: Advanced image forensics & text comparison that detects altered receipts (edited amounts, tampered dates), duplicate expense claims across team members, and non-deductible personal expenses for UAE corporate tax & VAT compliance.
+  - *Tech/Implementation*: Image hashing + LLM vision verification pipeline.
+
+---
+
+## 🎯 Recommended Implementation Order
+
+1. **Quick Win**: Smart Auto-Categorization & Tagging Engine `[Basic]`
+2. **High Value**: Smart Camera Receipt & Invoice Scanner `[Intermediate]`
+3. **Huge WOW Factor**: Wazy AI Copilot (UAE SME Compliance Advisor) `[Advanced]`
+4. **Cutting Edge**: Autonomous Document Renewal Agent `[Hard]`
