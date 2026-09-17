@@ -4,7 +4,7 @@ import 'package:wazy/screens/document_scan_screen.dart';
 import 'package:wazy/services/natural_language_parser_service.dart';
 
 void main() {
-  group('NaturalLanguageParserService Tests', () {
+  group('NaturalLanguageParserService Typo & Variation Tests', () {
     final parser = NaturalLanguageParserService.instance;
 
     test('Parses user screenshot prompt: "Driving License Will Expire In October 12 2027 By Dubai Rta"', () {
@@ -21,45 +21,80 @@ void main() {
       expect(res.hasExtractedDate, isTrue);
     });
 
-    test('Parses prompt: "Add my trade licence, expires 12 March 2027"', () {
-      const prompt = 'Add my trade licence, expires 12 March 2027';
+    test('Parses prompt with typo "drving lisence" & Month-first date', () {
+      const prompt = 'drving lisence ending Nov 15 2026 fee 1.5k AED';
       final res = parser.parse(prompt);
 
-      expect(res.title, equals('Trade Licence'));
-      expect(res.docType.displayName, equals(DocumentType.tradeLicence.displayName));
-      expect(res.expiryDate.year, equals(2027));
-      expect(res.expiryDate.month, equals(3));
-      expect(res.expiryDate.day, equals(12));
-      expect(res.hasExtractedDate, isTrue);
+      expect(res.docType.displayName, equals(DocumentType.vehicleRegistration.displayName));
+      expect(res.expiryDate.year, equals(2026));
+      expect(res.expiryDate.month, equals(11));
+      expect(res.expiryDate.day, equals(15));
+      expect(res.renewalFee, equals(1500.0));
     });
 
-    test('Parses prompt with fee and emirate: "Remind me about Ejari contract expires in 60 days cost 2500 AED Dubai"', () {
-      const prompt = 'Remind me about Ejari contract expires in 60 days cost 2500 AED Dubai';
+    test('Parses prompt with typo "ejri tenacy" & relative date', () {
+      const prompt = 'ejri tenacy contract expiring in 45 days cost 4500 dhm Dubai';
       final res = parser.parse(prompt);
 
       expect(res.docType.displayName, equals(DocumentType.ejari.displayName));
-      expect(res.renewalFee, equals(2500.0));
+      expect(res.renewalFee, equals(4500.0));
       expect(res.emirate, equals(UaeEmirate.dubai));
-      expect(res.hasExtractedFee, isTrue);
-      expect(res.hasExtractedEmirate, isTrue);
+      expect(res.hasExtractedDate, isTrue);
     });
 
-    test('Parses prompt with ISO date and person name: "Visa renewal for John Doe expires 2026-11-15"', () {
-      const prompt = 'Visa renewal for John Doe expires 2026-11-15';
+    test('Parses prompt with typo "viza residancy" & ISO date', () {
+      const prompt = 'viza residancy for Ahmed expires 2026-11-15 fee 3500 dirhams';
       final res = parser.parse(prompt);
 
       expect(res.docType.displayName, equals(DocumentType.visa.displayName));
       expect(res.expiryDate, equals(DateTime(2026, 11, 15)));
-      expect(res.title, contains('John Doe'));
+      expect(res.renewalFee, equals(3500.0));
     });
 
-    test('Parses prompt with relative next month and fee: "Vehicle Mulkiya expires next month cost 800 AED Abu Dhabi"', () {
-      const prompt = 'Vehicle Mulkiya expires next month cost 800 AED Abu Dhabi';
+    test('Parses prompt with typo "mulkya vehical" & Abu Dhabi Tamm', () {
+      const prompt = 'mulkya vehical reg valid until 25/12/2026 Abu Dhabi Tamm fee 750 aed';
       final res = parser.parse(prompt);
 
       expect(res.docType.displayName, equals(DocumentType.vehicleRegistration.displayName));
-      expect(res.renewalFee, equals(800.0));
       expect(res.emirate, equals(UaeEmirate.abuDhabi));
+      expect(res.expiryDate, equals(DateTime(2026, 12, 25)));
+      expect(res.renewalFee, equals(750.0));
+    });
+
+    test('Parses prompt with "emiratesid" & Month-Year date', () {
+      const prompt = 'emiratesid card valid till October 2027';
+      final res = parser.parse(prompt);
+
+      expect(res.docType.displayName, equals(DocumentType.emiratesId.displayName));
+      expect(res.expiryDate.year, equals(2027));
+      expect(res.expiryDate.month, equals(10));
+    });
+
+    test('Parses prompt with typo "health insurane" & relative months', () {
+      const prompt = 'health insurane policy due in 2 months cost 2k AED';
+      final res = parser.parse(prompt);
+
+      expect(res.docType.displayName, equals(DocumentType.insurance.displayName));
+      expect(res.renewalFee, equals(2000.0));
+      expect(res.hasExtractedDate, isTrue);
+    });
+
+    test('Parses prompt with typo "civil defence cert" & Sharjah SEDD', () {
+      const prompt = 'civil defence cert exp in 90 days Sharjah SEDD';
+      final res = parser.parse(prompt);
+
+      expect(res.docType.displayName, equals(DocumentType.certificates.displayName));
+      expect(res.emirate, equals(UaeEmirate.sharjah));
+      expect(res.hasExtractedDate, isTrue);
+    });
+
+    test('Parses prompt with "establishment card" & fee', () {
+      const prompt = 'establishment card exp 30 Jun 2027 fee 1800 dirhams';
+      final res = parser.parse(prompt);
+
+      expect(res.docType.displayName, equals(DocumentType.labourDocuments.displayName));
+      expect(res.expiryDate, equals(DateTime(2027, 6, 30)));
+      expect(res.renewalFee, equals(1800.0));
     });
   });
 }

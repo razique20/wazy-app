@@ -242,61 +242,76 @@ class NaturalLanguageParserService {
   DocumentTypeMeta _extractDocumentType(String lower) {
     final registry = DocumentTypeRegistry.instance;
 
-    // Driving License & Vehicle / Mulkiya / RTA Card
-    if (lower.contains('driving license') ||
-        lower.contains('driving licence') ||
-        lower.contains('driver license') ||
-        lower.contains('driver\'s license') ||
+    // Driving License & Vehicle / Mulkiya / RTA Card (including typos like drving, driver, driveing, lisence, mulkya)
+    if (lower.contains('driving') ||
+        lower.contains('driver') ||
+        lower.contains('drving') ||
+        lower.contains('driveing') ||
         lower.contains('mulkiya') ||
-        lower.contains('vehicle registration') ||
+        lower.contains('mulkya') ||
+        lower.contains('moolkiya') ||
         lower.contains('vehicle') ||
+        lower.contains('vehical') ||
+        lower.contains('vehcle') ||
         lower.contains('car registration')) {
       return registry.byEnum(DocumentType.vehicleRegistration);
     }
 
-    // Ejari & Tenancy / Rental / Lease
+    // Ejari & Tenancy / Rental / Lease (including typos like ejri, ijari, tenacy)
     if (lower.contains('ejari') ||
+        lower.contains('ejri') ||
+        lower.contains('ijari') ||
         lower.contains('tenancy') ||
+        lower.contains('tenacy') ||
         lower.contains('lease') ||
         lower.contains('rent') ||
+        lower.contains('rental') ||
         lower.contains('apartment contract')) {
       return registry.byEnum(DocumentType.ejari);
     }
 
-    // Visa & Residence / Residency
+    // Visa & Residence / Residency (including typos like viza, residancy, passprt)
     if (lower.contains('visa') ||
+        lower.contains('viza') ||
         lower.contains('residency') ||
+        lower.contains('residancy') ||
         lower.contains('residence') ||
         lower.contains('entry permit') ||
-        lower.contains('passport')) {
+        lower.contains('passport') ||
+        lower.contains('passprt')) {
       return registry.byEnum(DocumentType.visa);
     }
 
-    // Emirates ID
+    // Emirates ID (including typos like emirate id, emiratesid, eid)
     if (lower.contains('emirates id') ||
+        lower.contains('emirate id') ||
+        lower.contains('emiratesid') ||
         lower.contains('eid') ||
         lower.contains('national id') ||
         lower.contains('identity card')) {
       return registry.byEnum(DocumentType.emiratesId);
     }
 
-    // Trade License & Commercial License / Business License / DED
-    if (lower.contains('trade licence') ||
-        lower.contains('trade license') ||
-        lower.contains('commercial license') ||
-        lower.contains('commercial licence') ||
+    // Trade License & Commercial License / Business License / DED (including typos like licens, lisence, lisense, licnse)
+    if (lower.contains('trade') ||
+        lower.contains('commercial') ||
         lower.contains('business license') ||
         lower.contains('ded license') ||
         lower.contains('licence') ||
-        lower.contains('license')) {
+        lower.contains('license') ||
+        lower.contains('licens') ||
+        lower.contains('lisence') ||
+        lower.contains('lisense') ||
+        lower.contains('licnse')) {
       return registry.byEnum(DocumentType.tradeLicence);
     }
 
-    // Insurance
+    // Insurance (including typos like insurane, insurence, polcy)
     if (lower.contains('insurance') ||
-        lower.contains('health insurance') ||
-        lower.contains('medical insurance') ||
-        lower.contains('policy')) {
+        lower.contains('insurane') ||
+        lower.contains('insurence') ||
+        lower.contains('policy') ||
+        lower.contains('polcy')) {
       return registry.byEnum(DocumentType.insurance);
     }
 
@@ -304,16 +319,19 @@ class NaturalLanguageParserService {
     if (lower.contains('labour') ||
         lower.contains('labor') ||
         lower.contains('establishment card') ||
+        lower.contains('est card') ||
         lower.contains('company card') ||
         lower.contains('mohre')) {
       return registry.byEnum(DocumentType.labourDocuments);
     }
 
-    // Civil Defense / Safety / Certificates
+    // Civil Defense / Safety / Certificates (including typos like certifcate)
     if (lower.contains('civil defense') ||
         lower.contains('civil defence') ||
-        lower.contains('safety certificate') ||
-        lower.contains('certificate')) {
+        lower.contains('safety') ||
+        lower.contains('cert') ||
+        lower.contains('certificate') ||
+        lower.contains('certifcate')) {
       return registry.byEnum(DocumentType.certificates);
     }
 
@@ -321,8 +339,18 @@ class NaturalLanguageParserService {
   }
 
   (double, String)? _extractFee(String text) {
+    // Check 'k' multiplier e.g. 1.5k AED or 2k AED
+    final kRegex = RegExp(r'\b(\d+(?:\.\d{1,2})?)\s*k\s*(?:aed|dirhams|dhs|dh)?\b', caseSensitive: false);
+    final kMatch = kRegex.firstMatch(text);
+    if (kMatch != null) {
+      final numVal = double.tryParse(kMatch.group(1)!);
+      if (numVal != null) {
+        return (numVal * 1000, kMatch.group(0)!);
+      }
+    }
+
     final aedRegex = RegExp(
-      r'\b(?:aed|dirhams|dhs)\s*(\d+(?:\.\d{1,2})?)\b|\b(\d+(?:\.\d{1,2})?)\s*(?:aed|dirhams|dhs)\b',
+      r'\b(?:aed|dirhams|dhs|dhm|dhms)\s*(\d+(?:\.\d{1,2})?)\b|\b(\d+(?:\.\d{1,2})?)\s*(?:aed|dirhams|dhs|dhm|dhms)\b',
       caseSensitive: false,
     );
     final aedMatch = aedRegex.firstMatch(text);
@@ -337,7 +365,7 @@ class NaturalLanguageParserService {
     }
 
     final costRegex = RegExp(
-      r'\b(?:cost|fee|price|amount)\s*:?\s*(\d+(?:\.\d{1,2})?)\b',
+      r'\b(?:cost|cst|fee|fe|price|amount|val|charge|charges)\s*:?\s*(\d+(?:\.\d{1,2})?)\b',
       caseSensitive: false,
     );
     final costMatch = costRegex.firstMatch(text);
