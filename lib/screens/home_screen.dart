@@ -280,6 +280,7 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       child: Row(
         children: [
+          // Left: collection avatar + switcher.
           CircleAvatar(
             backgroundColor: theme.colorScheme.primaryContainer,
             child: Icon(
@@ -287,9 +288,6 @@ class _HomeScreenState extends State<HomeScreen> {
               color: theme.colorScheme.onPrimaryContainer,
             ),
           ),
-          const Spacer(),
-          // Notifications bell: opens the alert list sheet.
-          _buildNotificationBell(theme),
           const SizedBox(width: 12),
           Expanded(
             child: InkWell(
@@ -326,6 +324,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
+          // Right: notifications bell (opens the alert list sheet).
+          _buildNotificationBell(theme),
         ],
       ),
     );
