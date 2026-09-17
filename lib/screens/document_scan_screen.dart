@@ -12,6 +12,7 @@ import '../models/expiry_item.dart';
 import '../services/collection_service.dart';
 import '../services/custom_document_type_service.dart';
 import '../services/document_scanner_service.dart';
+import '../services/uae_document_ocr_service.dart';
 
 enum UaeEmirate {
   dubai('Dubai'),
@@ -104,6 +105,8 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
   DateTime _expiresAt = DateTime.now().add(const Duration(days: 365));
   PlatformFile? _attachedFile;
   bool _isSaving = false;
+  bool _isScanningOcr = false;
+  UaeOcrResult? _ocrResult;
 
   @override
   void initState() {
@@ -124,6 +127,104 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
     super.dispose();
   }
 
+  Future<void> _runOcrScan(String filePath) async {
+    final ext = filePath.split('.').last.toLowerCase();
+    final isImage = ['png', 'jpg', 'jpeg'].contains(ext);
+
+    if (!isImage) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('OCR extraction is optimized for image documents (PNG, JPG). For PDFs, enter details manually.'),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isScanningOcr = true);
+
+    try {
+      final res = await UaeDocumentOcrService.instance.processImageFile(filePath);
+
+      if (!mounted) return;
+
+      if (!res.hasAnyExtractedField) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No clear UAE document fields recognized. You can still enter details manually.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        setState(() {
+          _isScanningOcr = false;
+          _ocrResult = null;
+        });
+        return;
+      }
+
+      setState(() {
+        _ocrResult = res;
+        _isScanningOcr = false;
+
+        // Auto-fill extracted values into form fields
+        if (res.title != null && res.title!.isNotEmpty) {
+          _titleController.text = res.title!;
+        }
+        if (res.documentType != null) {
+          _docType = res.documentType!;
+        }
+        if (res.expiryDate != null) {
+          _expiresAt = res.expiryDate!;
+        }
+        if (res.emirate != null) {
+          _selectedEmirate = res.emirate!;
+          final list = _emirateAuthorities[res.emirate!] ?? [];
+          if (res.authority != null && list.contains(res.authority)) {
+            _selectedAuthority = res.authority!;
+            _isCustomAuthority = false;
+            _locationController.text = res.authority!;
+          } else if (list.isNotEmpty) {
+            _selectedAuthority = list.first;
+            _isCustomAuthority = false;
+            _locationController.text = list.first;
+          }
+        }
+
+        // Add document number to description if found
+        if (res.documentNumber != null && res.documentNumber!.isNotEmpty) {
+          if (!_descriptionController.text.contains(res.documentNumber!)) {
+            final prefix = _descriptionController.text.trim().isNotEmpty
+                ? '${_descriptionController.text.trim()}\n'
+                : '';
+            _descriptionController.text = '${prefix}Doc No: ${res.documentNumber}';
+          }
+        }
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.bolt, color: Colors.amber),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text('Form pre-filled from scan! Please review & confirm before saving.'),
+              ),
+            ],
+          ),
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isScanningOcr = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('OCR extraction error: $e')),
+      );
+    }
+  }
+
   Future<void> _pickFile() async {
     try {
       final result = await FilePicker.platform.pickFiles(
@@ -137,6 +238,7 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
         final file = result.files.first;
         setState(() {
           _attachedFile = file;
+          _ocrResult = null;
           if (_titleController.text.trim().isEmpty) {
             final nameWithoutExt = file.name.contains('.')
                 ? file.name.substring(0, file.name.lastIndexOf('.'))
@@ -147,6 +249,14 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
             }
           }
         });
+
+        // Trigger OCR automatically for image files
+        if (file.path != null) {
+          final ext = file.extension?.toLowerCase();
+          if (ext == 'png' || ext == 'jpg' || ext == 'jpeg') {
+            _runOcrScan(file.path!);
+          }
+        }
       }
     } catch (e) {
       if (!mounted) return;
@@ -446,7 +556,7 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Supports PDF, DOC, XLS, PNG, JPG',
+                          'Supports PDF, DOC, XLS, PNG, JPG (Auto-OCR for Images)',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.outline,
                           ),
@@ -456,68 +566,172 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
                   ),
                 )
               else
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerLow,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: theme.colorScheme.primary),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.insert_drive_file_outlined,
+                              color: theme.colorScheme.onPrimaryContainer,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _attachedFile!.name,
+                                  style: theme.textTheme.bodyLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${(_attachedFile!.size / 1024).toStringAsFixed(0)} KB • ${_attachedFile!.extension?.toUpperCase() ?? "FILE"}',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.outline,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded),
+                            onPressed: () => setState(() {
+                              _attachedFile = null;
+                              _ocrResult = null;
+                            }),
+                            tooltip: 'Remove file',
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_attachedFile?.path != null &&
+                        ['png', 'jpg', 'jpeg'].contains(_attachedFile!.extension?.toLowerCase())) ...[
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          onPressed: _isScanningOcr
+                              ? null
+                              : () => _runOcrScan(_attachedFile!.path!),
+                          icon: const Icon(Icons.bolt_rounded, size: 18),
+                          label: const Text('Re-scan Image with OCR'),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+
+              const SizedBox(height: 16),
+
+              // Scanning indicator
+              if (_isScanningOcr)
                 Container(
-                  padding: const EdgeInsets.all(14),
+                  padding: const EdgeInsets.all(16),
+                  margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerLow,
+                    color: theme.colorScheme.primaryContainer.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: theme.colorScheme.primary),
                   ),
-                  child: Row(
+                  child: const Row(
                     children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          Icons.insert_drive_file_outlined,
-                          color: theme.colorScheme.onPrimaryContainer,
-                        ),
+                      SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2.5),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _attachedFile!.name,
-                              style: theme.textTheme.bodyLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              'Scanning document with ML Kit OCR...',
+                              style: TextStyle(fontWeight: FontWeight.bold),
                             ),
-                            const SizedBox(height: 2),
                             Text(
-                              '${(_attachedFile!.size / 1024).toStringAsFixed(0)} KB • ${_attachedFile!.extension?.toUpperCase() ?? "FILE"}',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.outline,
-                              ),
+                              'Extracting expiry date, license no, title & jurisdiction...',
+                              style: TextStyle(fontSize: 12),
                             ),
                           ],
                         ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close_rounded),
-                        onPressed: () => setState(() => _attachedFile = null),
-                        tooltip: 'Remove file',
                       ),
                     ],
                   ),
                 ),
 
-              const SizedBox(height: 20),
+              // OCR Summary Banner
+              if (_ocrResult != null && !_isScanningOcr)
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.amber.shade400),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.bolt, color: Colors.amber.shade900),
+                          const SizedBox(width: 6),
+                          Text(
+                            '⚡ Fields Pre-filled from Document Scan',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.amber.shade900,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Review the auto-filled details below. Make any adjustments before tapping Confirm & Save.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.amber.shade900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
               TextFormField(
                 controller: _titleController,
                 textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Document Title *',
                   hintText: 'e.g. Dubai Trade Licence 2026',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.description_outlined),
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.description_outlined),
+                  suffixIcon: _ocrResult?.title != null
+                      ? const Tooltip(
+                          message: 'Auto-filled from OCR scan',
+                          child: Icon(Icons.bolt, color: Colors.amber, size: 20),
+                        )
+                      : null,
                 ),
                 validator: (val) {
                   if (val == null || val.trim().isEmpty) {
@@ -530,9 +744,15 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
               DropdownButtonFormField<DocumentTypeMeta>(
                 initialValue: _docType,
                 isExpanded: true,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Document Category',
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
+                  suffixIcon: _ocrResult?.documentType != null
+                      ? const Tooltip(
+                          message: 'Auto-filled from OCR scan',
+                          child: Icon(Icons.bolt, color: Colors.amber, size: 20),
+                        )
+                      : null,
                 ),
                 items: DocumentTypeRegistry.instance.typesForPicker.map((t) {
                   return DropdownMenuItem(
@@ -569,10 +789,16 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
               // Emirate Dropdown
               DropdownButtonFormField<UaeEmirate>(
                 value: _selectedEmirate,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Emirate / Jurisdiction',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.map_rounded),
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.map_rounded),
+                  suffixIcon: _ocrResult?.emirate != null
+                      ? const Tooltip(
+                          message: 'Auto-filled from OCR scan',
+                          child: Icon(Icons.bolt, color: Colors.amber, size: 20),
+                        )
+                      : null,
                 ),
                 items: UaeEmirate.values.map((e) {
                   return DropdownMenuItem(
@@ -661,10 +887,16 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
                 onTap: _pickExpiryDate,
                 borderRadius: BorderRadius.circular(4),
                 child: InputDecorator(
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Expiry Date *',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.calendar_today_rounded),
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.calendar_today_rounded),
+                    suffixIcon: _ocrResult?.expiryDate != null
+                        ? const Tooltip(
+                            message: 'Auto-filled from OCR scan',
+                            child: Icon(Icons.bolt, color: Colors.amber, size: 20),
+                          )
+                        : null,
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -713,10 +945,16 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
               TextFormField(
                 controller: _descriptionController,
                 maxLines: 3,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Notes & Information (Optional)',
                   hintText: 'Add license number, TRN, or renewal steps...',
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
+                  suffixIcon: _ocrResult?.documentNumber != null
+                      ? const Tooltip(
+                          message: 'License/Document number detected',
+                          child: Icon(Icons.bolt, color: Colors.amber, size: 20),
+                        )
+                      : null,
                 ),
               ),
               const SizedBox(height: 28),
@@ -728,15 +966,23 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
-                    : const Icon(Icons.cloud_upload_rounded),
-                label: Text(_isSaving ? 'Saving...' : 'Save document'),
+                    : Icon(_ocrResult != null
+                        ? Icons.check_circle_rounded
+                        : Icons.cloud_upload_rounded),
+                label: Text(_isSaving
+                    ? 'Saving...'
+                    : _ocrResult != null
+                        ? 'Confirm & Save Document'
+                        : 'Save document'),
                 style: FilledButton.styleFrom(
+                  backgroundColor: _ocrResult != null ? Colors.green.shade700 : null,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
               ),
+
             ],
           ),
         ),

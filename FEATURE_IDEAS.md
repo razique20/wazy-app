@@ -74,9 +74,9 @@ App: **Wazy** — a two-tier operations app for UAE SMEs:
 All AI runs **on-device via ML Kit** — free, private, works offline. Nothing here
 needs an LLM budget or server-side calls.
 
-- [ ] **OCR scan → auto-fill** — `google_mlkit_text_recognition` scans a trade licence / visa / Ejari certificate and pre-fills name, number, expiry date, emirate. Include specialized parsing for UAE date formats (visa stickers, Mulkiya, Ejari) and prompt the user to fix unreadable fields before saving. Biggest UX upgrade available — the scan flow currently has zero extraction.
+- [x] **OCR scan → auto-fill** — ✅ implemented: `google_mlkit_text_recognition` scans uploaded document images (Trade License, Visa, Ejari, Mulkiya, Emirates ID) and extracts title, document number, document category, expiry date (with UAE date format support), emirate, and issuing authority. Forms are auto-filled with visual "⚡ Auto-filled" badges, and the user must review and explicitly tap **Confirm & Save Document** before saving.
 - [ ] **Arabic + English OCR** — ML Kit supports both scripts; bilingual extraction is a real differentiator for UAE documents.
-- [ ] **Auto document-type detection** — classify the OCR text into one of the 13 `DocumentType` values (keyword rules first, tiny model later). Removes the manual type-picker step.
+- [x] **Auto document-type detection** — ✅ implemented: automatic classification of OCR text into Wazy document categories (`tradeLicence`, `residencyVisa`, `ejari`, `vehicleRegistration`, `emiratesId`, `establishmentCard`, `healthInsurance`, `civilDefense`).
 - [ ] **Natural-language add** — "Add my trade licence, expires 12 March 2027" → parsed into an `ExpiryItem` (regex/date parser).
 
 ---
