@@ -210,70 +210,44 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildQuickActionsRow(ThemeData theme) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => context.push('/scan'),
-                  icon: const Icon(Icons.add_task_rounded, size: 18),
-                  label: const Text(
-                    'Add Document',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: WazyColors.navyPrimary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 2,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => context.go('/money'),
-                  icon: const Icon(Icons.add_card_rounded, size: 18),
-                  label: const Text(
-                    'Add Fund / Record',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: WazyColors.cyanSecondary,
-                    foregroundColor: const Color(0xFF0A0E1A),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 2,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () async {
-                final created = await NaturalLanguageAddDialog.show(context);
-                if (created != null) _loadData();
-              },
-              icon: const Icon(Icons.bolt_rounded, size: 18, color: Colors.amber),
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: () => context.push('/scan'),
+              icon: const Icon(Icons.add_task_rounded, size: 18),
               label: const Text(
-                '⚡ Quick Add with Natural Language',
+                'Add Document',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 11),
-                side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.5)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: WazyColors.navyPrimary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
+                elevation: 2,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: () => context.go('/money'),
+              icon: const Icon(Icons.add_card_rounded, size: 18),
+              label: const Text(
+                'Add Fund / Record',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: WazyColors.cyanSecondary,
+                foregroundColor: const Color(0xFF0A0E1A),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 2,
               ),
             ),
           ),

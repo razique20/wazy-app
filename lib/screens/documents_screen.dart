@@ -256,11 +256,35 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
               child: CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
+                  // Quick Add with Natural Language Banner
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          final created = await NaturalLanguageAddDialog.show(context);
+                          if (created != null) _loadData();
+                        },
+                        icon: const Icon(Icons.bolt_rounded, size: 20, color: Colors.amber),
+                        label: const Text(
+                          '⚡ Quick Add with Natural Language',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.4)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                   // Filter chips row
                   SliverToBoxAdapter(
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
                       child: Row(
                         children: [
                           _statusChip(theme, 'All', _DocFilter.all,
@@ -369,14 +393,32 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                 ],
               ),
             ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'documents_add',
-        onPressed: () async {
-          await context.push('/scan');
-          await _loadData();
-        },
-        icon: const Icon(Icons.add),
-        label: const Text('Add Document'),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          FloatingActionButton.extended(
+            heroTag: 'nl_quick_add',
+            onPressed: () async {
+              final created = await NaturalLanguageAddDialog.show(context);
+              if (created != null) await _loadData();
+            },
+            icon: const Icon(Icons.bolt_rounded, color: Colors.amber),
+            label: const Text('⚡ Quick Add (NL)'),
+            backgroundColor: WazyColors.navyPrimary,
+            foregroundColor: Colors.white,
+          ),
+          const SizedBox(height: 8),
+          FloatingActionButton.extended(
+            heroTag: 'documents_add',
+            onPressed: () async {
+              await context.push('/scan');
+              await _loadData();
+            },
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('Full Form / Upload'),
+          ),
+        ],
       ),
     );
   }
