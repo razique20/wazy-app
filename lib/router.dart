@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'models/finance.dart';
 import 'theme/app_theme.dart';
 import 'models/expiry_item.dart';
+import 'services/alert_preferences_service.dart';
+import 'services/anomaly_detection_service.dart';
 import 'services/budget_alert_service.dart';
 import 'services/document_scanner_service.dart';
 import 'services/finance_service.dart';
@@ -162,6 +164,11 @@ class _AppShell extends StatefulWidget {
 class _AppShellState extends State<_AppShell> {
   List<ExpiryItem> _items = [];
   BudgetStatusResult? _budgetStatus;
+  int _spikeCount = 0;
+
+  /// Navbar index of the bell (opens the notifications sheet, not a tab).
+  /// Profile sits one position after it, mapping to branch 3.
+  static const int _bellNavIndex = 3;
 
   @override
   void initState() {
@@ -187,7 +194,20 @@ class _AppShellState extends State<_AppShell> {
   }
 
   void _refreshBudgetStatus() {
-    setState(() => _budgetStatus = BudgetAlertService.instance.worstStatus);
+    setState(() {
+      // Badge mirrors the alerts: hidden entirely when the user disabled
+      // budget alerts in Profile.
+      _budgetStatus = AlertPreferencesService.instance.budgetAlertsEnabled
+          ? BudgetAlertService.instance.worstStatus
+          : null;
+
+      // Bell badge: bill spike count (0 when spikes are muted).
+      _spikeCount = AlertPreferencesService.instance.billSpikesEnabled
+          ? AnomalyDetectionService.instance
+              .detectRecentAnomalies(FinanceService.instance.activeTransactions)
+              .length
+          : 0;
+    });
   }
 
   Future<void> _loadItems() async {
@@ -202,9 +222,153 @@ class _AppShellState extends State<_AppShell> {
     });
   }
 
+  /// Bottom sheet listing every current notification: documents needing
+  /// attention (upcoming + expired), bill spikes, and budget alerts.
+  void _showNotificationsSheet(BuildContext context) {
+    final theme = Theme.of(context);
+    final now = DateTime.now();
+
+    final rows = <Widget>[];
+
+    // --- Document reminders ---
+    final pending = _items
+        .where((i) => i.isActive && !i.isExpired && i.daysRemaining <= 30)
+        .toList()
+      ..sort((a, b) => a.expiresAt.compareTo(b.expiresAt));
+    for (final item in pending) {
+      rows.add(_NotificationRow(
+        icon: Icons.event_available_rounded,
+        color: item.daysRemaining <= 7 ? WazyColors.danger : WazyColors.warning,
+        title: item.displayName,
+        subtitle:
+            'Expires in ${item.daysRemaining} day${item.daysRemaining == 1 ? '' : 's'} — renew soon',
+        onTap: () => context.go('/documents'),
+      ));
+    }
+
+    // --- Expired documents ---
+    for (final item in _items.where((i) => i.isActive && i.isExpired)) {
+      final days = now.difference(item.expiresAt).inDays;
+      rows.add(_NotificationRow(
+        icon: Icons.error_outline_rounded,
+        color: WazyColors.danger,
+        title: item.displayName,
+        subtitle: 'Expired ${days <= 0 ? 'today' : '$days day${days == 1 ? '' : 's'} ago'} — act now',
+        onTap: () => context.go('/documents'),
+      ));
+    }
+
+    // --- Bill spikes ---
+    if (AlertPreferencesService.instance.billSpikesEnabled) {
+      for (final anomaly in AnomalyDetectionService.instance
+          .detectRecentAnomalies(FinanceService.instance.activeTransactions)) {
+        rows.add(_NotificationRow(
+          icon: Icons.trending_up_rounded,
+          color: WazyColors.warning,
+          title: 'Bill spike: ${anomaly.transaction.title}',
+          subtitle: anomaly.message,
+          onTap: () => context.go('/money'),
+        ));
+      }
+    }
+
+    // --- Budget alerts ---
+    final budget = _budgetStatus;
+    if (budget != null) {
+      final pct = (budget.ratio * 100).toStringAsFixed(0);
+      final exceeded = budget.status == BudgetAlertLevel.exceeded;
+      rows.add(_NotificationRow(
+        icon: Icons.account_balance_wallet_rounded,
+        color: exceeded ? WazyColors.danger : WazyColors.warning,
+        title:
+            '${exceeded ? "Budget exceeded" : "Close to budget"} — ${budget.budget.category.displayName}',
+        subtitle:
+            '$pct% of the monthly budget used this month.',
+        onTap: () => context.go('/money'),
+      ));
+    }
+
+    showModalBottomSheet<void>(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(sheetContext).size.height * 0.75,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 8, 0),
+                child: Row(
+                  children: [
+                    const Icon(Icons.notifications_rounded, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Notifications',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 20),
+                      onPressed: () => Navigator.pop(sheetContext),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              if (rows.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    children: [
+                      Icon(Icons.notifications_off_rounded,
+                          size: 40, color: theme.colorScheme.outline),
+                      const SizedBox(height: 12),
+                      Text(
+                        'You are all caught up',
+                        style: theme.textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'No alerts right now.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.outline,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Flexible(
+                  child: ListView(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    children: rows,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final pendingDocs = _items.where((i) => i.daysRemaining <= 30).length;
+    final pendingDocs = _items
+        .where((i) => i.isActive && !i.isExpired && i.daysRemaining <= 30)
+        .length;
+    final expiredDocs = _items.where((i) => i.isActive && i.isExpired).length;
+    final notificationCount = pendingDocs + expiredDocs + _spikeCount + (_budgetStatus != null ? 1 : 0);
 
     return Scaffold(
       body: widget.navigationShell,
@@ -224,11 +388,21 @@ class _AppShellState extends State<_AppShell> {
               ),
             ),
             child: NavigationBar(
-              selectedIndex: widget.navigationShell.currentIndex,
-              onDestinationSelected: (index) => widget.navigationShell.goBranch(
-                index,
-                initialLocation: index == widget.navigationShell.currentIndex,
-              ),
+              selectedIndex: widget.navigationShell.currentIndex > _bellNavIndex
+                  ? widget.navigationShell.currentIndex + 1
+                  : widget.navigationShell.currentIndex,
+              onDestinationSelected: (index) {
+                if (index == _bellNavIndex) {
+                  _showNotificationsSheet(context);
+                  return;
+                }
+                // Bell occupies navbar position 3; branches are 0-3.
+                final branch = index > _bellNavIndex ? index - 1 : index;
+                widget.navigationShell.goBranch(
+                  branch,
+                  initialLocation: branch == widget.navigationShell.currentIndex,
+                );
+              },
               destinations: [
                 const NavigationDestination(
                   icon: Icon(Icons.dashboard_outlined),
@@ -267,6 +441,21 @@ class _AppShellState extends State<_AppShell> {
                   ),
                   label: 'Documents',
                 ),
+                NavigationDestination(
+                  icon: _BadgeIcon(
+                    icon: Icons.notifications_outlined,
+                    showDot: notificationCount > 0,
+                    color: WazyColors.danger,
+                    tooltip: '$notificationCount notifications',
+                  ),
+                  selectedIcon: _BadgeIcon(
+                    icon: Icons.notifications_rounded,
+                    showDot: notificationCount > 0,
+                    color: WazyColors.danger,
+                    tooltip: '$notificationCount notifications',
+                  ),
+                  label: 'Alerts',
+                ),
                 const NavigationDestination(
                   icon: Icon(Icons.person_outline_rounded),
                   selectedIcon: Icon(Icons.person_rounded),
@@ -277,6 +466,56 @@ class _AppShellState extends State<_AppShell> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// One tappable row inside the notifications sheet.
+class _NotificationRow extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _NotificationRow({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ListTile(
+      leading: CircleAvatar(
+        radius: 18,
+        backgroundColor: color.withOpacity(0.15),
+        child: Icon(icon, size: 18, color: color),
+      ),
+      title: Text(
+        title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.outline,
+        ),
+      ),
+      trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+      onTap: () {
+        Navigator.pop(context);
+        onTap();
+      },
     );
   }
 }

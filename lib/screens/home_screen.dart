@@ -29,6 +29,10 @@ class _HomeScreenState extends State<HomeScreen> {
   List<ExpiryItem> _items = [];
   bool _loading = true;
 
+  /// The "renewals need attention" banner was closed by the user this
+  /// session. Re-appears on restart or when data reloads with a *new* count.
+  int? _dismissedAttentionCount;
+
   @override
   void initState() {
     super.initState();
@@ -328,6 +332,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildAttentionBanner(ThemeData theme, UrgencySnapshot urgency) {
     final pending = urgency.pendingActions;
+    // User closed this exact alert count — stay hidden until it changes.
+    if (pending.isNotEmpty && _dismissedAttentionCount == pending.length) {
+      return const SizedBox.shrink();
+    }
     final isDark = theme.brightness == Brightness.dark;
 
     final bannerBg = pending.isEmpty
@@ -417,6 +425,26 @@ class _HomeScreenState extends State<HomeScreen> {
                 Icons.chevron_right_rounded,
                 color: textColor.withOpacity(0.7),
               ),
+              if (pending.isNotEmpty)
+                // Close button: hides the banner until the pending count
+                // changes (or the app restarts).
+                Tooltip(
+                  message: 'Dismiss alert',
+                  child: InkWell(
+                    onTap: () => setState(
+                      () => _dismissedAttentionCount = pending.length,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(
+                        Icons.close_rounded,
+                        size: 20,
+                        color: textColor.withOpacity(0.8),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
