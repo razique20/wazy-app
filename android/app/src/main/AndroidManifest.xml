@@ -8,6 +8,8 @@
     <!--flutter_local_notifications: required on Android 14+ to show notifications while the app runs in the foreground as a normal activity -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- Voice-to-Record: microphone access + system speech recognition service -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <application
         android:label="Wazy"
         android:name="${applicationName}"

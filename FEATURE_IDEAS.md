@@ -10,9 +10,9 @@ A curated roadmap of **Basic to Hard AI Features** tailored for **Wazy** (UAE SM
   - *Description*: Uses TF-IDF / fuzzy string matching and user historical habits to automatically classify unstructured transactions into categories (e.g., "Talabat" → Food & Dining, "Salik" → Transport).
   - *Tech/Implementation*: Pure Dart string matching / Levenshtein distance & category memory index.
 
-- [ ] **Dynamic Expiry Risk & Penalty Predictor** `[Basic]`
+- [x] **Dynamic Expiry Risk & Penalty Predictor** `[Basic]`
   - *Description*: Calculates an "Expiry Urgency & Risk Score" based on document authority (e.g., RTA vs GDRFA vs Ejari) and alerts users earlier for high-penalty documents (e.g., Late Ejari renewal vs Visa overstay fine calculation).
-  - *Tech/Implementation*: Rule-based heuristic engine with authority fine lookup tables.
+  - *Tech/Implementation*: Rule-based heuristic engine with authority fine lookup tables. *(Shipped: `UrgencyEngine` + `UrgencyLevel.fromDays` tiers, 7/30/60/90-day alert buckets, reminder-status escalation, and per-type penalty warnings like "Fine AED 500+".)*
 
 - [x] **Bill Spike & Anomaly Detection** `[Basic]`
   - *Description*: Automatically detects unusual price hikes in recurring expenses (e.g., "DEWA utility bill is 35% higher than your 3-month average").
@@ -22,17 +22,17 @@ A curated roadmap of **Basic to Hard AI Features** tailored for **Wazy** (UAE SM
 
 ## 🟡 Level 2: Intermediate AI Features (On-Device ML & Vision)
 
-- [ ] **Bilingual Arabic + English OCR & Document Extraction** `[Intermediate]`
+- [x] **Bilingual Arabic + English OCR & Document Extraction** `[Intermediate]`
   - *Description*: On-device multi-script OCR extracting bilingual fields (Arabic & English names, Trade License numbers, authority stamps, Ejari tenancy terms) from UAE official documents.
-  - *Tech/Implementation*: `google_mlkit_text_recognition` with Arabic script recognition package.
+  - *Tech/Implementation*: `google_mlkit_text_recognition` with Arabic script recognition package. *(Shipped: `UaeDocumentOcrService` extracts title, document number, expiry date, emirate & issuing authority with per-field confidence. Arabic-script recognizer option still pending.)*
 
 - [ ] **Smart Camera Receipt & Invoice Scanner** `[Intermediate]`
   - *Description*: Users point camera at paper receipts or upload PDF invoices to automatically extract vendor name, total amount, 5% UAE VAT portion, and date.
   - *Tech/Implementation*: Crop & edge detection (`image_picker` / `edge_detection`) + ML Kit text bounding box parsing.
 
-- [ ] **Voice-to-Record Assistant (Speech-to-Text NL)** `[Intermediate]`
+- [x] **Voice-to-Record Assistant (Speech-to-Text NL)** `[Intermediate]`
   - *Description*: Hands-free natural language quick add via voice. User speaks: *"Paid 450 AED for DEWA yesterday"*, and the app transcribes & auto-populates the transaction/document form.
-  - *Tech/Implementation*: `speech_to_text` Flutter package combined with `NaturalLanguageParserService`.
+  - *Tech/Implementation*: `speech_to_text` Flutter package combined with `NaturalLanguageParserService`. *(Shipped: `VoiceInputService` with live partial transcripts, status stream & transcript normalizer that converts spoken word-numbers/currency to parser-friendly digits — "four hundred fifty dirhams" → "450 AED" — wired as a mic button into both NL quick-add dialogs, with iOS mic/speech and Android RECORD_AUDIO permissions.)*
 
 ---
 
@@ -54,9 +54,9 @@ A curated roadmap of **Basic to Hard AI Features** tailored for **Wazy** (UAE SM
 
 ## 🔴 Level 4: Hard / Complex AI Features (Predictive Analytics & Agents)
 
-- [ ] **Predictive 12-Month Cash Flow & Runway Engine** `[Hard]`
+- [x] **Predictive 12-Month Cash Flow & Runway Engine** `[Hard]`
   - *Description*: Machine learning time-series model predicting future cash balances, cash dips, and SME runway up to 12 months ahead by modeling seasonal revenue, recurring bills, and scheduled document renewal peaks.
-  - *Tech/Implementation*: Regression / ARIMA / Exponential Smoothing model implemented in Dart / ONNX Runtime Flutter plugin.
+  - *Tech/Implementation*: Regression / ARIMA / Exponential Smoothing model implemented in Dart / ONNX Runtime Flutter plugin. *(Shipped as deterministic 90-day projection: `FinanceMath.calculate90DayCashFlow` with recurring transactions + document renewal outflows, dip/lowest-balance detection, `CashFlowForecastCard` chart & dedicated screen.)*
 
 - [ ] **Autonomous Document Renewal Agent** `[Hard]`
   - *Description*: An autonomous AI agent workflow that monitors expiring documents, auto-drafts pre-filled renewal applications, generates step-by-step checklist tasks, calculates exact government fees, and sets intelligent reminder cascades.
@@ -70,7 +70,7 @@ A curated roadmap of **Basic to Hard AI Features** tailored for **Wazy** (UAE SM
 
 ## 🎯 Recommended Implementation Order
 
-1. **Quick Win**: Smart Auto-Categorization & Tagging Engine `[Basic]`
+1. ✅ **Quick Win**: Smart Auto-Categorization & Tagging Engine `[Basic]`
 2. **High Value**: Smart Camera Receipt & Invoice Scanner `[Intermediate]`
 3. **Huge WOW Factor**: Wazy AI Copilot (UAE SME Compliance Advisor) `[Advanced]`
 4. **Cutting Edge**: Autonomous Document Renewal Agent `[Hard]`

@@ -23,7 +23,11 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>    <!-- Voice-to-Record: microphone access + on-device speech recognition -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Wazy uses the microphone so you can add expenses and document renewals hands-free by speaking (e.g. "Paid 450 AED for DEWA yesterday").</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Wazy uses speech recognition to transcribe your spoken expenses and document details into the quick-add form.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

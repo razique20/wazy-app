@@ -1,14 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../models/document_type.dart';
 import '../../models/expiry_item.dart';
-import '../../screens/document_scan_screen.dart';
 import '../../services/collection_service.dart';
 import '../../services/document_scanner_service.dart';
 import '../../services/natural_language_parser_service.dart';
+import '../../services/voice_input_service.dart';
 
 /// Modal dialog allowing users to type freeform text to create a document item.
 class NaturalLanguageAddDialog extends StatefulWidget {
@@ -36,6 +37,12 @@ class _NaturalLanguageAddDialogState extends State<NaturalLanguageAddDialog> {
   ParsedNaturalLanguageItem? _parsed;
   bool _isSaving = false;
 
+  // Voice input state
+  bool _isListening = false;
+  String _voicePartial = '';
+  StreamSubscription<VoiceStatus>? _voiceStatusSub;
+  StreamSubscription<VoiceUpdate>? _voiceTranscriptSub;
+
   final List<String> _samplePrompts = [
     'Add my trade licence, expires 12 March 2027 cost 1500 AED',
     'Dubai Ejari contract expires in 60 days fee 2500 AED',
@@ -48,12 +55,67 @@ class _NaturalLanguageAddDialogState extends State<NaturalLanguageAddDialog> {
     super.initState();
     _inputController = TextEditingController();
     _inputController.addListener(_onInputChanged);
+    _voiceStatusSub = VoiceInputService.instance.statusStream.listen(_onVoiceStatus);
+    _voiceTranscriptSub =
+        VoiceInputService.instance.transcriptStream.listen(_onVoiceUpdate);
   }
 
   @override
   void dispose() {
+    _voiceStatusSub?.cancel();
+    _voiceTranscriptSub?.cancel();
+    VoiceInputService.instance.stopListening();
     _inputController.dispose();
     super.dispose();
+  }
+
+  void _onVoiceStatus(VoiceStatus status) {
+    if (!mounted) return;
+    setState(() {
+      _isListening = VoiceInputService.instance.isListening;
+      if (!_isListening) _voicePartial = '';
+    });
+    if (status == VoiceStatus.unavailable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            VoiceInputService.instance.lastError ??
+                'Voice input is not available.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _onVoiceUpdate(VoiceUpdate update) {
+    if (!mounted) return;
+    if (update.text.isNotEmpty) {
+      // Final transcript — normalize spoken numbers/currency and populate the
+      // input; the controller listener runs the NL parser automatically.
+      final normalized = VoiceInputService.normalizeTranscript(update.text);
+      _inputController.text = normalized;
+      setState(() => _voicePartial = '');
+    } else if (update.partialText.isNotEmpty) {
+      setState(() {
+        _voicePartial = VoiceInputService.normalizeTranscript(update.partialText);
+      });
+    }
+  }
+
+  Future<void> _toggleVoice() async {
+    if (_isListening) {
+      await VoiceInputService.instance.stopListening();
+      return;
+    }
+    FocusScope.of(context).unfocus();
+    final started = await VoiceInputService.instance.startListening();
+    if (started && mounted) {
+      setState(() {
+        _isListening = true;
+        _voicePartial = '';
+      });
+    }
   }
 
   void _onInputChanged() {
@@ -207,9 +269,60 @@ class _NaturalLanguageAddDialogState extends State<NaturalLanguageAddDialog> {
                       icon: const Icon(Icons.clear_rounded),
                       onPressed: () => _inputController.clear(),
                     )
-                  : null,
+                  : IconButton(
+                      tooltip: 'Speak instead of typing',
+                      icon: Icon(
+                        _isListening
+                            ? Icons.stop_circle_rounded
+                            : Icons.mic_rounded,
+                        color: _isListening ? Colors.red : null,
+                      ),
+                      onPressed: _toggleVoice,
+                    ),
             ),
           ),
+
+          // Live voice banner
+          if (_isListening)
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.red.withValues(alpha: 0.4)),
+              ),
+              child: Row(
+                children: [
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.red),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _voicePartial.isEmpty
+                          ? 'Listening… say e.g. "Add my trade licence, expires 12 March 2027 cost 1500 AED"'
+                          : _voicePartial,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontStyle: _voicePartial.isEmpty
+                            ? FontStyle.italic
+                            : FontStyle.normal,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => VoiceInputService.instance.stopListening(),
+                    child: const Text('Done'),
+                  ),
+                ],
+              ),
+            ),
           const SizedBox(height: 12),
 
           // Sample chips
