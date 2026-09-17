@@ -253,7 +253,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                         },
                         icon: const Icon(Icons.bolt_rounded, size: 20, color: Colors.amber),
                         label: const Text(
-                          '⚡ Quick Add with Natural Language',
+                          'Quick Add with Natural Language',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         style: OutlinedButton.styleFrom(
@@ -390,7 +390,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
               if (created != null) await _loadData();
             },
             icon: const Icon(Icons.bolt_rounded, color: Colors.amber),
-            label: const Text('⚡ Quick Add (NL)'),
+            label: const Text('Quick Add (NL)'),
             backgroundColor: WazyColors.navyPrimary,
             foregroundColor: Colors.white,
           ),
