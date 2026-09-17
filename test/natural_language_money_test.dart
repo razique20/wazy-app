@@ -6,6 +6,67 @@ void main() {
   group('NaturalLanguageParserService parseMoney Tests', () {
     final parser = NaturalLanguageParserService.instance;
 
+    test('Parses user complaint prompt: "paid 400 for food"', () {
+      const prompt = 'paid 400 for food';
+      final res = parser.parseMoney(prompt);
+
+      expect(res.kind, equals(FinanceKind.expense));
+      expect(res.category, equals(FinanceCategory.foodAndBeverages));
+      expect(res.amount, equals(400.0));
+      expect(res.title, equals('Food'));
+      expect(res.hasExtractedAmount, isTrue);
+    });
+
+    test('Parses coffee prompt: "spent 50 on coffee"', () {
+      const prompt = 'spent 50 on coffee';
+      final res = parser.parseMoney(prompt);
+
+      expect(res.kind, equals(FinanceKind.expense));
+      expect(res.category, equals(FinanceCategory.foodAndBeverages));
+      expect(res.amount, equals(50.0));
+      expect(res.title, equals('Coffee'));
+    });
+
+    test('Parses groceries prompt: "grocery shopping 250 dirhams"', () {
+      const prompt = 'grocery shopping 250 dirhams';
+      final res = parser.parseMoney(prompt);
+
+      expect(res.kind, equals(FinanceKind.expense));
+      expect(res.category, equals(FinanceCategory.foodAndBeverages));
+      expect(res.amount, equals(250.0));
+      expect(res.title, equals('Grocery Shopping'));
+    });
+
+    test('Parses medical pharmacy prompt: "pharmacy 80 AED"', () {
+      const prompt = 'pharmacy 80 AED';
+      final res = parser.parseMoney(prompt);
+
+      expect(res.kind, equals(FinanceKind.expense));
+      expect(res.category, equals(FinanceCategory.medical));
+      expect(res.amount, equals(80.0));
+      expect(res.title, equals('Pharmacy'));
+    });
+
+    test('Parses shopping prompt: "bought shoes 350 AED"', () {
+      const prompt = 'bought shoes 350 AED';
+      final res = parser.parseMoney(prompt);
+
+      expect(res.kind, equals(FinanceKind.expense));
+      expect(res.category, equals(FinanceCategory.shopping));
+      expect(res.amount, equals(350.0));
+      expect(res.title, equals('Shoes'));
+    });
+
+    test('Parses entertainment prompt: "cinema movie tickets 120"', () {
+      const prompt = 'cinema movie tickets 120';
+      final res = parser.parseMoney(prompt);
+
+      expect(res.kind, equals(FinanceKind.expense));
+      expect(res.category, equals(FinanceCategory.entertainment));
+      expect(res.amount, equals(120.0));
+      expect(res.title, equals('Cinema Movie Tickets'));
+    });
+
     test('Parses expense prompt: "Paid 450 AED for DEWA electricity yesterday"', () {
       const prompt = 'Paid 450 AED for DEWA electricity yesterday';
       final res = parser.parseMoney(prompt);
@@ -13,7 +74,7 @@ void main() {
       expect(res.kind, equals(FinanceKind.expense));
       expect(res.category, equals(FinanceCategory.utilities));
       expect(res.amount, equals(450.0));
-      expect(res.title, contains('Dewa Electricity'));
+      expect(res.title, equals('Dewa Electricity'));
       expect(res.hasExtractedAmount, isTrue);
       expect(res.hasExtractedDate, isTrue);
     });
@@ -25,7 +86,7 @@ void main() {
       expect(res.kind, equals(FinanceKind.income));
       expect(res.category, equals(FinanceCategory.sales));
       expect(res.amount, equals(12000.0));
-      expect(res.title, contains('Acme'));
+      expect(res.title, equals('Acme'));
       expect(res.hasExtractedAmount, isTrue);
     });
 
@@ -36,6 +97,7 @@ void main() {
       expect(res.kind, equals(FinanceKind.expense));
       expect(res.category, equals(FinanceCategory.transport));
       expect(res.amount, equals(85.0));
+      expect(res.title, equals('Uber Transport'));
     });
 
     test('Parses recurring rent prompt: "Office rent 15000 AED recurring monthly"', () {
@@ -66,6 +128,7 @@ void main() {
       expect(res.kind, equals(FinanceKind.income));
       expect(res.category, equals(FinanceCategory.salaries));
       expect(res.amount, equals(18000.0));
+      expect(res.title, equals('Company'));
     });
   });
 }

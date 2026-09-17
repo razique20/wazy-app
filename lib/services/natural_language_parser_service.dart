@@ -676,6 +676,88 @@ class NaturalLanguageParserService {
   }
 
   FinanceCategory _extractFinanceCategory(String lower, FinanceKind kind) {
+    // Food & Dining / Groceries
+    if (lower.contains('food') ||
+        lower.contains('drink') ||
+        lower.contains('drinks') ||
+        lower.contains('beverage') ||
+        lower.contains('beverages') ||
+        lower.contains('dining') ||
+        lower.contains('restaurant') ||
+        lower.contains('cafe') ||
+        lower.contains('coffee') ||
+        lower.contains('lunch') ||
+        lower.contains('dinner') ||
+        lower.contains('breakfast') ||
+        lower.contains('snack') ||
+        lower.contains('groceries') ||
+        lower.contains('grocery') ||
+        lower.contains('supermarket') ||
+        lower.contains('talabat') ||
+        lower.contains('deliveroo') ||
+        lower.contains('noon food') ||
+        lower.contains('zomato') ||
+        lower.contains('mcdonalds') ||
+        lower.contains('starbucks') ||
+        lower.contains('kfc') ||
+        lower.contains('cafeteria') ||
+        lower.contains('meal') ||
+        lower.contains('meals')) {
+      return FinanceCategory.foodAndBeverages;
+    }
+
+    // Shopping / Retail
+    if (lower.contains('shopping') ||
+        lower.contains('clothes') ||
+        lower.contains('clothing') ||
+        lower.contains('shoes') ||
+        lower.contains('fashion') ||
+        lower.contains('mall') ||
+        lower.contains('amazon') ||
+        lower.contains('noon') ||
+        lower.contains('electronics') ||
+        lower.contains('gift') ||
+        lower.contains('gifts') ||
+        lower.contains('store') ||
+        lower.contains('boutique')) {
+      return FinanceCategory.shopping;
+    }
+
+    // Medical & Healthcare
+    if (lower.contains('medical') ||
+        lower.contains('medicine') ||
+        lower.contains('doctor') ||
+        lower.contains('clinic') ||
+        lower.contains('hospital') ||
+        lower.contains('pharmacy') ||
+        lower.contains('health') ||
+        lower.contains('healthcare') ||
+        lower.contains('dental') ||
+        lower.contains('dentist') ||
+        lower.contains('lab') ||
+        lower.contains('aster') ||
+        lower.contains('life pharmacy')) {
+      return FinanceCategory.medical;
+    }
+
+    // Entertainment & Leisure
+    if (lower.contains('movie') ||
+        lower.contains('cinema') ||
+        lower.contains('tickets') ||
+        lower.contains('concert') ||
+        lower.contains('game') ||
+        lower.contains('gaming') ||
+        lower.contains('bowling') ||
+        lower.contains('park') ||
+        lower.contains('theme park') ||
+        lower.contains('netflix') ||
+        lower.contains('spotify') ||
+        lower.contains('hbo') ||
+        lower.contains('entertainment') ||
+        lower.contains('fun')) {
+      return FinanceCategory.entertainment;
+    }
+
     // Utilities
     if (lower.contains('dewa') ||
         lower.contains('sewa') ||
@@ -851,30 +933,38 @@ class NaturalLanguageParserService {
   }) {
     String clean = rawText;
 
-    // 1. Strip action verbs at start
-    clean = clean.replaceFirst(
-      RegExp(r'^(?:add|log|record|paid|spent|received|got|earned|new)\s+(?:my\s+)?', caseSensitive: false),
-      '',
-    );
-    clean = clean.replaceFirst(RegExp(r'^(?:my|a|an|the)\s+', caseSensitive: false), '');
-
-    // 2. Strip amount snippet
+    // 1. Strip amount snippet if present
     if (amountSnippet != null && amountSnippet.isNotEmpty) {
       clean = clean.replaceAll(amountSnippet, '');
     }
 
-    // 3. Strip date snippet
+    // 2. Strip date snippet if present
     if (dateSnippet != null && dateSnippet.isNotEmpty) {
       clean = clean.replaceAll(dateSnippet, '');
     }
 
-    // 4. Strip currency & fee keywords
-    clean = clean.replaceAll(RegExp(r'\b(?:aed|dirhams|dhs|dhm|dhms|cost|fee|amount|paid|spent|received|got|for|on|payment|payment\s+from|from|to)\b', caseSensitive: false), '');
+    // 3. Strip any leftover standalone numbers
+    clean = clean.replaceAll(RegExp(r'\b\d+(?:,\d+)*(?:\.\d+)?k?\b', caseSensitive: false), '');
 
-    // 5. Strip recurrence keywords
-    clean = clean.replaceAll(RegExp(r'\b(?:recurring|monthly|every\s+month|per\s+month|quarterly|yearly|every\s+year|subscription)\b', caseSensitive: false), '');
+    // 4. Strip action verbs & prepositions
+    clean = clean.replaceAll(
+      RegExp(r'\b(?:add|log|record|paid|spent|bought|received|got|earned|cost|fee|amount|payment|payment\s+from|salary|salaries|client|customer|from|to|for|on|at|in|my|a|an|the)\b', caseSensitive: false),
+      '',
+    );
 
-    // 6. Strip punctuation & clean spaces
+    // 5. Strip currency keywords
+    clean = clean.replaceAll(
+      RegExp(r'\b(?:aed|dirhams|dhs|dhm|dhms|dirham)\b', caseSensitive: false),
+      '',
+    );
+
+    // 6. Strip date & recurrence keywords
+    clean = clean.replaceAll(
+      RegExp(r'\b(?:yesterday|today|tomorrow|last\s+week|days\s+ago|recurring|monthly|every\s+month|per\s+month|quarterly|yearly|every\s+year|subscription)\b', caseSensitive: false),
+      '',
+    );
+
+    // 7. Strip punctuation & clean spaces
     clean = clean.replaceAll(RegExp(r'[,:;\.\-–]'), ' ');
 
     final tokens = clean

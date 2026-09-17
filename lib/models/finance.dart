@@ -26,6 +26,10 @@ enum FinanceCategory {
   transport,
   software,
   sales,
+  foodAndBeverages,
+  shopping,
+  medical,
+  entertainment,
   other,
 }
 
@@ -50,6 +54,14 @@ extension FinanceCategoryX on FinanceCategory {
         return 'Software';
       case FinanceCategory.sales:
         return 'Sales';
+      case FinanceCategory.foodAndBeverages:
+        return 'Food & Dining';
+      case FinanceCategory.shopping:
+        return 'Shopping';
+      case FinanceCategory.medical:
+        return 'Medical & Healthcare';
+      case FinanceCategory.entertainment:
+        return 'Entertainment';
       case FinanceCategory.other:
         return 'Other';
     }
@@ -75,6 +87,14 @@ extension FinanceCategoryX on FinanceCategory {
         return Icons.computer_rounded;
       case FinanceCategory.sales:
         return Icons.storefront_rounded;
+      case FinanceCategory.foodAndBeverages:
+        return Icons.restaurant_rounded;
+      case FinanceCategory.shopping:
+        return Icons.shopping_bag_rounded;
+      case FinanceCategory.medical:
+        return Icons.medical_services_rounded;
+      case FinanceCategory.entertainment:
+        return Icons.local_activity_rounded;
       case FinanceCategory.other:
         return Icons.category_rounded;
     }
