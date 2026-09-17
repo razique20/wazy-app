@@ -5,6 +5,8 @@ import '../models/document_collection.dart';
 import '../models/document_type.dart';
 import '../models/expiry_item.dart';
 import '../models/finance.dart';
+import '../services/alert_preferences_service.dart';
+import '../services/anomaly_detection_service.dart';
 import '../services/collection_service.dart';
 import '../services/document_scanner_service.dart';
 import '../services/finance_service.dart';
@@ -285,6 +287,9 @@ class _HomeScreenState extends State<HomeScreen> {
               color: theme.colorScheme.onPrimaryContainer,
             ),
           ),
+          const Spacer(),
+          // Notifications bell: opens the alert list sheet.
+          _buildNotificationBell(theme),
           const SizedBox(width: 12),
           Expanded(
             child: InkWell(
@@ -322,6 +327,214 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // Notifications bell (header) + alert list sheet
+  // ------------------------------------------------------------------
+
+  int get _notificationCount {
+    final expired = _items.where((i) => i.isActive && i.isExpired).length;
+    final pending = _items
+        .where((i) =>
+            i.isActive &&
+            !i.isExpired &&
+            i.daysRemaining <= 30 &&
+            i.daysRemaining != _dismissedAttentionCount)
+        .length;
+    var spikes = 0;
+    if (AlertPreferencesService.instance.billSpikesEnabled) {
+      spikes = AnomalyDetectionService.instance
+          .detectRecentAnomalies(FinanceService.instance.activeTransactions)
+          .length;
+    }
+    return expired + pending + spikes;
+  }
+
+  Widget _buildNotificationBell(ThemeData theme) {
+    final count = _notificationCount;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.notifications_outlined),
+          tooltip: 'Notifications',
+          onPressed: _showNotificationsSheet,
+        ),
+        if (count > 0)
+          Positioned(
+            right: 6,
+            top: 8,
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: const BoxDecoration(
+                color: WazyColors.danger,
+                shape: BoxShape.circle,
+              ),
+              constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+              child: Text(
+                count > 9 ? '9+' : '$count',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Bottom sheet listing every current notification: documents needing
+  /// attention (upcoming + expired), bill spikes, and budget alerts.
+  void _showNotificationsSheet() {
+    final now = DateTime.now();
+    final rows = <Widget>[];
+
+    // --- Upcoming renewals (within 30 days) ---
+    final pending = _items
+        .where((i) => i.isActive && !i.isExpired && i.daysRemaining <= 30)
+        .toList()
+      ..sort((a, b) => a.expiresAt.compareTo(b.expiresAt));
+    for (final item in pending) {
+      rows.add(_NotificationRow(
+        icon: Icons.event_available_rounded,
+        color: item.daysRemaining <= 7 ? WazyColors.danger : WazyColors.warning,
+        title: item.displayName,
+        subtitle:
+            'Expires in ${item.daysRemaining} day${item.daysRemaining == 1 ? '' : 's'} — renew soon',
+        onTap: () => context.go('/documents'),
+      ));
+    }
+
+    // --- Expired documents ---
+    for (final item in _items.where((i) => i.isActive && i.isExpired)) {
+      final days = now.difference(item.expiresAt).inDays;
+      rows.add(_NotificationRow(
+        icon: Icons.error_outline_rounded,
+        color: WazyColors.danger,
+        title: item.displayName,
+        subtitle:
+            'Expired ${days <= 0 ? 'today' : '$days day${days == 1 ? '' : 's'} ago'} — act now',
+        onTap: () => context.go('/documents'),
+      ));
+    }
+
+    // --- Bill spikes ---
+    if (AlertPreferencesService.instance.billSpikesEnabled) {
+      for (final anomaly in AnomalyDetectionService.instance
+          .detectRecentAnomalies(FinanceService.instance.activeTransactions)) {
+        rows.add(_NotificationRow(
+          icon: Icons.trending_up_rounded,
+          color: WazyColors.warning,
+          title: 'Bill spike: ${anomaly.transaction.title}',
+          subtitle: anomaly.message,
+          onTap: () => context.go('/money'),
+        ));
+      }
+    }
+
+    // --- Budget alerts ---
+    if (AlertPreferencesService.instance.budgetAlertsEnabled) {
+      final budgets = FinanceService.instance.activeBudgets;
+      if (budgets.isNotEmpty) {
+        final spend = FinanceMath.spendByCategory(
+          FinanceService.instance.activeTransactions,
+          DateTime.now(),
+          collectionId: FinanceService.instance.activeCollectionIdSafe,
+        );
+        final statuses = FinanceMath.budgetStatuses(budgets, spend);
+        for (final s in statuses) {
+          if (s.status == BudgetAlertLevel.none) continue;
+          final pct = (s.ratio * 100).toStringAsFixed(0);
+          final exceeded = s.status == BudgetAlertLevel.exceeded;
+          rows.add(_NotificationRow(
+            icon: Icons.account_balance_wallet_rounded,
+            color: exceeded ? WazyColors.danger : WazyColors.warning,
+            title:
+                '${exceeded ? "Budget exceeded" : "Close to budget"} — ${s.budget.category.displayName}',
+            subtitle: '$pct% of the monthly budget used this month.',
+            onTap: () => context.go('/money'),
+          ));
+        }
+      }
+    }
+
+    final theme = Theme.of(context);
+    showModalBottomSheet<void>(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(sheetContext).size.height * 0.75,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 8, 0),
+                child: Row(
+                  children: [
+                    const Icon(Icons.notifications_rounded, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Notifications',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 20),
+                      onPressed: () => Navigator.pop(sheetContext),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              if (rows.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    children: [
+                      Icon(Icons.notifications_off_rounded,
+                          size: 40, color: theme.colorScheme.outline),
+                      const SizedBox(height: 12),
+                      Text(
+                        'You are all caught up',
+                        style: theme.textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'No alerts right now.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.outline,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Flexible(
+                  child: ListView(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    children: rows,
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1077,6 +1290,56 @@ class _UpcomingTile extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// One tappable row inside the notifications sheet.
+class _NotificationRow extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _NotificationRow({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ListTile(
+      leading: CircleAvatar(
+        radius: 18,
+        backgroundColor: color.withOpacity(0.15),
+        child: Icon(icon, size: 18, color: color),
+      ),
+      title: Text(
+        title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.outline,
+        ),
+      ),
+      trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+      onTap: () {
+        Navigator.pop(context);
+        onTap();
+      },
     );
   }
 }
