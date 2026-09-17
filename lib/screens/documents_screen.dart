@@ -356,7 +356,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                     )
                   else
                     SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 140),
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 180),
                       sliver: SliverList(
                         delegate: SliverChildBuilderDelegate(
                           (context, index) => Padding(
@@ -380,7 +380,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
               ),
             ),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 88),
+        padding: const EdgeInsets.only(bottom: 115),
         child: FloatingActionButton.extended(
           heroTag: 'documents_add',
           onPressed: () async {

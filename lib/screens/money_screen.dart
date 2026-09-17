@@ -104,10 +104,21 @@ class _MoneyScreenState extends State<MoneyScreen> {
           ),
         ],
       ),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 115),
+        child: FloatingActionButton.extended(
+          heroTag: 'money_add_record',
+          onPressed: _showAddTransactionSheet,
+          icon: const Icon(Icons.add_rounded),
+          label: const Text('Add Record', style: TextStyle(fontWeight: FontWeight.bold)),
+          backgroundColor: WazyColors.violetAccent,
+          foregroundColor: Colors.white,
+        ),
+      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 140),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 180),
               children: [
                 _buildFinancialOverviewCard(theme, summary),
                 const SizedBox(height: 12),
