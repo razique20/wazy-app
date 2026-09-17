@@ -176,6 +176,14 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
         title: const Text('Documents'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.bolt_rounded),
+            tooltip: 'Quick Add with Natural Language',
+            onPressed: () async {
+              final created = await NaturalLanguageAddDialog.show(context);
+              if (created != null) _loadData();
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.travel_explore_rounded),
             tooltip: 'Search all documents',
             onPressed: () => context.push('/search'),
@@ -242,30 +250,6 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
               child: CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
-                  // Quick Add with Natural Language Banner
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                      child: OutlinedButton.icon(
-                        onPressed: () async {
-                          final created = await NaturalLanguageAddDialog.show(context);
-                          if (created != null) _loadData();
-                        },
-                        icon: const Icon(Icons.bolt_rounded, size: 20, color: Colors.amber),
-                        label: const Text(
-                          'Quick Add with Natural Language',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.4)),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
                   // Filter chips row
                   SliverToBoxAdapter(
                     child: SingleChildScrollView(

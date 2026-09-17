@@ -99,6 +99,14 @@ class _MoneyScreenState extends State<MoneyScreen> {
         title: const Text('Money'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.bolt_rounded),
+            tooltip: 'Quick Add with Natural Language',
+            onPressed: () async {
+              final created = await NaturalLanguageMoneyAddDialog.show(context);
+              if (created != null) _reload();
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.ios_share_rounded),
             tooltip: 'Export CSV',
             onPressed: _transactions.isEmpty ? null : _exportCsv,
@@ -121,8 +129,6 @@ class _MoneyScreenState extends State<MoneyScreen> {
           : ListView(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 180),
               children: [
-                _buildQuickAddNaturalLanguageButton(theme),
-                const SizedBox(height: 12),
                 _buildFinancialOverviewCard(theme, summary),
                 const SizedBox(height: 12),
                 _buildSmallRenewalOutlookCard(theme),
@@ -151,22 +157,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
     );
   }
 
-  Widget _buildQuickAddNaturalLanguageButton(ThemeData theme) {
-    return OutlinedButton.icon(
-      onPressed: () async {
-        final created = await NaturalLanguageMoneyAddDialog.show(context);
-        if (created != null) {
-          _reload();
-        }
-      },
-      icon: const Icon(Icons.bolt_rounded, size: 18),
-      label: const Text('Quick Add with Natural Language'),
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
+
 
   // ------------------------------------------------------------------
   // Financial Overview (Month Income, Spend & Net)
@@ -2002,26 +1993,10 @@ class _TransactionFormSheetState extends State<_TransactionFormSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Add record',
-                  style: theme.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                TextButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    NaturalLanguageMoneyAddDialog.show(context);
-                  },
-                  icon: const Icon(Icons.bolt_rounded, size: 16),
-                  label: const Text(
-                    'Natural Language',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
+            Text(
+              'Add record',
+              style: theme.textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 16),
             SegmentedButton<FinanceKind>(
