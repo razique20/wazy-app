@@ -15,6 +15,7 @@ import '../services/document_scanner_service.dart';
 import '../services/finance_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/cash_flow_forecast_chart.dart';
+import '../widgets/dialogs/natural_language_money_add_dialog.dart';
 import 'package:uuid/uuid.dart';
 
 /// The Money tab: renewal cost outlook, monthly budget tracking, savings
@@ -120,6 +121,8 @@ class _MoneyScreenState extends State<MoneyScreen> {
           : ListView(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 180),
               children: [
+                _buildQuickAddNaturalLanguageButton(theme),
+                const SizedBox(height: 12),
                 _buildFinancialOverviewCard(theme, summary),
                 const SizedBox(height: 12),
                 _buildSmallRenewalOutlookCard(theme),
@@ -145,6 +148,23 @@ class _MoneyScreenState extends State<MoneyScreen> {
                 _buildTransactionsSection(theme),
               ],
             ),
+    );
+  }
+
+  Widget _buildQuickAddNaturalLanguageButton(ThemeData theme) {
+    return OutlinedButton.icon(
+      onPressed: () async {
+        final created = await NaturalLanguageMoneyAddDialog.show(context);
+        if (created != null) {
+          _reload();
+        }
+      },
+      icon: const Icon(Icons.bolt_rounded, size: 18),
+      label: const Text('Quick Add with Natural Language'),
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
     );
   }
 
@@ -1982,10 +2002,26 @@ class _TransactionFormSheetState extends State<_TransactionFormSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'Add record',
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w600),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Add record',
+                  style: theme.textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                TextButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    NaturalLanguageMoneyAddDialog.show(context);
+                  },
+                  icon: const Icon(Icons.bolt_rounded, size: 16),
+                  label: const Text(
+                    'Natural Language',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             SegmentedButton<FinanceKind>(

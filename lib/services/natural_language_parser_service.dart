@@ -2,7 +2,46 @@ import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 
 import '../models/document_type.dart';
+import '../models/finance.dart';
 import '../screens/document_scan_screen.dart';
+
+/// Parsed natural language output item for financial transactions.
+class ParsedMoneyItem {
+  final String rawInput;
+  final String title;
+  final FinanceKind kind;
+  final FinanceCategory category;
+  final double amount;
+  final String currency;
+  final DateTime occurredAt;
+  final bool isRecurring;
+  final RecurrenceFrequency frequency;
+  final int dayOfMonth;
+  final String? note;
+  final bool hasExtractedAmount;
+  final bool hasExtractedDate;
+
+  const ParsedMoneyItem({
+    required this.rawInput,
+    required this.title,
+    required this.kind,
+    required this.category,
+    required this.amount,
+    this.currency = 'AED',
+    required this.occurredAt,
+    this.isRecurring = false,
+    this.frequency = RecurrenceFrequency.monthly,
+    this.dayOfMonth = 1,
+    this.note,
+    this.hasExtractedAmount = false,
+    this.hasExtractedDate = false,
+  });
+
+  @override
+  String toString() {
+    return 'ParsedMoneyItem(title: "$title", kind: ${kind.name}, category: ${category.name}, amount: $amount $currency, date: ${DateFormat("dd MMM yyyy").format(occurredAt)}, recurring: $isRecurring)';
+  }
+}
 
 /// Parsed natural language output item.
 class ParsedNaturalLanguageItem {
@@ -494,5 +533,364 @@ class NaturalLanguageParserService {
     }).join(' ');
 
     return result.trim().isEmpty ? docType.displayName : result.trim();
+  }
+
+  /// Parses financial natural language input e.g.:
+  /// "Paid 450 AED for DEWA electricity yesterday"
+  /// "Received 12,000 AED client payment from Acme"
+  /// "Office rent 15000 AED recurring monthly"
+  ParsedMoneyItem parseMoney(String text) {
+    final rawText = text.trim();
+    if (rawText.isEmpty) {
+      return ParsedMoneyItem(
+        rawInput: rawText,
+        title: 'New Transaction',
+        kind: FinanceKind.expense,
+        category: FinanceCategory.other,
+        amount: 0.0,
+        occurredAt: DateTime.now(),
+      );
+    }
+
+    final lower = rawText.toLowerCase();
+
+    // 1. Amount
+    final amountMatch = _extractMoneyAmount(rawText);
+    final amount = amountMatch?.$1 ?? 0.0;
+    final hasExtractedAmount = amountMatch != null;
+
+    // 2. Kind
+    final kind = _extractFinanceKind(lower);
+
+    // 3. Category
+    final category = _extractFinanceCategory(lower, kind);
+
+    // 4. Date
+    final dateMatch = _extractMoneyDate(rawText);
+    final occurredAt = dateMatch?.$1 ?? DateTime.now();
+    final hasExtractedDate = dateMatch != null;
+
+    // 5. Recurrence
+    final isRecurring = _extractIsRecurring(lower);
+    final frequency = _extractRecurrenceFrequency(lower);
+
+    // 6. Clean Title
+    final title = _extractMoneyTitle(
+      rawText: rawText,
+      category: category,
+      amountSnippet: amountMatch?.$2,
+      dateSnippet: dateMatch?.$2,
+    );
+
+    return ParsedMoneyItem(
+      rawInput: rawText,
+      title: title,
+      kind: kind,
+      category: category,
+      amount: amount,
+      currency: 'AED',
+      occurredAt: occurredAt,
+      isRecurring: isRecurring,
+      frequency: frequency,
+      dayOfMonth: occurredAt.day,
+      hasExtractedAmount: hasExtractedAmount,
+      hasExtractedDate: hasExtractedDate,
+    );
+  }
+
+  (double, String)? _extractMoneyAmount(String text) {
+    // 1. Check 'k' multiplier e.g. 1.5k AED, 12k AED, 1.5k
+    final kRegex = RegExp(r'\b(\d+(?:\.\d{1,2})?)\s*k\s*(?:aed|dirhams|dhs|dh)?\b', caseSensitive: false);
+    final kMatch = kRegex.firstMatch(text);
+    if (kMatch != null) {
+      final numVal = double.tryParse(kMatch.group(1)!);
+      if (numVal != null) {
+        return (numVal * 1000, kMatch.group(0)!);
+      }
+    }
+
+    // 2. Numbers with optional commas e.g. "12,000" or "1,500.50" with AED or currency
+    final commaAedRegex = RegExp(
+      r'\b(?:aed|dirhams|dhs|dhm|dhms)\s*(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)\b|\b(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)\s*(?:aed|dirhams|dhs|dhm|dhms)\b',
+      caseSensitive: false,
+    );
+    final commaAedMatch = commaAedRegex.firstMatch(text);
+    if (commaAedMatch != null) {
+      final valStr = (commaAedMatch.group(1) ?? commaAedMatch.group(2))?.replaceAll(',', '');
+      if (valStr != null) {
+        final val = double.tryParse(valStr);
+        if (val != null) {
+          return (val, commaAedMatch.group(0)!);
+        }
+      }
+    }
+
+    // 3. Keywords prefixing numbers e.g. "cost 450", "paid 450", "amount 12000", "for 450"
+    final costRegex = RegExp(
+      r'\b(?:cost|cst|fee|price|amount|paid|spent|received|got|for)\s*:?\s*(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)\b',
+      caseSensitive: false,
+    );
+    final costMatch = costRegex.firstMatch(text);
+    if (costMatch != null) {
+      final valStr = costMatch.group(1)?.replaceAll(',', '');
+      if (valStr != null) {
+        final val = double.tryParse(valStr);
+        if (val != null) {
+          return (val, costMatch.group(0)!);
+        }
+      }
+    }
+
+    // 4. Any standalone number in text that looks like money (not part of dates)
+    final standaloneRegex = RegExp(r'\b(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d{2,6}(?:\.\d{1,2})?)\b');
+    for (final m in standaloneRegex.allMatches(text)) {
+      final snippet = m.group(1)!;
+      final valStr = snippet.replaceAll(',', '');
+      final val = double.tryParse(valStr);
+      if (val != null && val > 0 && val != 2024 && val != 2025 && val != 2026 && val != 2027) {
+        return (val, m.group(0)!);
+      }
+    }
+
+    return null;
+  }
+
+  FinanceKind _extractFinanceKind(String lower) {
+    if (lower.contains('received') ||
+        lower.contains('got') ||
+        lower.contains('income') ||
+        lower.contains('salary') ||
+        lower.contains('salaries') ||
+        lower.contains('earned') ||
+        lower.contains('earning') ||
+        lower.contains('sales') ||
+        lower.contains('client payment') ||
+        lower.contains('customer payment') ||
+        lower.contains('deposit') ||
+        lower.contains('refunded') ||
+        lower.contains('credited') ||
+        lower.contains('revenue')) {
+      return FinanceKind.income;
+    }
+    return FinanceKind.expense;
+  }
+
+  FinanceCategory _extractFinanceCategory(String lower, FinanceKind kind) {
+    // Utilities
+    if (lower.contains('dewa') ||
+        lower.contains('sewa') ||
+        lower.contains('fewa') ||
+        lower.contains('electricity') ||
+        lower.contains('water') ||
+        lower.contains('internet') ||
+        lower.contains('wifi') ||
+        lower.contains('phone') ||
+        lower.contains('mobile') ||
+        lower.contains('du') ||
+        lower.contains('etisalat') ||
+        lower.contains('gas') ||
+        lower.contains('utility') ||
+        lower.contains('utilities') ||
+        lower.contains('bill')) {
+      return FinanceCategory.utilities;
+    }
+
+    // Rent
+    if (lower.contains('rent') ||
+        lower.contains('office rent') ||
+        lower.contains('apartment') ||
+        lower.contains('housing') ||
+        lower.contains('tenancy') ||
+        lower.contains('ejari')) {
+      return FinanceCategory.rent;
+    }
+
+    // Salaries / Payroll
+    if (lower.contains('salary') ||
+        lower.contains('salaries') ||
+        lower.contains('payroll') ||
+        lower.contains('wage') ||
+        lower.contains('wages') ||
+        lower.contains('bonus') ||
+        lower.contains('staff pay') ||
+        lower.contains('employee pay') ||
+        lower.contains('freelancer')) {
+      return FinanceCategory.salaries;
+    }
+
+    // Transport / Travel / Vehicle / Petrol
+    if (lower.contains('uber') ||
+        lower.contains('careem') ||
+        lower.contains('taxi') ||
+        lower.contains('petrol') ||
+        lower.contains('fuel') ||
+        lower.contains('parking') ||
+        lower.contains('rta') ||
+        lower.contains('salik') ||
+        lower.contains('transport') ||
+        lower.contains('toll')) {
+      return FinanceCategory.transport;
+    }
+
+    // Software / IT / Subscriptions
+    if (lower.contains('software') ||
+        lower.contains('aws') ||
+        lower.contains('google cloud') ||
+        lower.contains('github') ||
+        lower.contains('chatgpt') ||
+        lower.contains('figma') ||
+        lower.contains('saas') ||
+        lower.contains('cloud') ||
+        lower.contains('hosting') ||
+        lower.contains('domain')) {
+      return FinanceCategory.software;
+    }
+
+    // Marketing / Ads
+    if (lower.contains('marketing') ||
+        lower.contains('ads') ||
+        lower.contains('facebook ads') ||
+        lower.contains('google ads') ||
+        lower.contains('meta ads') ||
+        lower.contains('promotion') ||
+        lower.contains('campaign') ||
+        lower.contains('advertising')) {
+      return FinanceCategory.marketing;
+    }
+
+    // Suppliers / Vendors / Materials
+    if (lower.contains('supplier') ||
+        lower.contains('suppliers') ||
+        lower.contains('inventory') ||
+        lower.contains('stock') ||
+        lower.contains('vendor') ||
+        lower.contains('materials') ||
+        lower.contains('supply')) {
+      return FinanceCategory.suppliers;
+    }
+
+    // Sales / Client Payments
+    if (lower.contains('sales') ||
+        lower.contains('client') ||
+        lower.contains('customer') ||
+        lower.contains('revenue') ||
+        lower.contains('invoice') ||
+        lower.contains('project payment')) {
+      return FinanceCategory.sales;
+    }
+
+    // Renewals / Licensing
+    if (lower.contains('trade licence') ||
+        lower.contains('trade license') ||
+        lower.contains('visa') ||
+        lower.contains('insurance') ||
+        lower.contains('mulkiya') ||
+        lower.contains('renewal')) {
+      return FinanceCategory.renewals;
+    }
+
+    if (kind == FinanceKind.income) {
+      return FinanceCategory.sales;
+    }
+
+    return FinanceCategory.other;
+  }
+
+  (DateTime, String)? _extractMoneyDate(String text) {
+    final now = DateTime.now();
+
+    if (RegExp(r'\byesterday\b', caseSensitive: false).hasMatch(text)) {
+      final match = RegExp(r'\byesterday\b', caseSensitive: false).firstMatch(text)!;
+      return (now.subtract(const Duration(days: 1)), match.group(0)!);
+    }
+
+    if (RegExp(r'\btoday\b', caseSensitive: false).hasMatch(text)) {
+      final match = RegExp(r'\btoday\b', caseSensitive: false).firstMatch(text)!;
+      return (now, match.group(0)!);
+    }
+
+    final agoDaysMatch = RegExp(r'\b(\d+)\s+days?\s+ago\b', caseSensitive: false).firstMatch(text);
+    if (agoDaysMatch != null) {
+      final days = int.parse(agoDaysMatch.group(1)!);
+      return (now.subtract(Duration(days: days)), agoDaysMatch.group(0)!);
+    }
+
+    if (RegExp(r'\blast\s+week\b', caseSensitive: false).hasMatch(text)) {
+      final match = RegExp(r'\blast\s+week\b', caseSensitive: false).firstMatch(text)!;
+      return (now.subtract(const Duration(days: 7)), match.group(0)!);
+    }
+
+    return _extractExpiryDate(text);
+  }
+
+  bool _extractIsRecurring(String lower) {
+    return lower.contains('recurring') ||
+        lower.contains('monthly') ||
+        lower.contains('every month') ||
+        lower.contains('per month') ||
+        lower.contains('quarterly') ||
+        lower.contains('yearly') ||
+        lower.contains('every year') ||
+        lower.contains('subscription') ||
+        lower.contains('auto-pay');
+  }
+
+  RecurrenceFrequency _extractRecurrenceFrequency(String lower) {
+    if (lower.contains('quarterly')) return RecurrenceFrequency.quarterly;
+    if (lower.contains('yearly') || lower.contains('annual') || lower.contains('every year')) {
+      return RecurrenceFrequency.yearly;
+    }
+    return RecurrenceFrequency.monthly;
+  }
+
+  String _extractMoneyTitle({
+    required String rawText,
+    required FinanceCategory category,
+    String? amountSnippet,
+    String? dateSnippet,
+  }) {
+    String clean = rawText;
+
+    // 1. Strip action verbs at start
+    clean = clean.replaceFirst(
+      RegExp(r'^(?:add|log|record|paid|spent|received|got|earned|new)\s+(?:my\s+)?', caseSensitive: false),
+      '',
+    );
+    clean = clean.replaceFirst(RegExp(r'^(?:my|a|an|the)\s+', caseSensitive: false), '');
+
+    // 2. Strip amount snippet
+    if (amountSnippet != null && amountSnippet.isNotEmpty) {
+      clean = clean.replaceAll(amountSnippet, '');
+    }
+
+    // 3. Strip date snippet
+    if (dateSnippet != null && dateSnippet.isNotEmpty) {
+      clean = clean.replaceAll(dateSnippet, '');
+    }
+
+    // 4. Strip currency & fee keywords
+    clean = clean.replaceAll(RegExp(r'\b(?:aed|dirhams|dhs|dhm|dhms|cost|fee|amount|paid|spent|received|got|for|on|payment|payment\s+from|from|to)\b', caseSensitive: false), '');
+
+    // 5. Strip recurrence keywords
+    clean = clean.replaceAll(RegExp(r'\b(?:recurring|monthly|every\s+month|per\s+month|quarterly|yearly|every\s+year|subscription)\b', caseSensitive: false), '');
+
+    // 6. Strip punctuation & clean spaces
+    clean = clean.replaceAll(RegExp(r'[,:;\.\-–]'), ' ');
+
+    final tokens = clean
+        .split(RegExp(r'\s+'))
+        .where((t) => t.trim().isNotEmpty)
+        .toList();
+
+    if (tokens.isEmpty) {
+      return category.displayName;
+    }
+
+    final result = tokens.map((t) {
+      if (t.length == 1) return t.toUpperCase();
+      return t[0].toUpperCase() + t.substring(1).toLowerCase();
+    }).join(' ');
+
+    return result.trim().isEmpty ? category.displayName : result.trim();
   }
 }

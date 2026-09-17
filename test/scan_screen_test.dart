@@ -26,7 +26,7 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: DocumentScanScreen()));
     await tester.pump();
 
-    await tester.tap(find.text('Document Category'));
+    await tester.tap(find.text('Document Category'), warnIfMissed: false);
     await tester.pumpAndSettle();
 
     // Built-in types appear in the open menu (trade licence is the selected
