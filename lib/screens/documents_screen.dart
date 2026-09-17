@@ -380,33 +380,17 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
               ),
             ),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 75),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            FloatingActionButton.extended(
-              heroTag: 'nl_quick_add',
-              onPressed: () async {
-                final created = await NaturalLanguageAddDialog.show(context);
-                if (created != null) await _loadData();
-              },
-              icon: const Icon(Icons.bolt_rounded, color: Colors.amber),
-              label: const Text('Quick Add (NL)'),
-              backgroundColor: WazyColors.navyPrimary,
-              foregroundColor: Colors.white,
-            ),
-            const SizedBox(height: 8),
-            FloatingActionButton.extended(
-              heroTag: 'documents_add',
-              onPressed: () async {
-                await context.push('/scan');
-                await _loadData();
-              },
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Full Form / Upload'),
-            ),
-          ],
+        padding: const EdgeInsets.only(bottom: 88),
+        child: FloatingActionButton.extended(
+          heroTag: 'documents_add',
+          onPressed: () async {
+            await context.push('/scan');
+            await _loadData();
+          },
+          icon: const Icon(Icons.add_rounded),
+          label: const Text('Add Document'),
+          backgroundColor: WazyColors.navyPrimary,
+          foregroundColor: Colors.white,
         ),
       ),
     );

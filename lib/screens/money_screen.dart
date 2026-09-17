@@ -97,38 +97,12 @@ class _MoneyScreenState extends State<MoneyScreen> {
       appBar: AppBar(
         title: const Text('Money'),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: FilledButton.icon(
-              onPressed: _showAddTransactionSheet,
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('Add Fund / Record', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-              style: FilledButton.styleFrom(
-                backgroundColor: WazyColors.violetAccent,
-                foregroundColor: Colors.white,
-                visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-            ),
-          ),
           IconButton(
             icon: const Icon(Icons.ios_share_rounded),
             tooltip: 'Export CSV',
             onPressed: _transactions.isEmpty ? null : _exportCsv,
           ),
         ],
-      ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 75),
-        child: FloatingActionButton.extended(
-          heroTag: 'money_add_record',
-          onPressed: _showAddTransactionSheet,
-          icon: const Icon(Icons.add_card_rounded),
-          label: const Text('Add Fund / Record', style: TextStyle(fontWeight: FontWeight.bold)),
-          backgroundColor: WazyColors.violetAccent,
-          foregroundColor: Colors.white,
-        ),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())

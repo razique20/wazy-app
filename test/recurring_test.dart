@@ -309,7 +309,7 @@ void main() {
       await tester.pumpWidget(const MaterialApp(home: MoneyScreen()));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.add_card_rounded).first);
+      await tester.tap(find.text('Add Record').first);
       await tester.pumpAndSettle();
 
       expect(find.text('Repeat monthly'), findsOneWidget);
@@ -324,7 +324,7 @@ void main() {
       await tester.pumpWidget(const MaterialApp(home: MoneyScreen()));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.add_card_rounded).first);
+      await tester.tap(find.text('Add Record').first);
       await tester.pumpAndSettle();
 
       // Expense is the default kind — the linked-document picker shows.

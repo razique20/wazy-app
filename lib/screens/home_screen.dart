@@ -175,17 +175,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 75),
-        child: FloatingActionButton.extended(
-          heroTag: 'home_add_document',
-          onPressed: () => context.push('/scan'),
-          icon: const Icon(Icons.add_rounded),
-          label: const Text('Add Document'),
-          backgroundColor: WazyColors.cyanAccent,
-          foregroundColor: const Color(0xFF0A0E1A),
-        ),
-      ),
       body: SafeArea(
         child: _loading
             ? const Center(child: CircularProgressIndicator())
