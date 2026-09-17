@@ -6,7 +6,7 @@ A curated roadmap of **Basic to Hard AI Features** tailored for **Wazy** (UAE SM
 
 ## 🟢 Level 1: Basic AI Features (Quick Wins & Smart Heuristics)
 
-- [ ] **Smart Auto-Categorization & Tagging Engine** `[Basic]`
+- [x] **Smart Auto-Categorization & Tagging Engine** `[Basic]`
   - *Description*: Uses TF-IDF / fuzzy string matching and user historical habits to automatically classify unstructured transactions into categories (e.g., "Talabat" → Food & Dining, "Salik" → Transport).
   - *Tech/Implementation*: Pure Dart string matching / Levenshtein distance & category memory index.
 

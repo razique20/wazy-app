@@ -13,6 +13,7 @@ import '../services/budget_alert_service.dart';
 import '../services/collection_service.dart';
 import '../services/document_scanner_service.dart';
 import '../services/finance_service.dart';
+import '../services/smart_category_engine.dart';
 import '../theme/app_theme.dart';
 import '../widgets/cash_flow_forecast_chart.dart';
 import '../widgets/dialogs/natural_language_money_add_dialog.dart';
@@ -98,6 +99,11 @@ class _MoneyScreenState extends State<MoneyScreen> {
       appBar: AppBar(
         title: const Text('Money'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.auto_awesome_rounded),
+            tooltip: 'Auto-Categorize with AI',
+            onPressed: _runAutoCategorizationAI,
+          ),
           IconButton(
             icon: const Icon(Icons.bolt_rounded),
             tooltip: 'Quick Add with Natural Language',
@@ -1473,6 +1479,24 @@ class _MoneyScreenState extends State<MoneyScreen> {
         .addEnvelope(result.$1, result.$2, result.$3);
   }
 
+  Future<void> _runAutoCategorizationAI() async {
+    final updatedCount =
+        await FinanceService.instance.autoCategorizeExistingTransactions();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          updatedCount > 0
+              ? 'AI Auto-Categorized $updatedCount transaction${updatedCount > 1 ? "s" : ""}! ✨'
+              : 'All transactions are already accurately categorized! ✓',
+        ),
+        backgroundColor:
+            updatedCount > 0 ? WazyColors.violetAccent : Colors.green,
+      ),
+    );
+    _reload();
+  }
+
   // ------------------------------------------------------------------
   // CSV export
   // ------------------------------------------------------------------
@@ -1890,6 +1914,7 @@ class _TransactionFormSheetState extends State<_TransactionFormSheet> {
   FinanceCategory _category = FinanceCategory.other;
   bool _repeatMonthly = false;
   ExpiryItem? _linkedDocument;
+  CategoryPrediction? _aiPrediction;
   final _titleController = TextEditingController();
   final _amountController = TextEditingController();
 
@@ -1899,6 +1924,27 @@ class _TransactionFormSheetState extends State<_TransactionFormSheet> {
       .where((i) => i.isActive && !i.isExpired)
       .toList()
     ..sort((a, b) => a.expiresAt.compareTo(b.expiresAt));
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController.addListener(_onTitleChanged);
+  }
+
+  void _onTitleChanged() {
+    final text = _titleController.text.trim();
+    if (text.isEmpty) {
+      setState(() => _aiPrediction = null);
+    } else {
+      final pred = SmartCategoryEngine.instance.predict(text, kind: _kind);
+      setState(() {
+        _aiPrediction = pred;
+        if (pred.isHighConfidence && _category == FinanceCategory.other) {
+          _category = pred.category;
+        }
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -2025,6 +2071,43 @@ class _TransactionFormSheetState extends State<_TransactionFormSheet> {
                 border: OutlineInputBorder(),
               ),
             ),
+            if (_aiPrediction != null && _aiPrediction!.isHighConfidence) ...[
+              const SizedBox(height: 6),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: InkWell(
+                  onTap: () =>
+                      setState(() => _category = _aiPrediction!.category),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: WazyColors.cyanAccent.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                          color: WazyColors.cyanAccent.withOpacity(0.4)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.auto_awesome_rounded,
+                            size: 14, color: WazyColors.cyanAccent),
+                        const SizedBox(width: 6),
+                        Text(
+                          'AI Suggested: ${_aiPrediction!.category.displayName} (${(_aiPrediction!.confidence * 100).toStringAsFixed(0)}%)',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: WazyColors.cyanAccent,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             TextField(
               controller: _amountController,

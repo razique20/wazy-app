@@ -9,6 +9,7 @@ import '../models/document_collection.dart';
 import '../models/finance.dart';
 import 'auth_service.dart';
 import 'collection_service.dart';
+import 'smart_category_engine.dart';
 import 'supabase_service.dart';
 
 /// Store for the signed-in user's finance records: transactions, category
@@ -98,6 +99,7 @@ class FinanceService extends ChangeNotifier {
   Future<void> init() async {
     if (_initialized) return;
     _initialized = true;
+    await SmartCategoryEngine.instance.init();
 
     final client = _client;
     final userId = AuthService.instance.currentUserId;
@@ -327,8 +329,32 @@ class FinanceService extends ChangeNotifier {
     }
 
     _transactions.insert(0, scoped);
+    await SmartCategoryEngine.instance.learnUserChoice(scoped.title, scoped.category);
     await _persistLocal();
     notifyListeners();
+  }
+
+  /// Automatically re-classifies existing transactions (or uncategorized ones)
+  /// using the Smart Category AI Engine.
+  Future<int> autoCategorizeExistingTransactions() async {
+    final updatedList = SmartCategoryEngine.instance.retroApplyCategorization(
+      _transactions,
+      onlyUncategorized: true,
+    );
+    var count = 0;
+    for (var i = 0; i < _transactions.length; i++) {
+      if (_transactions[i].category != updatedList[i].category) {
+        count++;
+      }
+    }
+    if (count > 0) {
+      _transactions
+        ..clear()
+        ..addAll(updatedList);
+      await _persistLocal();
+      notifyListeners();
+    }
+    return count;
   }
 
   Future<void> updateTransaction(FinanceTransaction updated) async {

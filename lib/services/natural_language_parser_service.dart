@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/document_type.dart';
 import '../models/finance.dart';
 import '../screens/document_scan_screen.dart';
+import 'smart_category_engine.dart';
 
 /// Parsed natural language output item for financial transactions.
 class ParsedMoneyItem {
@@ -676,6 +677,10 @@ class NaturalLanguageParserService {
   }
 
   FinanceCategory _extractFinanceCategory(String lower, FinanceKind kind) {
+    final pred = SmartCategoryEngine.instance.predict(lower, kind: kind);
+    if (pred.category != FinanceCategory.other) {
+      return pred.category;
+    }
     // Food & Dining / Groceries
     if (lower.contains('food') ||
         lower.contains('drink') ||
