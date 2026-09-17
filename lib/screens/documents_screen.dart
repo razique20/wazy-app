@@ -10,6 +10,7 @@ import '../services/urgency_engine.dart';
 import '../theme/app_theme.dart';
 import '../widgets/indicators/department_logo.dart';
 import '../widgets/dialogs/natural_language_add_dialog.dart';
+import '../widgets/dialogs/renew_document_dialog.dart';
 
 /// Documents tab (Tier 1): the full expiry-tracking workspace — search,
 /// filters and detailed cards with inline actions.
@@ -635,15 +636,58 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
   }
 
   Future<void> _markRenewed(ExpiryItem item) async {
-    await DocumentScannerService.instance.markAsRenewed(item.id);
-    await _loadData();
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${item.displayName} marked as renewed ✓'),
-        backgroundColor: Colors.green,
-      ),
-    );
+    // Ask for the new expiry (and an optional re-uploaded file) instead of
+    // archiving the document — renewal keeps it tracked.
+    final result = await showRenewDocumentDialog(context, item);
+    if (result == null) return;
+
+    try {
+      await DocumentScannerService.instance.markAsRenewed(
+        item.id,
+        newExpiryDate: result.newExpiry,
+        fee: result.fee,
+        renewedBy: result.renewedBy,
+        note: result.note,
+      );
+
+      // Persist the replacement file when the user re-uploaded one.
+      if (result.replacementFile != null) {
+        final storedPath = await saveRenewalReplacementFile(
+          item,
+          result.replacementFile!,
+        );
+        final refreshed =
+            await DocumentScannerService.instance.getItemById(item.id);
+        if (refreshed != null) {
+          await DocumentScannerService.instance.updateItem(
+            refreshed.copyWith(
+              fileName: result.replacementFile!.name,
+              filePath: storedPath ?? refreshed.filePath,
+              fileSize: result.replacementFile!.size,
+            ),
+          );
+        }
+      }
+
+      await _loadData();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${item.displayName} renewed — now expires ${ExpiryItem.formatDate(result.newExpiry)} ✓',
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not renew: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Future<void> _updateDate(ExpiryItem item) async {

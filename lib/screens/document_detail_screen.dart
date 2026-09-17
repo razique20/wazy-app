@@ -12,6 +12,7 @@ import '../models/renewal_record.dart';
 import '../services/finance_service.dart';
 import '../services/document_scanner_service.dart';
 import '../services/notification_service.dart';
+import '../widgets/dialogs/renew_document_dialog.dart';
 import '../widgets/widgets.dart';
 
 class DocumentDetailScreen extends StatefulWidget {
@@ -1460,88 +1461,16 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
   }
 
   Future<void> _markAsRenewed(BuildContext context, ExpiryItem item) async {
-    final feeController = TextEditingController(
-      text: item.renewalFee != null ? item.renewalFee!.toStringAsFixed(0) : '',
-    );
-    final byController = TextEditingController(text: item.assignedTo ?? '');
-    final noteController = TextEditingController();
-
-    final result = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Renew ${item.displayName}'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Current Expiry: ${ExpiryItem.formatDate(item.expiresAt)}',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: feeController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Renewal fee / cost (AED)',
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: byController,
-                decoration: const InputDecoration(
-                  labelText: 'Renewed by (Person / Dept)',
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: noteController,
-                decoration: const InputDecoration(
-                  labelText: 'Notes (optional)',
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.green),
-            onPressed: () {
-              final feeVal = double.tryParse(feeController.text.trim());
-              Navigator.pop(ctx, {
-                'fee': feeVal,
-                'renewedBy': byController.text.trim(),
-                'note': noteController.text.trim(),
-              });
-            },
-            child: const Text('Confirm Renewal'),
-          ),
-        ],
-      ),
-    );
-
+    // Shared renewal dialog: pick the new expiry date and optionally
+    // re-upload the document file. Renewing never deletes the document.
+    final result = await showRenewDocumentDialog(context, item);
     if (result == null) return;
 
     try {
-      final fee = result['fee'] as double?;
-      final renewedBy = result['renewedBy'] as String?;
-      final note = result['note'] as String?;
-
-      final newExpiry = DateTime(
-        item.expiresAt.year + 1,
-        item.expiresAt.month,
-        item.expiresAt.day,
-      );
+      final fee = result.fee;
+      final renewedBy = result.renewedBy;
+      final note = result.note;
+      final newExpiry = result.newExpiry;
 
       await DocumentScannerService.instance.markAsRenewed(
         item.id,
@@ -1550,6 +1479,25 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
         renewedBy: renewedBy,
         note: note,
       );
+
+      // Persist the replacement file when the user re-uploaded one.
+      if (result.replacementFile != null) {
+        final storedPath = await saveRenewalReplacementFile(
+          item,
+          result.replacementFile!,
+        );
+        final refreshed =
+            await DocumentScannerService.instance.getItemById(item.id);
+        if (refreshed != null) {
+          await DocumentScannerService.instance.updateItem(
+            refreshed.copyWith(
+              fileName: result.replacementFile!.name,
+              filePath: storedPath ?? refreshed.filePath,
+              fileSize: result.replacementFile!.size,
+            ),
+          );
+        }
+      }
 
       if ((fee ?? 0) > 0) {
         await FinanceService.instance.addTransaction(

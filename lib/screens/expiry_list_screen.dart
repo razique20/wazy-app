@@ -14,6 +14,7 @@ import '../services/document_scanner_service.dart';
 import '../services/expiry_report.dart';
 import '../services/urgency_engine.dart';
 import '../theme/app_theme.dart';
+import '../widgets/dialogs/renew_document_dialog.dart';
 import '../widgets/widgets.dart';
 
 class ExpiryListScreen extends StatefulWidget {
@@ -582,13 +583,46 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
   }
 
   Future<void> _markAsRenewed(BuildContext context, ExpiryItem item) async {
+    // Ask for the new expiry (and an optional re-uploaded file) instead of
+    // archiving the document — renewal keeps it tracked.
+    final result = await showRenewDocumentDialog(context, item);
+    if (result == null) return;
+
     try {
-      await DocumentScannerService.instance.markAsRenewed(item.id);
+      await DocumentScannerService.instance.markAsRenewed(
+        item.id,
+        newExpiryDate: result.newExpiry,
+        fee: result.fee,
+        renewedBy: result.renewedBy,
+        note: result.note,
+      );
+
+      // Persist the replacement file when the user re-uploaded one.
+      if (result.replacementFile != null) {
+        final storedPath = await saveRenewalReplacementFile(
+          item,
+          result.replacementFile!,
+        );
+        final refreshed =
+            await DocumentScannerService.instance.getItemById(item.id);
+        if (refreshed != null) {
+          await DocumentScannerService.instance.updateItem(
+            refreshed.copyWith(
+              fileName: result.replacementFile!.name,
+              filePath: storedPath ?? refreshed.filePath,
+              fileSize: result.replacementFile!.size,
+            ),
+          );
+        }
+      }
+
       await _loadData();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${item.displayName} marked as renewed ✓'),
+            content: Text(
+              '${item.displayName} renewed — now expires ${ExpiryItem.formatDate(result.newExpiry)} ✓',
+            ),
             backgroundColor: Colors.green,
           ),
         );
