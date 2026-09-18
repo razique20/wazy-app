@@ -39,6 +39,79 @@ class AppVersionService {
   /// Current app version built into this release.
   static const String currentAppVersion = '1.0.0';
 
+  /// Dummy App Store link for iOS releases.
+  static const String dummyAppStoreUrl =
+      'https://apps.apple.com/app/wazy-doc-tracker/id1234567890';
+
+  /// Dummy Google Play Store link for Android releases.
+  static const String dummyPlayStoreUrl =
+      'https://play.google.com/store/apps/details?id=com.wazy.app';
+
+  /// Fallback release URL.
+  static const String dummyReleaseUrl =
+      'https://github.com/razique20/wazy-app/releases';
+
+  /// Returns user-facing operating system name (e.g. "iOS", "Android", "Web", "macOS").
+  static String get osName {
+    if (kIsWeb) return 'Web';
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.iOS:
+        return 'iOS';
+      case TargetPlatform.android:
+        return 'Android';
+      case TargetPlatform.macOS:
+        return 'macOS';
+      case TargetPlatform.windows:
+        return 'Windows';
+      case TargetPlatform.linux:
+        return 'Linux';
+      default:
+        return 'Mobile';
+    }
+  }
+
+  /// Returns platform key used for querying Supabase ('ios', 'android', 'web', 'all').
+  static String get osPlatformKey {
+    if (kIsWeb) return 'web';
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.iOS:
+        return 'ios';
+      case TargetPlatform.android:
+        return 'android';
+      default:
+        return 'all';
+    }
+  }
+
+  /// Returns dummy store URL based on the OS.
+  static String get dummyStoreUrl {
+    if (kIsWeb) return dummyReleaseUrl;
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.iOS:
+        return dummyAppStoreUrl;
+      case TargetPlatform.android:
+        return dummyPlayStoreUrl;
+      default:
+        return dummyReleaseUrl;
+    }
+  }
+
+  /// Returns store name based on OS (e.g. "App Store", "Google Play Store").
+  static String get storeName {
+    if (kIsWeb) return 'Releases';
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.iOS:
+        return 'App Store';
+      case TargetPlatform.android:
+        return 'Google Play Store';
+      default:
+        return 'Store';
+    }
+  }
+
+  /// Version text formatted with current OS (e.g. "v1.0.0 (iOS)" or "v1.0.0 (Android)").
+  static String get fullVersionDisplay => 'v$currentAppVersion ($osName)';
+
   /// Performs a version check against Supabase `app_versions` table.
   /// Defaults gracefully to [VersionCheckStatus.upToDate] if network or Supabase is unavailable.
   Future<VersionCheckResult> checkAppVersion({String platform = 'all'}) async {

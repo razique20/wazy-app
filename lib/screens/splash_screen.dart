@@ -41,7 +41,9 @@ class _SplashScreenState extends State<SplashScreen>
     }
 
     // Always check for app updates when opening the app
-    final versionResult = await AppVersionService.instance.checkAppVersion();
+    final versionResult = await AppVersionService.instance.checkAppVersion(
+      platform: AppVersionService.osPlatformKey,
+    );
     if (mounted && versionResult.shouldPromptUpdate) {
       final allowed = await AppVersionDialog.showIfNeeded(context, versionResult);
       if (!allowed && versionResult.status == VersionCheckStatus.forceUpdate) {
@@ -72,43 +74,63 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: WazyColors.navyPrimary,
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'WAZY',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 44,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 3.0,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'FINANCIAL & DOCUMENT INTELLIGENCE',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 2.5,
-                color: WazyColors.cyanAccent.withOpacity(0.9),
-              ),
-            ),
-            const SizedBox(height: 48),
-            if (_hasOnboarded)
-              const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(WazyColors.cyanAccent),
+      body: Stack(
+        children: [
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'WAZY',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 44,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 3.0,
+                    color: Colors.white,
+                  ),
                 ),
+                const SizedBox(height: 10),
+                Text(
+                  'FINANCIAL & DOCUMENT INTELLIGENCE',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 2.5,
+                    color: WazyColors.cyanAccent.withOpacity(0.9),
+                  ),
+                ),
+                const SizedBox(height: 48),
+                if (_hasOnboarded)
+                  const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(WazyColors.cyanAccent),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          // Version label pinned to the bottom center
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: MediaQuery.of(context).padding.bottom + 24,
+            child: Text(
+              AppVersionService.fullVersionDisplay,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 1.2,
+                color: Colors.white.withOpacity(0.35),
               ),
-          ],
-        ),
+            ),
+          ),
+        ],
       ),
     );
   }

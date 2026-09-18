@@ -34,7 +34,9 @@ class AppVersionDialog extends StatelessWidget {
   }
 
   Future<void> _launchUpdateUrl(BuildContext context) async {
-    final urlStr = result.downloadUrl ?? 'https://github.com/razique20/wazy-app/releases';
+    final urlStr = (result.downloadUrl != null && result.downloadUrl!.isNotEmpty)
+        ? result.downloadUrl!
+        : AppVersionService.dummyStoreUrl;
     final uri = Uri.parse(urlStr);
 
     try {
@@ -43,14 +45,14 @@ class AppVersionDialog extends StatelessWidget {
       } else {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Could not open link: $urlStr')),
+            SnackBar(content: Text('Opening store link: $urlStr')),
           );
         }
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error launching update: $e')),
+          SnackBar(content: Text('Opening store link: $urlStr')),
         );
       }
     }
@@ -150,8 +152,10 @@ class AppVersionDialog extends StatelessWidget {
           ),
         FilledButton.icon(
           onPressed: () => _launchUpdateUrl(context),
-          icon: const Icon(Icons.download_rounded, size: 18),
-          label: Text(isForce ? 'Update Now' : 'Update App'),
+          icon: const Icon(Icons.open_in_new_rounded, size: 18),
+          label: Text(isForce
+              ? 'Open ${AppVersionService.storeName}'
+              : 'Update on ${AppVersionService.storeName}'),
           style: FilledButton.styleFrom(
             backgroundColor: isForce ? Colors.red.shade700 : null,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
