@@ -131,8 +131,15 @@ class CustomDocumentTypeService {
 
   void _registerFromRow(Map<String, dynamic> row) {
     try {
+      // Re-register with the row's stable DB id so the registry key stays
+      // 'custom-<uuid>' across sign-out → sign-in. Without this a fresh key
+      // would be generated and documents whose doc_type references the old
+      // key would silently resolve to the trade-licence fallback.
       DocumentTypeRegistry.instance.register(
         name: row['name'] as String? ?? '',
+        key: row['id'] == null
+            ? null
+            : '${DocumentTypeRegistry.customKeyPrefix}${row['id']}',
         renewalAuthority: row['renewal_authority'] as String?,
         typicalRenewalDays: (row['renewal_days'] as num?)?.toInt() ?? 365,
       );
@@ -150,8 +157,12 @@ class CustomDocumentTypeService {
       for (final entry in list) {
         final map = Map<String, dynamic>.from(entry as Map);
         try {
+          // Restore the stored key so documents referencing 'custom-<uuid>'
+          // still resolve after a restart (same rationale as _registerFromRow).
+          final storedKey = map['key'] as String?;
           DocumentTypeRegistry.instance.register(
             name: map['name'] as String? ?? '',
+            key: storedKey,
             renewalAuthority: map['renewalAuthority'] as String?,
             typicalRenewalDays:
                 (map['typicalRenewalDays'] as num?)?.toInt() ?? 365,
@@ -171,6 +182,7 @@ class CustomDocumentTypeService {
       final customs = DocumentTypeRegistry.instance.all
           .where((t) => t.isCustom)
           .map((t) => {
+                'key': t.key,
                 'name': t.displayName,
                 'renewalAuthority': t.renewalAuthority,
                 'typicalRenewalDays': t.typicalRenewalDays,
