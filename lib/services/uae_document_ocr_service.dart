@@ -4,6 +4,7 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 
 import '../models/document_type.dart';
 import '../screens/document_scan_screen.dart';
+import 'uae_authority_catalog.dart';
 
 /// Result of OCR processing and UAE field extraction.
 class UaeOcrResult {

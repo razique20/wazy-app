@@ -5,6 +5,7 @@ import '../models/document_type.dart';
 import '../models/finance.dart';
 import '../screens/document_scan_screen.dart';
 import 'smart_category_engine.dart';
+import 'uae_authority_catalog.dart';
 
 /// Parsed natural language output item for financial transactions.
 class ParsedMoneyItem {
@@ -120,10 +121,20 @@ class NaturalLanguageParserService {
     final renewalFee = feeMatch?.$1;
     final hasExtractedFee = feeMatch != null;
 
-    // 4. Extract Emirate & Issuing Authority
+    // 4. Extract Emirate & Issuing Authority. A keyword match names an
+    // authority explicitly ("by Dubai RTA") and wins outright; a bare
+    // emirate mention ("... expires 12 March 2027 Dubai") only tells us the
+    // emirate, so the type-aware mapping in UaeAuthorityCatalog suggests
+    // the right authority ("Other / Custom" when nothing maps).
     final emirateMatch = _extractEmirateAndAuthority(rawText);
     final emirate = emirateMatch?.$1 ?? UaeEmirate.dubai;
-    final authority = emirateMatch?.$2 ?? 'Dubai DET / DED (Department of Economy & Tourism)';
+    final catalog = UaeAuthorityCatalog.instance;
+    final namedAuthority = _namesExplicitAuthority(rawText)
+        ? emirateMatch?.$2
+        : null;
+    final authority = namedAuthority ??
+        catalog.suggestedAuthorityFor(docType, emirate) ??
+        UaeAuthorityCatalog.otherAuthorityLabel;
     final hasExtractedEmirate = emirateMatch != null;
 
     // 5. Clean & Extract Title
@@ -150,13 +161,18 @@ class NaturalLanguageParserService {
   }
 
   ParsedNaturalLanguageItem _defaultItem(String raw) {
+    final docType = DocumentTypeRegistry.instance.byEnum(DocumentType.tradeLicence);
     return ParsedNaturalLanguageItem(
       rawInput: raw,
       title: 'New Document',
-      docType: DocumentTypeRegistry.instance.byEnum(DocumentType.tradeLicence),
+      docType: docType,
       expiryDate: DateTime.now().add(const Duration(days: 365)),
       emirate: UaeEmirate.dubai,
-      authority: 'Dubai DET / DED (Department of Economy & Tourism)',
+      authority: UaeAuthorityCatalog.instance.suggestedAuthorityFor(
+            docType,
+            UaeEmirate.dubai,
+          ) ??
+          UaeAuthorityCatalog.otherAuthorityLabel,
     );
   }
 
@@ -431,6 +447,31 @@ class NaturalLanguageParserService {
     }
 
     return null;
+  }
+
+  /// True when the sentence explicitly names an issuing authority (RTA,
+  /// GDRFA, DED, RERA, TAMM, ITC, SEDD, MOHRE, ICP, …) rather than merely
+  /// mentioning an emirate. Only then does the keyword match's authority
+  /// override the type-aware catalog suggestion.
+  bool _namesExplicitAuthority(String text) {
+    final upper = text.toUpperCase();
+    // Acronyms need word boundaries: 'DHA' must not match inside
+    // 'ABU DHABI', 'DET' inside 'DEPARTMENT', etc.
+    if (RegExp(r'\b(RTA|GDRFA|DED|DET|RERA|EJARI|TAMM|ADDED|ITC|SEDD|MOHRE|ICP|FTA|DHA|DIFC|ADGM)\b')
+        .hasMatch(upper)) {
+      return true;
+    }
+    const namedAuthorities = [
+      'IMMIGRATION',
+      'MUNICIPALITY',
+      'LAND DEPARTMENT',
+      'POLICE',
+      'CIVIL DEFENSE',
+      'CIVIL DEFENCE',
+      'TRANSPORT AUTHORITY',
+      'ECONOMIC DEVELOPMENT',
+    ];
+    return namedAuthorities.any(upper.contains);
   }
 
   (UaeEmirate, String, String)? _extractEmirateAndAuthority(String text) {

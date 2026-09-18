@@ -160,6 +160,44 @@ extension DocumentTypeExtension on DocumentType {
     }
   }
 
+  /// Everyday name(s) shown in pickers so users find the type by the name
+  /// they actually use — e.g. nobody searches "Vehicle Registration" when
+  /// they mean the Mulkiya. Null when the display name is already how
+  /// people refer to it (Passport, Driving Licence, …).
+  String? get pickerAlias {
+    switch (this) {
+      case DocumentType.tradeLicence:
+        return 'Business / Commercial Licence';
+      case DocumentType.ejari:
+        return 'Tenancy Contract';
+      case DocumentType.visa:
+        return 'Residence Visa';
+      case DocumentType.emiratesId:
+        return 'National ID';
+      case DocumentType.labourDocuments:
+        return 'Labour / Establishment Card';
+      case DocumentType.insurance:
+        return 'Health / Vehicle Policy';
+      case DocumentType.vehicleRegistration:
+        return 'Mulkiya';
+      case DocumentType.contracts:
+        return 'Legal Agreement';
+      case DocumentType.certificates:
+        return 'Attestation';
+      case DocumentType.permits:
+        return 'Civil Defence / Municipality';
+      case DocumentType.domainNames:
+        return 'Website Domain';
+      case DocumentType.softwareSubscriptions:
+        return 'SaaS / Tools';
+      case DocumentType.supplierAgreements:
+        return 'Vendor Contract';
+      case DocumentType.passport:
+      case DocumentType.drivingLicence:
+        return null;
+    }
+  }
+
   int get typicalRenewalDays {
     switch (this) {
       case DocumentType.tradeLicence:

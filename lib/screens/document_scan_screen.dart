@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -12,79 +13,26 @@ import '../models/expiry_item.dart';
 import '../services/collection_service.dart';
 import '../services/custom_document_type_service.dart';
 import '../services/document_scanner_service.dart';
+import '../services/uae_authority_catalog.dart';
 import '../services/uae_document_ocr_service.dart';
+import '../widgets/dialogs/companion_suggestion_sheet.dart';
 
-enum UaeEmirate {
-  dubai('Dubai'),
-  abuDhabi('Abu Dhabi'),
-  sharjah('Sharjah'),
-  ajman('Ajman'),
-  rak('Ras Al Khaimah'),
-  fujairah('Fujairah'),
-  uaq('Umm Al Quwain'),
-  federal('Federal / UAE-Wide');
+/// The emirate enum now lives in UaeAuthorityCatalog; re-exported so existing
+/// imports of this screen keep resolving [UaeEmirate].
+export '../services/uae_authority_catalog.dart' show UaeEmirate;
 
-  final String displayName;
-  const UaeEmirate(this.displayName);
-}
-
-final Map<UaeEmirate, List<String>> _emirateAuthorities = {
-  UaeEmirate.dubai: [
-    'Dubai DET / DED (Department of Economy & Tourism)',
-    'RERA / Dubai Land Department (Ejari)',
-    'GDRFA Dubai (General Directorate of Residency)',
-    'RTA Dubai (Roads & Transport Authority)',
-    'DHA (Dubai Health Authority)',
-    'Dubai Municipality',
-    'DIFC (Dubai International Financial Centre)',
-    'DDA (Dubai Development Authority / Free Zones)',
-    'Dubai Courts',
-  ],
-  UaeEmirate.abuDhabi: [
-    'ADDED (Abu Dhabi Dept of Economic Development)',
-    'TAMM / Municipality of Abu Dhabi',
-    'ICP Abu Dhabi (Identity & Citizenship)',
-    'Integrated Transport Centre (ITC / DoT)',
-    'DOH (Department of Health Abu Dhabi)',
-    'ADGM (Abu Dhabi Global Market)',
-  ],
-  UaeEmirate.sharjah: [
-    'Sharjah SEDD (Economic Development Dept)',
-    'Sharjah City Municipality',
-    'Sharjah SRTA (Roads & Transport Authority)',
-    'Sharjah Police',
-  ],
-  UaeEmirate.ajman: [
-    'Ajman DED (Department of Economic Development)',
-    'Ajman Municipality & Planning Department',
-    'Ajman Transport Authority',
-  ],
-  UaeEmirate.rak: [
-    'RAK DED (Department of Economic Development)',
-    'RAK Municipality',
-    'RAK Public Services / RTA',
-  ],
-  UaeEmirate.fujairah: [
-    'Fujairah Municipality',
-    'Fujairah Free Zone Authority',
-  ],
-  UaeEmirate.uaq: [
-    'UAQ DED (Department of Economic Development)',
-    'UAQ Municipality',
-  ],
-  UaeEmirate.federal: [
-    'ICP (Federal Identity, Citizenship & Customs)',
-    'MOHRE (Ministry of Human Resources & Emiratisation)',
-    'Ministry of Economy UAE',
-    'FTA (Federal Tax Authority - TRN/VAT)',
-    'Central Bank of the UAE',
-    'TDRA (Telecommunications & Digital Regulatory Authority)',
-  ],
-};
-
-/// Full screen form to upload a document file and track its expiry date & renewal cost.
+/// Full screen form to upload or edit a document file and track its expiry date & renewal cost.
 class DocumentScanScreen extends StatefulWidget {
-  const DocumentScanScreen({super.key});
+  final ExpiryItem? initialItem;
+  final String? documentId;
+
+  const DocumentScanScreen({
+    super.key,
+    this.initialItem,
+    this.documentId,
+  });
+
+  bool get isEditing => initialItem != null || documentId != null;
 
   @override
   State<DocumentScanScreen> createState() => _DocumentScanScreenState();
@@ -97,10 +45,18 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
   late final TextEditingController _locationController;
   late final TextEditingController _descriptionController;
 
+  static const String _otherAuthority = 'OTHER_CUSTOM';
+
+  ExpiryItem? _editingItem;
+  bool _isLoadingToEdit = false;
+  String? _existingFilePath;
+  String? _existingFileName;
+  int? _existingFileSize;
+
   DocumentTypeMeta _docType =
       DocumentTypeRegistry.instance.byEnum(DocumentType.tradeLicence);
   UaeEmirate _selectedEmirate = UaeEmirate.dubai;
-  late String _selectedAuthority;
+  String _selectedAuthority = _otherAuthority;
   bool _isCustomAuthority = false;
   DateTime _expiresAt = DateTime.now().add(const Duration(days: 365));
   PlatformFile? _attachedFile;
@@ -113,9 +69,93 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
     super.initState();
     _titleController = TextEditingController();
     _feeController = TextEditingController();
-    _selectedAuthority = _emirateAuthorities[UaeEmirate.dubai]!.first;
-    _locationController = TextEditingController(text: _selectedAuthority);
+    _locationController = TextEditingController();
     _descriptionController = TextEditingController();
+
+    if (widget.initialItem != null) {
+      _initFromItem(widget.initialItem!);
+    } else if (widget.documentId != null) {
+      _loadDocumentToEdit(widget.documentId!);
+    } else {
+      _selectedAuthority =
+          UaeAuthorityCatalog.instance.suggestedAuthorityFor(
+                _docType,
+                UaeEmirate.dubai,
+              ) ??
+              _otherAuthority;
+      _isCustomAuthority = _selectedAuthority == _otherAuthority;
+      _locationController.text =
+          _isCustomAuthority ? '' : _selectedAuthority;
+    }
+  }
+
+  void _initFromItem(ExpiryItem item) {
+    _editingItem = item;
+    _titleController.text = item.displayName;
+    _feeController.text = item.renewalFee != null
+        ? (item.renewalFee! % 1 == 0
+            ? item.renewalFee!.toInt().toString()
+            : item.renewalFee!.toString())
+        : '';
+    _descriptionController.text = item.description ?? '';
+    _docType = item.docType;
+    _expiresAt = item.expiresAt;
+
+    final options = UaeAuthorityCatalog.instance.authorityOptionsFor(
+      _docType,
+      _selectedEmirate,
+    );
+    String authorityCandidate = _otherAuthority;
+    if (item.renewalAuthorities != null && item.renewalAuthorities!.isNotEmpty) {
+      authorityCandidate = item.renewalAuthorities!.first;
+    } else if (item.location != null && item.location!.isNotEmpty) {
+      authorityCandidate = item.location!;
+    }
+
+    if (options.contains(authorityCandidate)) {
+      _selectedAuthority = authorityCandidate;
+      _isCustomAuthority = false;
+      _locationController.text = authorityCandidate;
+    } else {
+      _selectedAuthority = _otherAuthority;
+      _isCustomAuthority = true;
+      _locationController.text = authorityCandidate == _otherAuthority ? '' : authorityCandidate;
+    }
+
+    if (item.filePath != null || item.fileName != null) {
+      _existingFilePath = item.filePath;
+      _existingFileName = item.fileName ?? item.filePath?.split('/').last;
+      _existingFileSize = item.fileSize;
+    }
+  }
+
+  Future<void> _loadDocumentToEdit(String id) async {
+    setState(() => _isLoadingToEdit = true);
+    final item = await DocumentScannerService.instance.getItemById(id);
+    if (mounted && item != null) {
+      setState(() {
+        _initFromItem(item);
+        _isLoadingToEdit = false;
+      });
+    } else if (mounted) {
+      setState(() => _isLoadingToEdit = false);
+    }
+  }
+
+  /// Re-pick the authority for the current type+emirate pair, preserving a
+  /// custom entry only when it is still one of the offered options.
+  void _syncAuthorityToSelection() {
+    final options = UaeAuthorityCatalog.instance.authorityOptionsFor(
+      _docType,
+      _selectedEmirate,
+    );
+    if (_selectedAuthority != _otherAuthority &&
+        !_isCustomAuthority &&
+        !options.contains(_selectedAuthority)) {
+      _selectedAuthority = _otherAuthority;
+      _isCustomAuthority = true;
+      _locationController.text = '';
+    }
   }
 
   @override
@@ -178,15 +218,31 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
         }
         if (res.emirate != null) {
           _selectedEmirate = res.emirate!;
-          final list = _emirateAuthorities[res.emirate!] ?? [];
-          if (res.authority != null && list.contains(res.authority)) {
+          final options = UaeAuthorityCatalog.instance.authorityOptionsFor(
+            _docType,
+            _selectedEmirate,
+          );
+          if (res.authority != null && options.contains(res.authority)) {
             _selectedAuthority = res.authority!;
             _isCustomAuthority = false;
             _locationController.text = res.authority!;
-          } else if (list.isNotEmpty) {
-            _selectedAuthority = list.first;
-            _isCustomAuthority = false;
-            _locationController.text = list.first;
+          } else if (res.authority != null) {
+            // OCR read an authority that is not in the catalog — keep it as
+            // the custom entry instead of silently dropping it.
+            _selectedAuthority = _otherAuthority;
+            _isCustomAuthority = true;
+            _locationController.text = res.authority!;
+          } else {
+            // No authority on the scan → type+emirate suggestion, else Other.
+            _selectedAuthority =
+                UaeAuthorityCatalog.instance.suggestedAuthorityFor(
+                      _docType,
+                      _selectedEmirate,
+                    ) ??
+                    _otherAuthority;
+            _isCustomAuthority = _selectedAuthority == _otherAuthority;
+            _locationController.text =
+                _isCustomAuthority ? '' : _selectedAuthority;
           }
         }
 
@@ -426,8 +482,12 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
           ? '${_locationController.text.trim()} (${_selectedEmirate.displayName})'
           : _selectedAuthority;
 
-      final docId = const Uuid().v4();
-      String? localSavedPath = _attachedFile?.path;
+      final isEdit = _editingItem != null;
+      final docId = isEdit ? _editingItem!.id : const Uuid().v4();
+      String? localSavedPath = _attachedFile?.path ?? _existingFilePath;
+      String? savedFileName = _attachedFile?.name ?? _existingFileName;
+      int? savedFileSize = _attachedFile?.size ?? _existingFileSize;
+
       if (_attachedFile?.path != null && File(_attachedFile!.path!).existsSync()) {
         try {
           final appDocDir = await getApplicationDocumentsDirectory();
@@ -439,6 +499,8 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
           final targetPath = '${targetDir.path}/$fileName';
           final savedFile = await File(_attachedFile!.path!).copy(targetPath);
           localSavedPath = savedFile.path;
+          savedFileName = fileName;
+          savedFileSize = _attachedFile!.size;
         } catch (_) {
           localSavedPath = _attachedFile?.path;
         }
@@ -446,46 +508,62 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
 
       final item = ExpiryItem(
         id: docId,
-        collectionId: DocumentCollectionService.instance.activeCollectionId,
+        collectionId: isEdit
+            ? _editingItem!.collectionId
+            : DocumentCollectionService.instance.activeCollectionId,
         displayName: _titleController.text.trim(),
         docType: _docType,
         expiryDate: DateFormat('dd MMM yyyy').format(_expiresAt),
         daysRemaining: daysOffset,
         isExpired: daysOffset < 0,
-        isNotified: false,
-        notifiedDays: null,
+        isNotified: isEdit ? _editingItem!.isNotified : false,
+        notifiedDays: isEdit ? _editingItem!.notifiedDays : null,
         description: _descriptionController.text.trim(),
         location: finalLocation,
         reminderStatus: _determineReminderStatus(daysOffset),
         urgency: _determineUrgency(daysOffset),
-        assignedTo: null,
-        documentDate: DateFormat('dd MMM yyyy').format(now),
+        assignedTo: isEdit ? _editingItem!.assignedTo : null,
+        documentDate: isEdit
+            ? _editingItem!.documentDate
+            : DateFormat('dd MMM yyyy').format(now),
         renewalFee: fee,
-        renewalSteps: [
-          'Gather required documentation',
-          'Prepare renewal application',
-          'Submit to relevant authority',
-          'Pay renewal fees',
-          'Receive renewed document',
-        ],
+        renewalSteps: isEdit
+            ? _editingItem!.renewalSteps
+            : [
+                'Gather required documentation',
+                'Prepare renewal application',
+                'Submit to relevant authority',
+                'Pay renewal fees',
+                'Receive renewed document',
+              ],
         renewalAuthorities: [_selectedAuthority],
         renewalWarning: daysOffset <= 30 ? 'Expires soon — renew to avoid penalties' : null,
         expiresAt: _expiresAt,
-        fileName: _attachedFile?.name,
+        fileName: savedFileName,
         filePath: localSavedPath,
-        fileSize: _attachedFile?.size,
+        fileSize: savedFileSize,
+        customReminderDays: isEdit ? _editingItem!.customReminderDays : null,
+        renewalHistory: isEdit ? _editingItem!.renewalHistory : const [],
       );
 
-      await DocumentScannerService.instance.addItem(item);
+      if (isEdit) {
+        await DocumentScannerService.instance.updateItem(item);
+      } else {
+        await DocumentScannerService.instance.addItem(item);
+      }
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${item.displayName} added to tracking'),
+          content: Text(isEdit ? '${item.displayName} updated ✓' : '${item.displayName} added to tracking'),
           backgroundColor: Colors.green,
         ),
       );
-      context.pop();
+      final rootNavigatorContext = Navigator.of(context, rootNavigator: true).context;
+      context.pop(true);
+      if (!isEdit) {
+        unawaited(CompanionSuggestionSheet.maybeSuggestCompanions(rootNavigatorContext, item));
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -502,11 +580,19 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isEdit = widget.isEditing || _editingItem != null;
     final daysRemaining = _expiresAt.difference(DateTime.now()).inDays;
+
+    if (_isLoadingToEdit) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Edit document')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Upload document'),
+        title: Text(isEdit ? 'Edit document' : 'Upload document'),
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -517,7 +603,9 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Upload your document file and enter expiry details to start tracking.',
+                isEdit
+                    ? 'Update document expiry details, notes, or renewal fees.'
+                    : 'Upload your document file and enter expiry details to start tracking.',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -525,7 +613,7 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
               const SizedBox(height: 16),
 
               // File Upload Attachment Box
-              if (_attachedFile == null)
+              if (_attachedFile == null && _existingFileName == null)
                 InkWell(
                   onTap: _pickFile,
                   borderRadius: BorderRadius.circular(12),
@@ -596,7 +684,7 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  _attachedFile!.name,
+                                  _attachedFile?.name ?? _existingFileName ?? 'Attached file',
                                   style: theme.textTheme.bodyLarge?.copyWith(
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -605,7 +693,11 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  '${(_attachedFile!.size / 1024).toStringAsFixed(0)} KB • ${_attachedFile!.extension?.toUpperCase() ?? "FILE"}',
+                                  _attachedFile != null
+                                      ? '${(_attachedFile!.size / 1024).toStringAsFixed(0)} KB • ${_attachedFile!.extension?.toUpperCase() ?? "FILE"}'
+                                      : (_existingFileSize != null
+                                          ? '${(_existingFileSize! / 1024).toStringAsFixed(0)} KB • ATTACHED FILE'
+                                          : 'Existing file attached'),
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     color: theme.colorScheme.outline,
                                   ),
@@ -617,6 +709,9 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
                             icon: const Icon(Icons.close_rounded),
                             onPressed: () => setState(() {
                               _attachedFile = null;
+                              _existingFilePath = null;
+                              _existingFileName = null;
+                              _existingFileSize = null;
                               _ocrResult = null;
                             }),
                             tooltip: 'Remove file',
@@ -755,6 +850,10 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
                       : null,
                 ),
                 items: DocumentTypeRegistry.instance.typesForPicker.map((t) {
+                  final alias = t.builtinEnum?.pickerAlias;
+                  final label = alias == null
+                      ? t.displayName
+                      : '${t.displayName} ($alias)';
                   return DropdownMenuItem(
                     value: t,
                     child: Row(
@@ -763,7 +862,7 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
                         const SizedBox(width: 10),
                         Flexible(
                           child: Text(
-                            t.displayName,
+                            label,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -773,7 +872,10 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
                 }).toList(),
                 onChanged: (val) async {
                   if (val == null) return;
-                  setState(() => _docType = val);
+                  setState(() {
+                    _docType = val;
+                    _syncAuthorityToSelection();
+                  });
                 },
               ),
               Align(
@@ -810,27 +912,46 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
                   if (val != null) {
                     setState(() {
                       _selectedEmirate = val;
-                      final list = _emirateAuthorities[val] ?? [];
-                      _selectedAuthority = list.isNotEmpty ? list.first : 'OTHER_CUSTOM';
-                      _isCustomAuthority = _selectedAuthority == 'OTHER_CUSTOM';
-                      _locationController.text = _isCustomAuthority ? '' : _selectedAuthority;
+                      // Suggest the authority for this type+emirate pair;
+                      // fall back to Other / Custom when unmapped.
+                      _selectedAuthority =
+                          UaeAuthorityCatalog.instance.suggestedAuthorityFor(
+                                _docType,
+                                val,
+                              ) ??
+                              _otherAuthority;
+                      _isCustomAuthority =
+                          _selectedAuthority == _otherAuthority;
+                      _locationController.text =
+                          _isCustomAuthority ? '' : _selectedAuthority;
                     });
                   }
                 },
               ),
               const SizedBox(height: 16),
 
-              // Authority Dropdown
+              // Authority Dropdown — options ordered by relevance for the
+              // selected document type: suggestion first, then the emirate's
+              // list, then federal bodies, then Other / Custom.
               DropdownButtonFormField<String>(
                 value: _selectedAuthority,
                 isExpanded: true,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Issuing Authority',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.account_balance_outlined),
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.account_balance_outlined),
+                  helperText: UaeAuthorityCatalog.instance.suggestedAuthorityFor(
+                            _docType,
+                            _selectedEmirate,
+                          ) ==
+                          null
+                      ? 'Default: Other / Custom Authority'
+                      : null,
                 ),
                 items: [
-                  ...?_emirateAuthorities[_selectedEmirate]?.map((auth) {
+                  ...UaeAuthorityCatalog.instance
+                      .authorityOptionsFor(_docType, _selectedEmirate)
+                      .map((auth) {
                     return DropdownMenuItem(
                       value: auth,
                       child: Text(
@@ -966,16 +1087,20 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
-                    : Icon(_ocrResult != null
+                    : Icon(isEdit
                         ? Icons.check_circle_rounded
-                        : Icons.cloud_upload_rounded),
+                        : _ocrResult != null
+                            ? Icons.check_circle_rounded
+                            : Icons.cloud_upload_rounded),
                 label: Text(_isSaving
                     ? 'Saving...'
-                    : _ocrResult != null
-                        ? 'Confirm & Save Document'
-                        : 'Save document'),
+                    : isEdit
+                        ? 'Update document'
+                        : _ocrResult != null
+                            ? 'Confirm & Save Document'
+                            : 'Save document'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: _ocrResult != null ? Colors.green.shade700 : null,
+                  backgroundColor: (isEdit || _ocrResult != null) ? Colors.green.shade700 : null,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

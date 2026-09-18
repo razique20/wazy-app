@@ -67,7 +67,10 @@ final router = GoRouter(
     GoRoute(
       path: '/scan',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const DocumentScanScreen(),
+      builder: (context, state) {
+        final extraItem = state.extra as ExpiryItem?;
+        return DocumentScanScreen(initialItem: extraItem);
+      },
     ),
     GoRoute(
       path: '/document/:id',
@@ -75,6 +78,15 @@ final router = GoRouter(
       builder: (context, state) {
         final id = state.pathParameters['id']!;
         return DocumentDetailScreen(documentId: id);
+      },
+    ),
+    GoRoute(
+      path: '/document/:id/edit',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) {
+        final id = state.pathParameters['id']!;
+        final extraItem = state.extra as ExpiryItem?;
+        return DocumentScanScreen(documentId: id, initialItem: extraItem);
       },
     ),
     GoRoute(

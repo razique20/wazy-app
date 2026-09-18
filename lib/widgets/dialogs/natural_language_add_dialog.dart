@@ -7,7 +7,10 @@ import 'package:uuid/uuid.dart';
 
 import '../../models/expiry_item.dart';
 import '../../services/collection_service.dart';
+import '../../services/companion_document_factory.dart';
+import '../../services/companion_suggestion_service.dart';
 import '../../services/document_scanner_service.dart';
+import 'companion_suggestion_sheet.dart';
 import '../../services/natural_language_parser_service.dart';
 import '../../services/voice_input_service.dart';
 
@@ -193,6 +196,7 @@ class _NaturalLanguageAddDialogState extends State<NaturalLanguageAddDialog> {
         ),
       );
       Navigator.pop(context, newItem);
+      unawaited(_maybeSuggestCompanions(newItem));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -201,6 +205,10 @@ class _NaturalLanguageAddDialogState extends State<NaturalLanguageAddDialog> {
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  Future<void> _maybeSuggestCompanions(ExpiryItem newItem) async {
+    await CompanionSuggestionSheet.maybeSuggestCompanions(context, newItem);
   }
 
   @override

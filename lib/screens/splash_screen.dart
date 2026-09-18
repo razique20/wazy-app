@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/app_version_service.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/dialogs/app_version_dialog.dart';
 import '../widgets/widgets.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -37,7 +39,17 @@ class _SplashScreenState extends State<SplashScreen>
       setState(() => _hasOnboarded = hasOnboarded);
       _controller.forward();
     }
-    await Future.delayed(const Duration(milliseconds: 1200));
+
+    // Always check for app updates when opening the app
+    final versionResult = await AppVersionService.instance.checkAppVersion();
+    if (mounted && versionResult.shouldPromptUpdate) {
+      final allowed = await AppVersionDialog.showIfNeeded(context, versionResult);
+      if (!allowed && versionResult.status == VersionCheckStatus.forceUpdate) {
+        return; // Halt navigation if force update is required and not completed
+      }
+    }
+
+    await Future.delayed(const Duration(milliseconds: 1000));
     if (mounted) {
       final auth = AuthService.instance;
       if (auth.isAvailable && !auth.isSignedIn) {

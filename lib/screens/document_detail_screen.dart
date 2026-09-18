@@ -117,17 +117,14 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Edit document (coming soon)')),
-              );
-            },
+            onPressed: () => _editDocument(context, item),
             tooltip: 'Edit document',
           ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             onSelected: (value) => _handleMenuAction(context, value, item),
             itemBuilder: (context) => [
+              const PopupMenuItem(value: 'edit', child: Text('Edit document')),
               const PopupMenuItem(value: 'renew', child: Text('Mark as renewed')),
               const PopupMenuItem(value: 'share', child: Text('Share details')),
               const PopupMenuItem(value: 'export', child: Text('Export report')),
@@ -1569,8 +1566,21 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
     }
   }
 
+  Future<void> _editDocument(BuildContext context, ExpiryItem item) async {
+    final result = await context.push<bool>(
+      '/document/${item.id}/edit',
+      extra: item,
+    );
+    if (result == true && mounted) {
+      _loadItem();
+    }
+  }
+
   void _handleMenuAction(BuildContext context, String action, ExpiryItem item) {
     switch (action) {
+      case 'edit':
+        _editDocument(context, item);
+        break;
       case 'renew':
         _markAsRenewed(context, item);
         break;
