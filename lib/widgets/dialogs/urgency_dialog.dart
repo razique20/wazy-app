@@ -85,7 +85,8 @@ class UrgencyDialog extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            item.renewalWarning ?? '',
+            // Same fallback as the detail screen's renewal card.
+            item.effectiveRenewalWarning,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.outline,
               fontStyle: FontStyle.italic,

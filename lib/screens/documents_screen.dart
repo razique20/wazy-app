@@ -1173,11 +1173,12 @@ class _DocumentCard extends StatelessWidget {
                   ),
                 ],
               ),
-              // Renewal warning
-              if (item.daysRemaining <= 30 && item.renewalWarning != null) ...[
+              // Renewal warning — expiry-aware fallback keeps this
+              // meaningful even when no warning was stored on the item.
+              if (item.daysRemaining <= 30) ...[
                 const SizedBox(height: 8),
                 Text(
-                  item.renewalWarning!,
+                  item.effectiveRenewalWarning,
                   style: TextStyle(
                     color: accent,
                     fontSize: 11,

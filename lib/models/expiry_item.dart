@@ -135,6 +135,38 @@ class ExpiryItem {
 
   String get label => '$displayName (${docType.displayName})';
 
+  /// Guidance shown in "Renewal information" cards and urgency dialogs.
+  ///
+  /// [renewalWarning] is only populated by some creation paths (and only when
+  /// the document is near expiry), so it is blank for most documents. This
+  /// getter always yields meaningful text:
+  ///
+  /// 1. an explicitly stored warning, if any;
+  /// 2. otherwise an expiry-aware explanation: what changed when the
+  ///    document expired, or what happens as expiry approaches;
+  /// 3. otherwise the document type's generic compliance blurb.
+  String get effectiveRenewalWarning {
+    final stored = renewalWarning?.trim();
+    if (stored != null && stored.isNotEmpty) return stored;
+
+    final days = daysRemaining;
+    if (days < 0) {
+      return 'Expired ${-days} day${-days == 1 ? '' : 's'} ago on '
+          '${ExpiryItem.formatDate(expiresAt)} — renew as soon as possible '
+          'to avoid penalties or service interruptions.';
+    }
+    if (days == 0) {
+      return 'Expires today (${ExpiryItem.formatDate(expiresAt)}). '
+          'Renew now — many UAE authorities require valid documents at all times.';
+    }
+    if (days <= 30) {
+      return 'Expires in $days days (${ExpiryItem.formatDate(expiresAt)}). '
+          'Start the renewal now to avoid fines or a coverage gap.';
+    }
+    return '${docType.defaultWarning} Expires '
+        '${ExpiryItem.formatDate(expiresAt)}.';
+  }
+
   const ExpiryItem({
     required this.collectionId,
     required this.id,

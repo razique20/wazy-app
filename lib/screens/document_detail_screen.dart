@@ -715,7 +715,9 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  item.renewalWarning ?? '',
+                  // renewalWarning is often null; fall back to an expiry-aware
+                  // message so the card never renders an empty body.
+                  item.effectiveRenewalWarning,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.outline,
                     height: 1.5,

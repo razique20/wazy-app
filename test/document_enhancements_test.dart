@@ -95,5 +95,85 @@ void main() {
       expect(fireDate45.day, equals(expectedDate.day));
       expect(fireDate45.month, equals(expectedDate.month));
     });
+
+    group('effectiveRenewalWarning expiry-aware fallback', () {
+      final farExpiry = DateTime.now().add(const Duration(days: 365));
+      final nearExpiry = DateTime.now().add(const Duration(days: 14));
+      final expired = DateTime.now().subtract(const Duration(days: 5));
+
+      DocumentTypeMeta type(DocumentType t) =>
+          DocumentTypeRegistry.instance.byEnum(t);
+
+      /// Build via the RAW constructor — the path used by
+      /// DocumentScanScreen — which leaves renewalWarning null, unlike
+      /// ExpiryItem.create (pre-fills the type's generic blurb).
+      ExpiryItem rawItem(
+        String id,
+        DocumentType t,
+        DateTime expiresAt, {
+        String? renewalWarning,
+      }) {
+        final days = expiresAt.difference(DateTime.now()).inDays;
+        return ExpiryItem(
+          collectionId: 'personal',
+          id: id,
+          displayName: 'Doc $id',
+          docType: type(t),
+          expiryDate: ExpiryItem.formatDate(expiresAt),
+          daysRemaining: days,
+          isExpired: days < 0,
+          urgency: UrgencyLevel.fromDays(days),
+          expiresAt: expiresAt,
+          renewalWarning: renewalWarning,
+        );
+      }
+
+      test('far from expiry: type blurb + expiry date, never blank', () {
+        final item = rawItem('far-doc', DocumentType.visa, farExpiry);
+        expect(item.renewalWarning, isNull);
+
+        final text = item.effectiveRenewalWarning;
+        expect(text.trim(), isNotEmpty);
+        expect(text, contains('Visa expired'));
+        expect(text, contains(ExpiryItem.formatDate(farExpiry)));
+      });
+
+      test('within 30 days: urgency message with days and date', () {
+        final item = rawItem('near-doc', DocumentType.tradeLicence, nearExpiry);
+        final text = item.effectiveRenewalWarning;
+        // Whole days truncate (14 days away minus time-of-day → 13), so
+        // assert against the item's own day count.
+        expect(text, contains('${item.daysRemaining} days'));
+        expect(item.daysRemaining, inInclusiveRange(13, 14));
+        expect(text, contains(ExpiryItem.formatDate(nearExpiry)));
+      });
+
+      test('expired: days-ago message', () {
+        final item = rawItem('expired-doc', DocumentType.ejari, expired);
+        final text = item.effectiveRenewalWarning;
+        expect(text, contains('Expired 5 days ago'));
+        expect(text, contains(ExpiryItem.formatDate(expired)));
+      });
+
+      test('create() pre-filled type blurb is respected as stored text', () {
+        final item = ExpiryItem.create(
+          id: 'create-doc',
+          displayName: 'Work Visa',
+          docType: type(DocumentType.visa),
+          expiresAt: farExpiry,
+        );
+        expect(item.effectiveRenewalWarning, equals(item.renewalWarning));
+      });
+
+      test('stored warning always wins over the fallback', () {
+        final item = rawItem(
+          'stored-doc',
+          DocumentType.insurance,
+          farExpiry,
+          renewalWarning: 'Custom underwriter note',
+        );
+        expect(item.effectiveRenewalWarning, equals('Custom underwriter note'));
+      });
+    });
   });
 }
