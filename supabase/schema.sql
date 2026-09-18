@@ -56,6 +56,17 @@ create table if not exists public.documents (
   file_name text,
   file_path text,
   file_size bigint,
+  -- Issuing authority + jurisdiction as entered in the upload form
+  -- (e.g. 'Dubai Municipality (Dubai)'). Nullable: rows created before
+  -- this column existed have no location stored.
+  location text,
+  -- JSON array of historical renewal events (RenewalRecord.toJson() shape:
+  -- id, renewedAt, previousExpiryDate, newExpiryDate, fee, renewedBy, note).
+  -- Stored as jsonb so records can be queried/validated server-side.
+  renewal_history jsonb,
+  -- User-defined reminder offsets in days (e.g. '{90,60,30,7}'), replacing
+  -- the default escalation ladder for this document. Empty/NULL = default.
+  custom_reminder_days int[],
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -64,6 +75,12 @@ create table if not exists public.documents (
 -- can be stored. Idempotent — the constraint may not exist.
 alter table public.documents
   drop constraint if exists documents_doc_type_check;
+
+-- Existing installs: add the location + renewal_history +
+-- custom_reminder_days columns that were previously local-only. Idempotent.
+alter table public.documents add column if not exists location text;
+alter table public.documents add column if not exists renewal_history jsonb;
+alter table public.documents add column if not exists custom_reminder_days int[];
 
 create index if not exists idx_documents_collection
   on public.documents(collection_id);

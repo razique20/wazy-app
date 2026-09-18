@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as dev;
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -61,22 +62,31 @@ class DocumentScannerService extends ChangeNotifier {
     }
 
     try {
+      // Push queued offline mutations BEFORE pulling so rows created while
+      // offline exist server-side when we fetch (otherwise _mergeRemote()
+      // would see them "missing remotely" and drop them as deleted).
+      await _flushOutbox();
+
+      // NOTE: deliberately NO status filter. Expired/renewed rows must ride
+      // along (the UI filters visibility) — filtering here made documents
+      // vanish from the cache after sign-out → sign-in. _mergeRemote()'s
+      // "local row missing remotely → drop" step relies on this too.
       final response = await client
           .from('documents')
           .select()
           .eq('owner_id', userId)
-          .eq('status', 'active')
           .order('expires_at', ascending: true);
 
       final remote = response
           .map(_documentRowToExpiryItem)
           .toList();
       await _mergeRemote(remote);
-      await _flushOutbox();
       await _saveLocal();
-    } catch (_) {
+    } catch (e, st) {
       // Supabase unreachable — stay on the local cache (already loaded above);
       // queued mutations will be flushed on a later refresh.
+      dev.log('Document fetch failed, staying on local cache: $e\n$st',
+          name: 'DocumentScannerService');
     }
     notifyListeners();
   }
@@ -106,6 +116,46 @@ class DocumentScannerService extends ChangeNotifier {
     } catch (_) {
       _cache.clear();
     }
+  }
+
+  /// Remap a locally-stored collection id to a real DB collection id when
+  /// pushing to Supabase.
+  ///
+  /// Local-only mode stores documents with pseudo ids — the built-in
+  /// `'personal'` id or a `'local-<timestamp>'` id — that don't exist in the
+  /// `collections` table. Inserting them as-is violates the FK and the
+  /// write fails silently; after re-login the document would then be missing
+  /// remotely (and dropped by _mergeRemote as "deleted elsewhere"). This
+  /// maps pseudo/unknown ids onto the user's actual personal collection.
+  static bool _isPseudoCollectionId(String id) =>
+      id == DocumentCollection.personalId || id.startsWith('local-');
+
+  static String _resolveRemoteCollectionId(String collectionId) {
+    // Local-only pseudo ids can never satisfy the DB FK — always remap them.
+    if (!_isPseudoCollectionId(collectionId)) {
+      final collections = DocumentCollectionService.instance.collections;
+      // Collections not loaded yet (or local-only mode): keep the id as-is —
+      // it may be a real DB uuid we simply can't verify here.
+      if (collections.isEmpty || collections.any((c) => c.id == collectionId)) {
+        return collectionId;
+      }
+    }
+
+    // Prefer the real (DB-backed) personal collection; the service falls
+    // back to the pseudo personal row when Supabase is unreachable, which is
+    // fine — there are no DB writes in that mode anyway.
+    final personal =
+        DocumentCollectionService.instance.collections.where((c) => c.isPersonal).firstOrNull;
+    final resolved =
+        personal?.id ?? DocumentCollectionService.instance.activeCollectionId;
+    if (resolved != collectionId) {
+      dev.log(
+        'collection "$collectionId" unknown to the DB — mapping document '
+        'onto collection "$resolved"',
+        name: 'DocumentScannerService',
+      );
+    }
+    return resolved;
   }
 
   Future<void> _saveLocal() async {
@@ -236,8 +286,10 @@ class DocumentScannerService extends ChangeNotifier {
         await client.from('documents').insert(row);
         _outbox.removeWhere((op) => op.id == scoped.id);
         await _saveOutbox();
-      } catch (_) {
+      } catch (e) {
         // stays queued
+        dev.log('insert failed for "${scoped.displayName}" (${scoped.id}): $e',
+            name: 'DocumentScannerService');
       }
     }
 
@@ -268,8 +320,10 @@ class DocumentScannerService extends ChangeNotifier {
         await client.from('documents').update(row).eq('id', stamped.id);
         _outbox.removeWhere((op) => op.id == stamped.id);
         await _saveOutbox();
-      } catch (_) {
+      } catch (e) {
         // stays queued
+        dev.log('update failed for ${stamped.id}: $e',
+            name: 'DocumentScannerService');
       }
     }
     _replaceInCache(stamped);
@@ -295,8 +349,9 @@ class DocumentScannerService extends ChangeNotifier {
         await client.from('documents').delete().eq('id', id);
         _outbox.removeWhere((op) => op.id == id);
         await _saveOutbox();
-      } catch (_) {
+      } catch (e) {
         // stays queued
+        dev.log('delete failed for $id: $e', name: 'DocumentScannerService');
       }
     }
     await NotificationService.instance.cancelReminders(id);
@@ -386,6 +441,10 @@ class DocumentScannerService extends ChangeNotifier {
         await client.from('documents').update({
           'expires_at': _dateOnly(targetExpiry),
           'status': 'active',
+          // Renewal audit trail now syncs cross-device (see
+          // migrate_documents_local_only_fields.sql).
+          'renewal_history':
+              jsonEncode(history.map((r) => r.toJson()).toList()),
         }).eq('id', id);
         _outbox.removeWhere((op) => op.id == id);
         await _saveOutbox();
@@ -578,13 +637,25 @@ class DocumentScannerService extends ChangeNotifier {
         if (op.isDelete) {
           await client.from('documents').delete().eq('id', op.id);
         } else {
-          await client.from('documents').upsert({
-            ...op.item!,
-            'owner_id': AuthService.instance.currentUserId,
-          });
+          // Sanitize BEFORE re-resolving: queued rows may have been written
+          // by an older app version with keys that no longer exist in the
+          // table (e.g. `updated_at_client`). Replaying them as-is makes
+          // PostgREST reject the upsert (PGRST204) forever, so the document
+          // would never reach the DB.
+          final payload = _sanitizeDocumentRow(op.item!);
+          // Re-resolve at replay time: the queued row may predate the
+          // collection list loading (or carry a local-only pseudo id).
+          payload['collection_id'] = _resolveRemoteCollectionId(
+            payload['collection_id'] as String? ??
+                DocumentCollection.personalId,
+          );
+          payload['owner_id'] = AuthService.instance.currentUserId;
+          await client.from('documents').upsert(payload);
         }
-      } catch (_) {
+      } catch (e) {
         remaining.add(op); // network/permission failure — retry later
+        dev.log('Outbox replay failed for ${op.id}: $e',
+            name: 'DocumentScannerService');
       }
     }
     _outbox
@@ -695,7 +766,6 @@ class DocumentScannerService extends ChangeNotifier {
       isNotified: false,
       notifiedDays: null,
       description: notes,
-      location: 'UAE',
       reminderStatus: _calculateReminderStatusFromDays(days),
       urgency: urgency,
       assignedTo: assignedTo,
@@ -708,6 +778,16 @@ class DocumentScannerService extends ChangeNotifier {
       fileName: row['file_name'] as String?,
       filePath: row['file_path'] as String?,
       fileSize: row['file_size'] as int?,
+      // Cross-device fields (migrate_documents_local_only_fields.sql).
+      // location: fall back to the legacy hard-coded 'UAE' so rows created
+      //   before the column existed stay visually consistent;
+      //   renewal_history: null-safe JSON decode — a malformed payload
+      //   simply yields no history instead of crashing.
+      location: (row['location'] as String?) ?? 'UAE',
+      renewalHistory: _renewalHistoryFromRow(row['renewal_history']),
+      customReminderDays: (row['custom_reminder_days'] as List<dynamic>?)
+          ?.map((d) => (d as num).toInt())
+          .toList(),
       updatedAt: DateTime.tryParse(
         (row['updated_at_client'] ?? row['updated_at']) as String? ?? '',
       ),
@@ -718,17 +798,27 @@ class DocumentScannerService extends ChangeNotifier {
   ///
   /// Only persists columns that exist in the schema (see supabase/schema.sql):
   ///   id, collection_id, doc_type, display_name, expires_at, reminder_days,
-  ///   status, assigned_to, renewal_fee, notes, file_name, file_path, file_size
+  ///   status, assigned_to, renewal_fee, notes, file_name, file_path,
+  ///   file_size, location, renewal_history, custom_reminder_days
   ///
   /// `owner_id` is included on insert; the DB trigger plus RLS policies scope
   /// every row to the authenticated user.
+  ///
+  /// `updated_at` is maintained server-side by the trg_documents_updated_at
+  /// trigger — never send a client-side timestamp column here. Sending any
+  /// column that doesn't exist in the table (e.g. the legacy
+  /// `updated_at_client` key older versions wrote) makes PostgREST reject
+  /// the whole insert/update with PGRST204, so the document silently never
+  /// reaches the database.
   static Map<String, dynamic> _expiryItemToDocumentRow(
     ExpiryItem item, {
     String? ownerId,
   }) {
     final row = <String, dynamic>{
       'id': item.id,
-      'collection_id': item.collectionId,
+      // Never persist a local-only pseudo collection id — it would violate
+      // the FK on `collections` and the write would fail silently.
+      'collection_id': _resolveRemoteCollectionId(item.collectionId),
       'doc_type': item.docType.key,
       'display_name': item.displayName,
       'expires_at': _dateOnly(item.expiresAt),
@@ -738,16 +828,97 @@ class DocumentScannerService extends ChangeNotifier {
       'renewal_fee': item.renewalFee,
       'notes': (item.description != null && item.description!.trim().isNotEmpty)
           ? item.description!.trim()
-          : item.renewalWarning,
-      'file_name': item.fileName,
+          : item.renewalWarning,      'file_name': item.fileName,
       'file_path': item.filePath,
       'file_size': item.fileSize,
+      // Cross-device fields (added by migrate_documents_local_only_fields.sql):
+      // the issuing authority + emirate exactly as entered in the form, and
+      // the full renewal audit trail. Null-safe: custom types without an
+      // authority and documents never renewed just write NULL.
+      'location': item.location,
+      'renewal_history':
+          item.renewalHistory == null || item.renewalHistory!.isEmpty
+              ? null
+              : jsonEncode(item.renewalHistory!.map((r) => r.toJson()).toList()),
+      // Cross-device field: user-chosen reminder offsets override the
+      // default escalation ladder. Empty list → NULL so the column stays
+      // clean instead of storing '{}'.
+      'custom_reminder_days':
+          item.customReminderDays == null || item.customReminderDays!.isEmpty
+              ? null
+              : item.customReminderDays,
     };
-    if (item.updatedAt != null) {
-      row['updated_at_client'] = item.updatedAt!.toIso8601String();
-    }
     if (ownerId != null) row['owner_id'] = ownerId;
     return row;
+  }
+
+  /// Columns that actually exist in the `documents` table
+  /// (see supabase/schema.sql).
+  static const Set<String> _documentRowColumns = {
+    'id',
+    'owner_id',
+    'collection_id',
+    'doc_type',
+    'display_name',
+    'expires_at',
+    'reminder_days',
+    'status',
+    'assigned_to',
+    'renewal_fee',
+    'notes',
+    'file_name',
+    'file_path',
+    'file_size',
+    'location',
+    'renewal_history',
+    'custom_reminder_days',
+  };
+
+  /// Decode the `renewal_history` jsonb column into [RenewalRecord]s.
+  /// Tolerates: NULL, a JSON array string, or an already-decoded list
+  /// (PostgREST returns jsonb as decoded List). Malformed entries are
+  /// skipped rather than throwing.
+  static List<RenewalRecord>? _renewalHistoryFromRow(dynamic raw) {
+    if (raw == null) return null;
+    late final List<dynamic> entries;
+    if (raw is List<dynamic>) {
+      entries = raw;
+    } else if (raw is String && raw.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is! List<dynamic>) return null;
+        entries = decoded;
+      } catch (_) {
+        return null;
+      }
+    } else {
+      return null;
+    }
+    final records = <RenewalRecord>[];
+    for (final e in entries) {
+      if (e is Map<String, dynamic>) {
+        try {
+          records.add(RenewalRecord.fromJson(e));
+        } catch (_) {
+          // Skip malformed entry.
+        }
+      }
+    }
+    return records.isEmpty ? null : records;
+  }
+
+  /// Strip any key that isn't a real `documents` column from a row about to
+  /// be sent to Supabase.
+  ///
+  /// Outbox entries are persisted as JSON and may have been queued by an
+  /// older app version that included the now-removed `updated_at_client`
+  /// key. Replaying those as-is would fail with PGRST204 forever, so every
+  /// replayed row is sanitized first.
+  static Map<String, dynamic> _sanitizeDocumentRow(Map<String, dynamic> row) {
+    return {
+      for (final entry in row.entries)
+        if (_documentRowColumns.contains(entry.key)) entry.key: entry.value,
+    };
   }
 
   static int _calculateReminderStatusFromDays(int daysRemaining) {
