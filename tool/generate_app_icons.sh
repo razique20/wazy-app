@@ -3,7 +3,7 @@
 #
 #   ./tool/generate_app_icons.sh
 #
-# Source: assets/icon/source_logo.jpg       (original logo artwork)
+# Source: assets/images/logo.png            (original logo artwork, transparent PNG)
 # Master: assets/icon/logo_master_1024.png  (square 1024x1024; every output
 #         below is derived from this single file)
 #
@@ -18,7 +18,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-SOURCE="$ROOT/assets/icon/source_logo.jpg"
+SOURCE="$ROOT/assets/images/logo.png"
 MASTER="$ROOT/assets/icon/logo_master_1024.png"
 IOS_DIR="$ROOT/ios/Runner/Assets.xcassets/AppIcon.appiconset"
 ANDROID_RES="$ROOT/android/app/src/main/res"
@@ -28,9 +28,17 @@ command -v sips >/dev/null || { echo "error: sips not found (macOS only)" >&2; e
 [ -f "$SOURCE" ] || { echo "error: source logo missing: $SOURCE" >&2; exit 1; }
 
 # 1. Master: normalize to PNG, scale to 1024 high, center-crop to square.
+#    If the source is narrower than tall (e.g. 866x1024), crop to its own
+#    width first, then upscale back to a full 1024x1024 square.
 mkdir -p "$ROOT/assets/icon" "$STORE_DIR"
 sips -s format png --resampleHeight 1024 "$SOURCE" --out "$MASTER" >/dev/null
-sips -c 1024 1024 "$MASTER" --out "$MASTER" >/dev/null
+W=$(sips -g pixelWidth "$MASTER" | awk '/pixelWidth/{print $2}')
+if [ "$W" -lt 1024 ]; then
+  sips -c "$W" "$W" "$MASTER" --out "$MASTER" >/dev/null
+  sips -z 1024 1024 "$MASTER" --out "$MASTER" >/dev/null
+else
+  sips -c 1024 1024 "$MASTER" --out "$MASTER" >/dev/null
+fi
 
 # 2. iOS icon set. gen <pixels> <filename>
 gen_ios() { sips -s format png -z "$1" "$1" "$MASTER" --out "$IOS_DIR/$2" >/dev/null; }
@@ -65,4 +73,4 @@ gen_android 192 xxxhdpi
 cp "$MASTER" "$STORE_DIR/appstore_icon_1024.png"
 sips -s format png -z 512 512 "$MASTER" --out "$STORE_DIR/playstore_icon_512.png" >/dev/null
 
-echo "✓ All icons regenerated from assets/icon/source_logo.jpg"
+echo "✓ All icons regenerated from assets/images/logo.png"
