@@ -223,7 +223,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: ElevatedButton.icon(
               onPressed: () => context.push('/scan'),
-              icon: const Icon(Icons.add_task_rounded, size: 18),
+              icon: const Icon(Icons.document_scanner_rounded, size: 18),
               label: const Text(
                 'Add Document',
                 style: TextStyle(fontWeight: FontWeight.bold),
@@ -243,7 +243,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: ElevatedButton.icon(
               onPressed: () => context.go('/money'),
-              icon: const Icon(Icons.add_card_rounded, size: 18),
+              icon: const Icon(Icons.note_add_rounded, size: 18),
               label: const Text(
                 'Add Fund / Record',
                 style: TextStyle(fontWeight: FontWeight.bold),
@@ -402,14 +402,13 @@ class _HomeScreenState extends State<HomeScreen> {
       ..sort((a, b) => a.expiresAt.compareTo(b.expiresAt));
     for (final item in pending) {
       rows.add(_NotificationRow(
-        icon: Icons.event_available_rounded,
+        icon: Icons.hourglass_top_rounded,
         color: item.daysRemaining <= 7 ? WazyColors.danger : WazyColors.warning,
         title: item.displayName,
         subtitle:
             'Expires in ${item.daysRemaining} day${item.daysRemaining == 1 ? '' : 's'} — renew soon',
         onTap: () => context.go('/documents'),
-      ));
-    }
+      ));    }
 
     // --- Expired documents ---
     for (final item in _items.where((i) => i.isActive && i.isExpired)) {
@@ -453,8 +452,7 @@ class _HomeScreenState extends State<HomeScreen> {
           final pct = (s.ratio * 100).toStringAsFixed(0);
           final exceeded = s.status == BudgetAlertLevel.exceeded;
           rows.add(_NotificationRow(
-            icon: Icons.account_balance_wallet_rounded,
-            color: exceeded ? WazyColors.danger : WazyColors.warning,
+            icon: Icons.account_balance_wallet_rounded,            color: exceeded ? WazyColors.danger : WazyColors.warning,
             title:
                 '${exceeded ? "Budget exceeded" : "Close to budget"} — ${s.budget.category.displayName}',
             subtitle: '$pct% of the monthly budget used this month.',
@@ -696,7 +694,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: _statTile(
               theme,
-              icon: Icons.folder_open_rounded,
+              icon: Icons.description_outlined,
               value: '${_items.length}',
               label: 'Documents',
               valueColor: greenColor,
@@ -728,7 +726,7 @@ class _HomeScreenState extends State<HomeScreen> {
               theme,
               icon: healthRatio != null && healthRatio >= 1.0
                   ? Icons.trending_down_rounded
-                  : Icons.trending_up_rounded,
+                  : Icons.query_stats_rounded,
               value: healthRatio == null
                   ? '—'
                   : '${(healthRatio * 100).toStringAsFixed(0)}%',
@@ -863,7 +861,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Row(
                 children: [
                   Icon(
-                    Icons.account_balance_wallet_rounded,
+                    Icons.calendar_month_rounded,
                     size: 18,
                     color: theme.colorScheme.outline,
                   ),
@@ -950,7 +948,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Row(
                   children: [
                     Icon(
-                      Icons.show_chart_rounded,
+                      Icons.price_change_rounded,
                       size: 13,
                       color: theme.colorScheme.outline,
                     ),
@@ -971,8 +969,7 @@ class _HomeScreenState extends State<HomeScreen> {
               if (healthText.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Row(
-                  children: [
-                    Icon(
+                  children: [                    Icon(
                       healthColor == Colors.red
                           ? Icons.error_outline_rounded
                           : Icons.check_circle_outline_rounded,
@@ -1061,7 +1058,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
-                  Icons.gpp_bad_rounded,
+                  Icons.event_busy_rounded,
                   color: Colors.red,
                   size: 20,
                 ),
@@ -1188,10 +1185,9 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.inbox_outlined,
-            size: 48,
-            color: theme.colorScheme.outline,
+          EmptyStateIllustration(
+            scene: EmptyStateScene.document,
+            size: 104,
           ),
           const SizedBox(height: 12),
           Text(

@@ -9,7 +9,7 @@ extension FinanceKindX on FinanceKind {
   String get label => this == FinanceKind.expense ? 'Expense' : 'Income';
 
   IconData get icon =>
-      this == FinanceKind.expense ? Icons.arrow_outward_rounded : Icons.arrow_downward_rounded;
+      this == FinanceKind.expense ? Icons.north_east_rounded : Icons.south_west_rounded;
 
   Color get color => this == FinanceKind.expense ? Colors.red : Colors.green;
 }
@@ -70,7 +70,7 @@ extension FinanceCategoryX on FinanceCategory {
   IconData get icon {
     switch (this) {
       case FinanceCategory.renewals:
-        return Icons.refresh_rounded;
+        return Icons.autorenew_rounded;
       case FinanceCategory.salaries:
         return Icons.badge_rounded;
       case FinanceCategory.rent:
@@ -86,7 +86,7 @@ extension FinanceCategoryX on FinanceCategory {
       case FinanceCategory.software:
         return Icons.computer_rounded;
       case FinanceCategory.sales:
-        return Icons.storefront_rounded;
+        return Icons.point_of_sale_rounded;
       case FinanceCategory.foodAndBeverages:
         return Icons.restaurant_rounded;
       case FinanceCategory.shopping:

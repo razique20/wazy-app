@@ -5,6 +5,7 @@ import '../models/expiry_item.dart';
 import '../services/document_scanner_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/cards/document_list_tile.dart';
+import '../widgets/indicators/empty_state_illustration.dart';
 
 /// Global search across every collection: matches document name, record
 /// numbers (notes/authority fields), assigned-to, file name and type name.
@@ -149,10 +150,11 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            _searched ? Icons.search_off : Icons.manage_search_rounded,
-            size: 64,
-            color: theme.colorScheme.outline,
+          EmptyStateIllustration(
+            scene: _searched
+                ? EmptyStateScene.search
+                : EmptyStateScene.document,
+            size: 120,
           ),
           const SizedBox(height: 16),
           Text(

@@ -9,6 +9,7 @@ import '../services/document_scanner_service.dart';
 import '../services/urgency_engine.dart';
 import '../theme/app_theme.dart';
 import '../widgets/indicators/department_logo.dart';
+import '../widgets/indicators/empty_state_illustration.dart';
 import '../widgets/dialogs/natural_language_add_dialog.dart';
 import '../widgets/dialogs/renew_document_dialog.dart';
 
@@ -44,7 +45,7 @@ extension _DocSortX on _DocSort {
       case _DocSort.dueDate:
         return Icons.event_rounded;
       case _DocSort.urgency:
-        return Icons.priority_high_rounded;
+        return Icons.event_busy_rounded;
       case _DocSort.name:
         return Icons.sort_by_alpha_rounded;
       case _DocSort.fee:
@@ -185,7 +186,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.travel_explore_rounded),
+            icon: const Icon(Icons.saved_search_rounded),
             tooltip: 'Search all documents',
             onPressed: () => context.push('/search'),
           ),
@@ -505,10 +506,11 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            _hasActiveFilters ? Icons.search_off : Icons.inbox_outlined,
-            size: 56,
-            color: theme.colorScheme.outline,
+          EmptyStateIllustration(
+            scene: _hasActiveFilters
+                ? EmptyStateScene.search
+                : EmptyStateScene.document,
+            size: 120,
           ),
           const SizedBox(height: 16),
           Text(
@@ -850,7 +852,7 @@ class _InsightsHeader extends StatelessWidget {
                 Expanded(
                   child: _insightItem(
                     theme,
-                    icon: Icons.event_available_rounded,
+                    icon: Icons.hourglass_top_rounded,
                     label: 'Next due',
                     value: nextDue == null
                         ? '—'

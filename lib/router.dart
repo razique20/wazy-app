@@ -256,8 +256,8 @@ class _AppShellState extends State<_AppShell> {
               ),
               destinations: [
                 const NavigationDestination(
-                  icon: Icon(Icons.dashboard_outlined),
-                  selectedIcon: Icon(Icons.dashboard_rounded),
+                  icon: Icon(Icons.home_outlined),
+                  selectedIcon: Icon(Icons.home_rounded),
                   label: 'Home',
                 ),
                 NavigationDestination(
@@ -279,13 +279,13 @@ class _AppShellState extends State<_AppShell> {
                 ),
                 NavigationDestination(
                   icon: _BadgeIcon(
-                    icon: Icons.folder_outlined,
+                    icon: Icons.description_outlined,
                     showDot: pendingDocs > 0,
                     color: WazyColors.danger,
                     tooltip: '$pendingDocs need attention',
                   ),
                   selectedIcon: _BadgeIcon(
-                    icon: Icons.folder_rounded,
+                    icon: Icons.description_rounded,
                     showDot: pendingDocs > 0,
                     color: WazyColors.danger,
                     tooltip: '$pendingDocs need attention',

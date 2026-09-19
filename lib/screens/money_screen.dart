@@ -18,6 +18,7 @@ import '../services/finance_service.dart';
 import '../services/smart_category_engine.dart';
 import '../theme/app_theme.dart';
 import '../widgets/cash_flow_forecast_chart.dart';
+import '../widgets/indicators/empty_state_illustration.dart';
 import '../widgets/dialogs/natural_language_money_add_dialog.dart';
 import '../widgets/cards/monthly_summary_card.dart';
 import 'package:uuid/uuid.dart';
@@ -231,7 +232,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
               Row(
                 children: [
                   const Icon(
-                    Icons.account_balance_rounded,
+                    Icons.insights_rounded,
                     size: 20,
                     color: WazyColors.cyanAccent,
                   ),
@@ -303,7 +304,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
-                        Icons.arrow_downward_rounded,
+                        Icons.call_received_rounded,
                         size: 14,
                         color: greenColor,
                       ),
@@ -344,7 +345,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
-                        Icons.arrow_outward_rounded,
+                        Icons.call_made_rounded,
                         size: 14,
                         color: redColor,
                       ),
@@ -634,7 +635,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
-                  Icons.show_chart_rounded,
+                  Icons.candlestick_chart_rounded,
                   color: WazyColors.violetAccent,
                   size: 24,
                 ),
@@ -712,25 +713,25 @@ class _MoneyScreenState extends State<MoneyScreen> {
             label: 'Income',
             value: MoneyFormat.aed(summary.income),
             valueColor: greenColor,
-            icon: Icons.arrow_downward_rounded,
+            icon: Icons.call_received_rounded,
           ),
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: _SummaryCard(
+          child:          _SummaryCard(
             label: 'Spent',
             value: MoneyFormat.aed(summary.expense),
             valueColor: redColor,
-            icon: Icons.arrow_outward_rounded,
+            icon: Icons.north_east_rounded,
           ),
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: _SummaryCard(
+          child:          _SummaryCard(
             label: 'Net',
             value: MoneyFormat.aed(summary.net),
             valueColor: summary.net >= 0 ? greenColor : redColor,
-            icon: Icons.account_balance_wallet_rounded,
+            icon: Icons.trending_up_rounded,
           ),
         ),
       ],
@@ -985,7 +986,11 @@ class _MoneyScreenState extends State<MoneyScreen> {
         _sectionHeader(theme, 'Where money goes', Icons.pie_chart_rounded),
         const SizedBox(height: 12),
         if (entries.isEmpty)
-          _hintCard(theme, 'Add expenses to see a breakdown by category.')
+          _hintCard(
+            theme,
+            'Add expenses to see a breakdown by category.',
+            scene: EmptyStateScene.growth,
+          )
         else
           Container(
             width: double.infinity,
@@ -1070,7 +1075,11 @@ class _MoneyScreenState extends State<MoneyScreen> {
         _sectionHeader(theme, 'Biggest expenses', Icons.local_fire_department_rounded),
         const SizedBox(height: 12),
         if (top.isEmpty)
-          _hintCard(theme, 'No expenses recorded this month yet.')
+          _hintCard(
+            theme,
+            'No expenses recorded this month yet.',
+            scene: EmptyStateScene.growth,
+          )
         else
           Container(
             decoration: BoxDecoration(
@@ -1350,6 +1359,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
             overallBudget != null
                 ? 'No category budgets added yet. Tap "Add category" to allocate your monthly budget.'
                 : 'Set a monthly limit for any category to see progress here.',
+            scene: EmptyStateScene.growth,
           )
         else
           ..._budgets.map((budget) {
@@ -1389,6 +1399,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
           _hintCard(
             theme,
             'Mark rent, salaries or software as monthly and they are auto-logged here — no manual repeats.',
+            scene: EmptyStateScene.document,
           )
         else
           ..._recurring.map(
@@ -1446,6 +1457,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
           _hintCard(
             theme,
             'Set aside money for big renewals — tracked only, no real money moves.',
+            scene: EmptyStateScene.wallet,
           )
         else
           ..._envelopes.map(
@@ -1496,7 +1508,11 @@ class _MoneyScreenState extends State<MoneyScreen> {
         ),
         const SizedBox(height: 12),
         if (recent.isEmpty)
-          _hintCard(theme, 'No records yet. Add your first expense or income.')
+          _hintCard(
+            theme,
+            'No records yet. Add your first expense or income.',
+            scene: EmptyStateScene.wallet,
+          )
         else
           Container(
             decoration: BoxDecoration(
@@ -1727,7 +1743,11 @@ class _MoneyScreenState extends State<MoneyScreen> {
     );
   }
 
-  Widget _hintCard(ThemeData theme, String text) {
+  Widget _hintCard(
+    ThemeData theme,
+    String text, {
+    EmptyStateScene scene = EmptyStateScene.wallet,
+  }) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -1735,11 +1755,18 @@ class _MoneyScreenState extends State<MoneyScreen> {
         color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
         borderRadius: BorderRadius.circular(14),
       ),
-      child: Text(
-        text,
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: theme.colorScheme.outline,
-        ),
+      child: Column(
+        children: [
+          EmptyStateIllustration(scene: scene, size: 88),
+          const SizedBox(height: 10),
+          Text(
+            text,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
@@ -2220,12 +2247,12 @@ class _TransactionFormSheetState extends State<_TransactionFormSheet> {
                 ButtonSegment(
                   value: FinanceKind.expense,
                   label: Text('Expense'),
-                  icon: Icon(Icons.arrow_outward_rounded),
+                  icon: Icon(Icons.call_made_rounded),
                 ),
                 ButtonSegment(
                   value: FinanceKind.income,
                   label: Text('Income'),
-                  icon: Icon(Icons.arrow_downward_rounded),
+                  icon: Icon(Icons.call_received_rounded),
                 ),
               ],
               selected: {_kind},
@@ -2582,12 +2609,12 @@ class _RecurringFormSheetState extends State<_RecurringFormSheet> {
                   ButtonSegment(
                     value: FinanceKind.expense,
                     label: Text('Expense'),
-                    icon: Icon(Icons.arrow_outward_rounded),
+                    icon: Icon(Icons.call_made_rounded),
                   ),
                   ButtonSegment(
                     value: FinanceKind.income,
                     label: Text('Income'),
-                    icon: Icon(Icons.arrow_downward_rounded),
+                    icon: Icon(Icons.call_received_rounded),
                   ),
                 ],
                 selected: {_kind},

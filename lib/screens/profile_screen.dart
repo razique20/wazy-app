@@ -244,7 +244,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Phone Number (Optional)',
                     hintText: '+971 50 000 0000',
-                    prefixIcon: Icon(Icons.phone_outlined),
+                    prefixIcon: Icon(Icons.phone_iphone_rounded),
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -551,7 +551,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildSection(
                     context,
                     'Alert Timing',
-                    Icons.timer_outlined,
+                    Icons.event_repeat_rounded,
                     theme,
                     child: Column(
                       children: [
@@ -926,7 +926,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         if (_userPhone.trim().isNotEmpty) ...[
                           const SizedBox(width: 8),
                           const Icon(
-                            Icons.phone_outlined,
+                            Icons.phone_iphone_rounded,
                             size: 13,
                             color: WazyColors.cyanSecondary,
                           ),
@@ -978,18 +978,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               const SizedBox(width: 10),
-              if (AuthService.instance.isSignedIn)
-                OutlinedButton.icon(
-                  onPressed: _signOut,
-                  icon: const Icon(Icons.logout, size: 16, color: Colors.redAccent),
-                  label: const Text('Sign out',
-                      style: TextStyle(color: Colors.redAccent)),
-                  style: OutlinedButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    side: BorderSide(color: Colors.redAccent.shade100.withOpacity(0.5)),
-                  ),
-                )
-              else
+              if (!AuthService.instance.isSignedIn)
                 FilledButton.icon(
                   onPressed: () => context.go('/login'),
                   icon: const Icon(Icons.login, size: 16),
@@ -1020,7 +1009,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         Row(
           children: [
-            Icon(Icons.folder_copy_outlined,
+            Icon(Icons.folder_shared_outlined,
                 size: 20, color: theme.colorScheme.outline),
             const SizedBox(width: 8),
             Text(

@@ -138,7 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
               keyboardType: TextInputType.emailAddress,
               decoration: const InputDecoration(
                 labelText: 'Email',
-                prefixIcon: Icon(Icons.email_outlined),
+                prefixIcon: Icon(Icons.alternate_email_rounded),
               ),
             ),
           ],
@@ -256,7 +256,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             label: 'Budgets & forecasts',
                           ),
                           _HeroPill(
-                            icon: Icons.notifications_active_rounded,
+                            icon: Icons.event_repeat_rounded,
                             label: 'Renewal alerts',
                           ),
                         ],
@@ -318,7 +318,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         decoration: _fieldDecoration(
                           isDark,
                           label: 'Email',
-                          icon: Icons.email_outlined,
+                          icon: Icons.alternate_email_rounded,
                         ),
                         validator: (v) {
                           final value = v?.trim() ?? '';
@@ -338,7 +338,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         decoration: _fieldDecoration(
                           isDark,
                           label: 'Password',
-                          icon: Icons.lock_outline,
+                          icon: Icons.lock_person_rounded,
                         ),
                         validator: (v) {
                           final value = v ?? '';
@@ -384,7 +384,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           decoration: _fieldDecoration(
                             isDark,
                             label: 'Phone Number (Optional)',
-                            icon: Icons.phone_outlined,
+                            icon: Icons.phone_iphone_rounded,
                             helperText: 'For renewal & cash alerts',
                           ),
                         ),
@@ -533,7 +533,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 18),
                       Text(
-                        '${AppVersionBadge.version} · Made in the UAE 🇦🇪',
+                        '${AppVersionBadge.version} · Made in the UAE',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 11.5,

@@ -13,6 +13,7 @@ import '../services/collection_service.dart';
 import '../services/document_scanner_service.dart';
 import '../services/expiry_report.dart';
 import '../services/urgency_engine.dart';
+import '../widgets/indicators/empty_state_illustration.dart';
 import '../theme/app_theme.dart';
 import '../widgets/dialogs/renew_document_dialog.dart';
 import '../widgets/widgets.dart';
@@ -270,10 +271,11 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.search_off,
-            size: 64,
-            color: theme.colorScheme.outline,
+          EmptyStateIllustration(
+            scene: _hasActiveFilters
+                ? EmptyStateScene.search
+                : EmptyStateScene.document,
+            size: 120,
           ),
           const SizedBox(height: 16),
           Text(
@@ -374,7 +376,7 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
               const Divider(height: 1),
               // Actions
               ListTile(
-                leading: const Icon(Icons.notifications_active, color: Colors.amber),
+                leading: const Icon(Icons.alarm_add_rounded, color: Colors.amber),
                 title: const Text('Set reminder'),
                 subtitle: const Text('90 / 60 / 30 day reminders'),
                 onTap: () {
@@ -401,7 +403,7 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.file_upload, color: Colors.purple),
+                leading: const Icon(Icons.task_alt_rounded, color: Colors.purple),
                 title: const Text('Mark as renewed'),
                 subtitle: const Text('Document has been renewed'),
                 onTap: () {
@@ -410,7 +412,7 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.file_download, color: Colors.teal),
+                leading: const Icon(Icons.download_rounded, color: Colors.teal),
                 title: const Text('Download document'),
                 subtitle: const Text('Save a copy locally'),
                 onTap: () {
