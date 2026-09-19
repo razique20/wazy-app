@@ -50,6 +50,7 @@ const SEED = {
   // jsonEncodes every value: a Dart String must be stored double-encoded,
   // booleans as plain true/false.
   'flutter.hasOnboarded': 'true',
+  'flutter.hasSeenWelcome': 'true',
   'flutter.local_documents_v1': JSON.stringify(JSON.stringify([
     {
       collectionId: 'personal', id: 'doc-visa-1', displayName: 'Work Visa — GDRFA',

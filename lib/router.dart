@@ -11,6 +11,7 @@ import 'services/budget_alert_service.dart';
 import 'services/document_scanner_service.dart';
 import 'services/finance_service.dart';
 import 'screens/login_screen.dart';
+import 'screens/welcome_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/documents_screen.dart';
@@ -41,7 +42,7 @@ final router = GoRouter(
 
     final signedIn = auth.isSignedIn;
     final path = state.uri.path;
-    final isAuthRoute = path == '/login';
+    final isAuthRoute = path == '/login' || path == '/welcome';
 
     if (!signedIn && !isAuthRoute && path != '/') return '/login';
     if (signedIn && isAuthRoute) return '/home';
@@ -52,6 +53,11 @@ final router = GoRouter(
       path: '/',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const SplashScreen(),
+    ),
+    GoRoute(
+      path: '/welcome',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const WelcomeScreen(),
     ),
     GoRoute(
       path: '/login',

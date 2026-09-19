@@ -35,6 +35,7 @@ class _SplashScreenState extends State<SplashScreen>
   Future<void> _checkOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
     final hasOnboarded = prefs.getBool('hasOnboarded') ?? false;
+    final hasSeenWelcome = prefs.getBool('hasSeenWelcome') ?? false;
     if (mounted) {
       setState(() => _hasOnboarded = hasOnboarded);
       _controller.forward();
@@ -53,13 +54,18 @@ class _SplashScreenState extends State<SplashScreen>
 
     await Future.delayed(const Duration(milliseconds: 1000));
     if (mounted) {
-      final auth = AuthService.instance;
-      if (auth.isAvailable && !auth.isSignedIn) {
-        context.go('/login');
-      } else if (hasOnboarded) {
-        context.go('/home');
+      // First launch: show the welcome screen before the auth flow.
+      if (!hasSeenWelcome) {
+        context.go('/welcome');
       } else {
-        context.go('/onboarding');
+        final auth = AuthService.instance;
+        if (auth.isAvailable && !auth.isSignedIn) {
+          context.go('/login');
+        } else if (hasOnboarded) {
+          context.go('/home');
+        } else {
+          context.go('/onboarding');
+        }
       }
     }
   }
