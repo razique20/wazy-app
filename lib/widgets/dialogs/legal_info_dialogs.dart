@@ -347,7 +347,7 @@ void showAboutSheet(BuildContext context) {
             const SizedBox(height: 8),
             Center(
               child: Text(
-                'Made in the UAE 🇦🇪 · © 2026 Wazy',
+                'Made in the UAE · © 2026 Wazy',
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
