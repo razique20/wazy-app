@@ -7,7 +7,7 @@
 ```markdown
 You are an expert full-stack Web Developer specializing in React, Next.js, Tailwind CSS, TypeScript, and Supabase.
 
-Build a modern, production-grade **Admin Console Dashboard** for the **Wazy** application (a personal and small-business document expiry tracker & financial intelligence manager).
+Build a modern, production-grade **Admin Console Dashboard** for the **Wazy** application (a personal and small-business financial budgeting & cash-flow intelligence app with document expiry tracking).
 
 ---
 

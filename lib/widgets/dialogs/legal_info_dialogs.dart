@@ -287,7 +287,7 @@ void showAboutSheet(BuildContext context) {
                         ),
                       ),
                       Text(
-                        'Doc Tracker · v1.0.0',
+                        'Finance & Docs · v1.0.0',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),

@@ -43,7 +43,7 @@ select
   '1.0.0',
   false,
   'https://github.com/razique20/wazy-app/releases',
-  'Wazy version 1.0.0 — Track company document renewals & financial intelligence.'
+  'Wazy version 1.0.0 — Financial budgeting & cash-flow intelligence with document expiry tracking.'
 where not exists (select 1 from public.app_versions limit 1);
 
 -- 5. Helpful SQL helper functions to update version parameters
