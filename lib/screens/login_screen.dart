@@ -1,10 +1,6 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
-
-import '../config/app_links.dart';
 import '../services/auth_service.dart';
 import '../services/collection_service.dart';
 import '../services/custom_document_type_service.dart';
@@ -197,18 +193,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         );
       }
-    }
-  }
-
-  Future<void> _launchExternal(String raw) async {
-    final uri = Uri.tryParse(raw);
-    if (uri == null) return;
-    try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
-    } catch (_) {
-      // Placeholder URLs may not resolve yet — ignore.
     }
   }
 
@@ -477,44 +461,44 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 20),
 
                       // ── Legal consent line ──────────────────────────────
-                      Text.rich(
-                        TextSpan(
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            color: subColor,
-                            height: 1.5,
+                      // Opens the in-app legal sheets — the external
+                      // wazy.app pages are placeholders until they go live.
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 4,
+                        children: [
+                          Text(
+                            'By continuing you agree to our',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              color: subColor,
+                              height: 1.5,
+                            ),
                           ),
-                          children: [
-                            const TextSpan(text: _legalPrefix),
-                            TextSpan(
-                              text: 'Terms & Conditions',
-                              style: TextStyle(
-                                color: isDark
-                                    ? WazyColors.cyanAccent
-                                    : WazyColors.navyPrimary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () =>
-                                    _launchExternal(AppLinks.terms),
+                          _LegalLink(
+                            label: 'Terms & Conditions',
+                            color: isDark
+                                ? WazyColors.cyanAccent
+                                : WazyColors.navyPrimary,
+                            onTap: () => showTermsDialog(context),
+                          ),
+                          Text(
+                            'and',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              color: subColor,
+                              height: 1.5,
                             ),
-                            const TextSpan(text: ' and '),
-                            TextSpan(
-                              text: 'Privacy Policy',
-                              style: TextStyle(
-                                color: isDark
-                                    ? WazyColors.cyanAccent
-                                    : WazyColors.navyPrimary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () =>
-                                    _launchExternal(AppLinks.privacy),
-                            ),
-                            const TextSpan(text: '.'),
-                          ],
-                        ),
-                        textAlign: TextAlign.center,
+                          ),
+                          _LegalLink(
+                            label: 'Privacy Policy',
+                            color: isDark
+                                ? WazyColors.cyanAccent
+                                : WazyColors.navyPrimary,
+                            onTap: () => showPrivacyDialog(context),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 10),
 
@@ -603,8 +587,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-
-const String _legalPrefix = 'By continuing you agree to our\n';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Header decorative shapes (poster-style sparkle + soft ring)
@@ -863,6 +845,42 @@ class _DotSeparator extends StatelessWidget {
     return Text(
       '·',
       style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: color),
+    );
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Legal consent link — opens the matching in-app sheet
+// ──────────────────────────────────────────────────────────────────────────────
+
+class _LegalLink extends StatelessWidget {
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _LegalLink({
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w700,
+            color: color,
+            decoration: TextDecoration.underline,
+          ),
+        ),
+      ),
     );
   }
 }
