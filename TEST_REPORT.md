@@ -23,9 +23,9 @@
 |--------|------|----------|
 | `105a427` | docs | Added `LANDING_PAGE_PROMPT.md` (landing page spec, 189 lines) |
 | `ddbadbd` | fix | Cupertino import in `app_theme.dart`; removed 🇦🇪 flag emoji from About sheet (doesn't render on all platforms) |
-| *(made, uncommitted)* | fix | `android/app/build.gradle.kts` — desugaring; `pubspec.yaml/lock` — speech_to_text 7.5.0; removed unused `dart:math` import |
+| `9139786` | fix | `android/app/build.gradle.kts` — desugaring; `pubspec.yaml/lock` — speech_to_text 7.5.0; removed unused `dart:math` import (committed & pushed) |
 
-> Nothing was pushed in this session — say the word and I'll push the three commits.
+> All commits above are pushed to `origin/main`.
 
 ---
 
@@ -57,6 +57,8 @@
 
 ### 3.3 Android debug build — `flutter build apk --debug`
 
+**Status: ✅ PASSING** (re-verified 2026-09-19 after the fixes were committed as `9139786` and pushed).
+
 **First run: ❌ FAILED** — two real, pre-existing config issues:
 
 #### 🔴 Issue 1: `flutter_local_notifications` requires core library desugaring
@@ -79,6 +81,8 @@ The v1 `Registrar` API no longer exists in the Android embedding v2 toolchain. N
 **Fix applied:** `flutter pub upgrade --major-versions speech_to_text` → **7.5.0** (embedding-v2 compatible; API used by `voice_input_service.dart` is unchanged and analyze stays at 0 errors).
 
 **Second run: ✅ SUCCESS** — `build/app/outputs/flutter_apk/app-debug.apk` built in 63.7s.
+
+**Re-verification after commit `9139786` + icon regeneration from `assets/images/logo.png`: ✅ SUCCESS** — `app-debug.apk` built in 9.5s. Only remaining output is the non-blocking Gradle 8.14.0 / AGP 8.11.1 / Kotlin 2.2.20 deprecation warnings (see §4).
 
 ### 3.4 Runtime smoke checks (no device attached)
 No simulator/emulator was running in this session, so install-and-launch on a device was **not** performed. Static + widget + build coverage above substitutes for CI-level verification; a manual device pass is recommended before release.
