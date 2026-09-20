@@ -16,6 +16,7 @@ import '../services/document_scanner_service.dart';
 import '../services/uae_authority_catalog.dart';
 import '../services/uae_document_ocr_service.dart';
 import '../widgets/dialogs/companion_suggestion_sheet.dart';
+import '../widgets/dialogs/upgrade_dialog.dart';
 
 /// The emirate enum now lives in UaeAuthorityCatalog; re-exported so existing
 /// imports of this screen keep resolving [UaeEmirate].
@@ -471,6 +472,13 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
 
   Future<void> _saveDocument() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Track 1 gate: the Free plan tracks up to 10 documents. Edits pass;
+    // new documents first check the remaining quota (paywall on failure).
+    if (_editingItem == null &&
+        !await enforceDocumentLimit(context)) {
+      return;
+    }
 
     setState(() => _isSaving = true);
 

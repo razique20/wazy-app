@@ -11,6 +11,8 @@ import '../services/finance_service.dart';
 import '../services/custom_document_type_service.dart';
 import '../services/gemini_api_service.dart';
 import '../services/notification_service.dart';
+import '../models/subscription_tier.dart';
+import '../services/entitlement_service.dart';
 import '../services/supabase_service.dart';
 import '../services/theme_service.dart';
 import '../theme/app_theme.dart';
@@ -36,7 +38,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _notificationsEnabled = true;
   bool _billSpikesEnabled = true;
   bool _budgetAlertsEnabled = true;
-  bool _whatsappAlertsEnabled = false; // kept so the pref survives; WhatsApp is inactive
+  bool _whatsappAlertsEnabled =
+      false; // kept so the pref survives; WhatsApp is inactive
   int _reminderCadence = 90;
   int _taskCadence = 60;
   int _escalationCadence = 30;
@@ -63,10 +66,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadSettings() async {
+    // Re-read the user's tier so the subscription card is current (the admin
+    // may have processed an upgrade since this session started).
+    await EntitlementService.instance.refresh();
+
     final prefs = await SharedPreferences.getInstance();
     final email = AuthService.instance.userEmail;
     final derivedName = email != null && email.contains('@')
-        ? email.split('@').first.replaceAll('.', ' ').replaceAll('_', ' ').toUpperCase()
+        ? email
+              .split('@')
+              .first
+              .replaceAll('.', ' ')
+              .replaceAll('_', ' ')
+              .toUpperCase()
         : 'Unknown User';
 
     setState(() {
@@ -75,7 +87,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _userPhone = prefs.getString('userPhone') ?? '';
       _notificationsEnabled = prefs.getBool('notificationsEnabled') ?? true;
       _billSpikesEnabled = AlertPreferencesService.instance.billSpikesEnabled;
-      _budgetAlertsEnabled = AlertPreferencesService.instance.budgetAlertsEnabled;
+      _budgetAlertsEnabled =
+          AlertPreferencesService.instance.budgetAlertsEnabled;
       _whatsappAlertsEnabled = prefs.getBool('whatsappAlertsEnabled') ?? true;
       _reminderCadence = prefs.getInt('reminderCadence') ?? 90;
       _taskCadence = prefs.getInt('taskCadence') ?? 60;
@@ -170,9 +183,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (mounted) {
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Settings saved')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Settings saved')));
     }
   }
 
@@ -209,8 +222,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text(
                       'Edit User Profile',
                       style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const Spacer(),
                     IconButton(
@@ -254,8 +267,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: FilledButton.icon(
                     onPressed: () {
                       setState(() {
-                        _userName = nameCtrl.text.trim().isEmpty ? _userName : nameCtrl.text.trim();
-                        _userRole = roleCtrl.text.trim().isEmpty ? _userRole : roleCtrl.text.trim();
+                        _userName = nameCtrl.text.trim().isEmpty
+                            ? _userName
+                            : nameCtrl.text.trim();
+                        _userRole = roleCtrl.text.trim().isEmpty
+                            ? _userRole
+                            : roleCtrl.text.trim();
                         _userPhone = phoneCtrl.text.trim();
                       });
                       Navigator.pop(ctx);
@@ -278,8 +295,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Sign out?'),
-        content:
-            const Text('You will need to sign in again to see your documents.'),
+        content: const Text(
+          'You will need to sign in again to see your documents.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -299,6 +317,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     DocumentScannerService.instance.clearCache();
     FinanceService.instance.clearCache();
     CustomDocumentTypeService.instance.reset();
+    EntitlementService.instance.reset();
 
     if (mounted) context.go('/login');
   }
@@ -308,18 +327,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ------------------------------------------------------------------
 
   Future<void> _createCollection() async {
+    // Track 1 gate: company workspaces are tiered — Free has none, Plus one,
+    // Business unlimited.
+    final entitlements = EntitlementService.instance;
+    final companyCount = await entitlements.companyCollectionsInUse();
+    if (!entitlements.canAddCompanyCollections(companyCount)) {
+      final feature = entitlements.limits.maxCompanyCollections == 0
+          ? EntitlementFeature.companyCollection
+          : EntitlementFeature.multipleCompanyCollections;
+      await showUpgradeDialog(context, feature);
+      return;
+    }
+
     final name = await showCreateCollectionDialog(context);
     if (name == null || !mounted) return;
 
     try {
-      final created = await DocumentCollectionService.instance
-          .createCollection(name);
+      final created = await DocumentCollectionService.instance.createCollection(
+        name,
+      );
       await DocumentCollectionService.instance.setActive(created.id);
       await _loadCollections();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Collection "$name" created')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Collection "$name" created')));
       }
     } catch (e) {
       if (mounted) _showError('Could not create collection: $e');
@@ -331,13 +363,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (name == null || !mounted) return;
 
     try {
-      await DocumentCollectionService.instance
-          .renameCollection(collection.id, name);
+      await DocumentCollectionService.instance.renameCollection(
+        collection.id,
+        name,
+      );
       await _loadCollections();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Renamed to "$name"')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Renamed to "$name"')));
       }
     } catch (e) {
       if (mounted) _showError('Could not rename collection: $e');
@@ -352,9 +386,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       await DocumentCollectionService.instance.deleteCollection(collection.id);
       await _loadCollections();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('"${collection.name}" deleted')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('"${collection.name}" deleted')));
       }
     } catch (e) {
       if (mounted) _showError('Could not delete collection: $e');
@@ -404,6 +438,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   const SizedBox(height: 20),
 
+                  // Subscription & tier management (Track 1)
+                  _buildSubscriptionSection(context, theme),
+
+                  const SizedBox(height: 20),
+
                   // Collections manager
                   _buildCollectionsSection(context, theme),
 
@@ -426,7 +465,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     theme,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -465,8 +506,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               showSelectedIcon: false,
                               style: ButtonStyle(
                                 visualDensity: VisualDensity.compact,
-                                tapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
                             ),
                           ),
@@ -499,7 +539,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         SwitchListTile(
                           title: const Text('Bill spike alerts'),
                           subtitle: const Text(
-                              'Flag bills unusually higher than your average'),
+                            'Flag bills unusually higher than your average',
+                          ),
                           value: _billSpikesEnabled,
                           onChanged: (value) async {
                             setState(() => _billSpikesEnabled = value);
@@ -513,7 +554,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         SwitchListTile(
                           title: const Text('Budget alerts'),
                           subtitle: const Text(
-                              'Warn when spending nears a category budget'),
+                            'Warn when spending nears a category budget',
+                          ),
                           value: _budgetAlertsEnabled,
                           onChanged: (value) async {
                             setState(() => _budgetAlertsEnabled = value);
@@ -526,8 +568,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         // inactive until the Edge Function exists.
                         SwitchListTile(
                           title: const Text('WhatsApp alerts'),
-                          subtitle:
-                              const Text('Coming soon — needs WhatsApp Business API'),
+                          subtitle: const Text(
+                            'Coming soon — needs WhatsApp Business API',
+                          ),
                           value: false,
                           onChanged: null,
                         ),
@@ -536,8 +579,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         // inactive until the Edge Function exists.
                         SwitchListTile(
                           title: const Text('Email alerts'),
-                          subtitle:
-                              const Text('Coming soon — needs a mail provider'),
+                          subtitle: const Text(
+                            'Coming soon — needs a mail provider',
+                          ),
                           value: false,
                           onChanged: null,
                         ),
@@ -558,12 +602,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ListTile(
                           leading: const CircleAvatar(
                             backgroundColor: Colors.indigo,
-                            child: Icon(Icons.notifications_active,
-                                color: Colors.white, size: 18),
+                            child: Icon(
+                              Icons.notifications_active,
+                              color: Colors.white,
+                              size: 18,
+                            ),
                           ),
                           title: const Text('90-day reminder'),
                           subtitle: const Text(
-                              'First notification when expiry is 90 days away'),
+                            'First notification when expiry is 90 days away',
+                          ),
                           trailing: DropdownButton<int>(
                             value: _reminderCadence,
                             underline: const SizedBox(),
@@ -585,12 +633,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ListTile(
                           leading: const CircleAvatar(
                             backgroundColor: Colors.amber,
-                            child: Icon(Icons.assignment_turned_in,
-                                color: Colors.white, size: 18),
+                            child: Icon(
+                              Icons.assignment_turned_in,
+                              color: Colors.white,
+                              size: 18,
+                            ),
                           ),
                           title: const Text('60-day task'),
                           subtitle: const Text(
-                              'Assign renewal task to responsible person'),
+                            'Assign renewal task to responsible person',
+                          ),
                           trailing: DropdownButton<int>(
                             value: _taskCadence,
                             underline: const SizedBox(),
@@ -612,12 +664,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ListTile(
                           leading: const CircleAvatar(
                             backgroundColor: Colors.orange,
-                            child: Icon(Icons.priority_high_rounded,
-                                color: Colors.white, size: 18),
+                            child: Icon(
+                              Icons.priority_high_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
                           ),
                           title: const Text('30-day escalation'),
-                          subtitle:
-                              const Text('Escalate to management / stakeholders'),
+                          subtitle: const Text(
+                            'Escalate to management / stakeholders',
+                          ),
                           trailing: DropdownButton<int>(
                             value: _escalationCadence,
                             underline: const SizedBox(),
@@ -640,12 +696,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           enabled: false,
                           leading: const CircleAvatar(
                             backgroundColor: Colors.red,
-                            child: Icon(Icons.whatshot_rounded,
-                                color: Colors.white, size: 18),
+                            child: Icon(
+                              Icons.whatshot_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
                           ),
                           title: const Text('7-day WhatsApp'),
                           subtitle: const Text(
-                              'Coming soon — needs WhatsApp Business API'),
+                            'Coming soon — needs WhatsApp Business API',
+                          ),
                           trailing: DropdownButton<int>(
                             value: _whatsappCadence,
                             underline: const SizedBox(),
@@ -673,11 +733,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Column(
                       children: [
                         ListTile(
-                          leading: const Icon(Icons.delete_forever,
-                              color: Colors.red),
+                          leading: const Icon(
+                            Icons.delete_forever,
+                            color: Colors.red,
+                          ),
                           title: const Text('Clear all documents'),
                           subtitle: const Text(
-                              'Remove every tracked document in the active collection'),
+                            'Remove every tracked document in the active collection',
+                          ),
                           onTap: () => _confirmClearAll(context),
                         ),
                       ],
@@ -699,8 +762,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ListTile(
                           leading: const CircleAvatar(
                             backgroundColor: Colors.deepPurple,
-                            child: Icon(Icons.auto_awesome_rounded,
-                                color: Colors.white, size: 18),
+                            child: Icon(
+                              Icons.auto_awesome_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
                           ),
                           title: const Text('Gemini API key'),
                           subtitle: Text(
@@ -731,8 +797,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ? const SizedBox(
                               width: 20,
                               height: 20,
-                              child:
-                                  CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Text('Save Settings'),
                     ),
@@ -766,17 +831,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            WazyColors.navyPrimary,
-            WazyColors.navyPrimaryDark,
-          ],
+          colors: [WazyColors.navyPrimary, WazyColors.navyPrimaryDark],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: WazyColors.cyanSecondary.withOpacity(0.3),
-        ),
+        border: Border.all(color: WazyColors.cyanSecondary.withOpacity(0.3)),
         boxShadow: [
           BoxShadow(
             color: WazyColors.navyPrimary.withOpacity(0.35),
@@ -795,10 +855,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 height: 56,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [
-                      WazyColors.cyanSecondary,
-                      Color(0xFF00B8D4),
-                    ],
+                    colors: [WazyColors.cyanSecondary, Color(0xFF00B8D4)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -868,7 +925,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                isCloudSynced ? 'Cloud Synced' : 'Local Workspace',
+                                isCloudSynced
+                                    ? 'Cloud Synced'
+                                    : 'Local Workspace',
                                 style: const TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
@@ -901,6 +960,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           ),
                         ),
+                        const SizedBox(width: 6),
+                        const TierBadge(compact: true),
                       ],
                     ),
                     const SizedBox(height: 6),
@@ -947,10 +1008,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
           const SizedBox(height: 14),
-          Divider(
-            height: 1,
-            color: Colors.white.withOpacity(0.15),
-          ),
+          Divider(height: 1, color: Colors.white.withOpacity(0.15)),
           const SizedBox(height: 10),
           Row(
             children: [
@@ -997,20 +1055,200 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // ------------------------------------------------------------------
+  // Subscription section (Track 1)
+  // ------------------------------------------------------------------
+
+  Widget _buildSubscriptionSection(BuildContext context, ThemeData theme) {
+    final entitlements = EntitlementService.instance;
+    final tier = entitlements.tier;
+    final info = TierInfo.all[tier]!;
+    final limits = entitlements.limits;
+    final isTopTier = TierInfo.nextTierUp(tier) == null;
+    final planEndsAt = entitlements.planEndsAt;
+    final daysLeft = entitlements.daysUntilPlanExpiry();
+    final isExpired = entitlements.isPlanExpired;
+    final isPaid = tier != SubscriptionTier.free && planEndsAt != null;
+
+    return _buildSection(
+      context,
+      'Subscription',
+      Icons.workspace_premium_rounded,
+      theme,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                TierBadge(tier: tier),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    info.tagline,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            // Plan expiry countdown (fetched from user_tiers.plan_ends_at).
+            if (isPaid && !isExpired && daysLeft != null) ...[
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: (daysLeft <= 7 ? WazyColors.warning : WazyColors.safe)
+                      .withAlpha(20),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: (daysLeft <= 7 ? WazyColors.warning : WazyColors.safe)
+                        .withAlpha(70),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      daysLeft <= 7
+                          ? Icons.notification_important_rounded
+                          : Icons.event_available_rounded,
+                      size: 18,
+                      color: daysLeft <= 7 ? WazyColors.warning : WazyColors.safe,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        daysLeft == 0
+                            ? 'Your ${info.name} plan expires today'
+                            : 'Your ${info.name} plan expires in $daysLeft '
+                                  'day${daysLeft == 1 ? '' : 's'} — '
+                                  '${_formatDate(planEndsAt)}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color:
+                              daysLeft <= 7 ? WazyColors.warning : WazyColors.safe,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            // Expired plan: warn + nudge to renew.
+            if (isExpired) ...[
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: WazyColors.danger.withAlpha(20),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: WazyColors.danger.withAlpha(70)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.error_outline_rounded,
+                      size: 18,
+                      color: WazyColors.danger,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Your ${info.name} plan expired on '
+                        '${_formatDate(planEndsAt!)} — features are locked '
+                        'again. Tap Upgrade Plan to renew.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: WazyColors.danger,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 10),
+            Text(
+              limits.maxDocuments == null
+                  ? 'Unlimited documents • '
+                        '${limits.maxCompanyCollections ?? 'unlimited'} '
+                        'company workspace(s)'
+                  : '${limits.maxDocuments} documents • '
+                        '${limits.maxCompanyCollections == 0 ? 'no' : limits.maxCompanyCollections} '
+                        'company workspace(s)',
+              style: theme.textTheme.bodySmall,
+            ),
+            const SizedBox(height: 12),
+            if (!isTopTier)
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () => showTierRequestSheet(context),
+                  icon: const Icon(Icons.upgrade_rounded, size: 18),
+                  label: Text(isExpired
+                      ? 'Renew Plan'
+                      : isPaid
+                          ? 'Extend Plan'
+                          : 'Upgrade Plan'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: WazyColors.navyPrimary,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              )
+            else if (isExpired)
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () => showTierRequestSheet(context),
+                  icon: const Icon(Icons.autorenew_rounded, size: 18),
+                  label: const Text('Renew Plan'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: WazyColors.navyPrimary,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              )
+            else
+              Text(
+                'You are on the highest plan — thanks for supporting Wazy!',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: WazyColors.safe,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _formatDate(DateTime date) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    final local = date.toLocal();
+    return '${local.day} ${months[local.month - 1]} ${local.year}';
+  }
+
+  // ------------------------------------------------------------------
   // Collections section
   // ------------------------------------------------------------------
 
-  Widget _buildCollectionsSection(
-    BuildContext context,
-    ThemeData theme,
-  ) {
+  Widget _buildCollectionsSection(BuildContext context, ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Icon(Icons.folder_shared_outlined,
-                size: 20, color: theme.colorScheme.outline),
+            Icon(
+              Icons.folder_shared_outlined,
+              size: 20,
+              color: theme.colorScheme.outline,
+            ),
             const SizedBox(width: 8),
             Text(
               'My Collections',
@@ -1064,8 +1302,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   trailing: _activeId == collection.id
                       ? const Tooltip(
                           message: 'Active collection',
-                          child: Icon(Icons.check_circle,
-                              color: Colors.green),
+                          child: Icon(Icons.check_circle, color: Colors.green),
                         )
                       : Row(
                           mainAxisSize: MainAxisSize.min,
@@ -1073,17 +1310,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             // Personal collection cannot be renamed/deleted.
                             if (!collection.isPersonal) ...[
                               IconButton(
-                                icon: const Icon(Icons.edit_outlined,
-                                    size: 20),
+                                icon: const Icon(Icons.edit_outlined, size: 20),
                                 tooltip: 'Rename',
                                 onPressed: () => _renameCollection(collection),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.delete_outline,
-                                    size: 20, color: Colors.red),
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  size: 20,
+                                  color: Colors.red,
+                                ),
                                 tooltip: 'Delete',
-                                onPressed: () =>
-                                    _deleteCollection(collection),
+                                onPressed: () => _deleteCollection(collection),
                               ),
                             ],
                           ],
@@ -1108,8 +1346,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         Row(
           children: [
-            Icon(Icons.account_circle_outlined,
-                size: 20, color: theme.colorScheme.outline),
+            Icon(
+              Icons.account_circle_outlined,
+              size: 20,
+              color: theme.colorScheme.outline,
+            ),
             const SizedBox(width: 8),
             Text(
               'Account',
@@ -1142,8 +1383,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         Row(
           children: [
-            Icon(Icons.account_circle_outlined,
-                size: 20, color: theme.colorScheme.outline),
+            Icon(
+              Icons.account_circle_outlined,
+              size: 20,
+              color: theme.colorScheme.outline,
+            ),
             const SizedBox(width: 8),
             Text(
               'Account & Authentication',
@@ -1199,14 +1443,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
         const SizedBox(height: 8),
-        Card(
-          child: Column(
-            children: [
-              const Divider(height: 1),
-              child,
-            ],
-          ),
-        ),
+        Card(child: Column(children: [const Divider(height: 1), child])),
       ],
     );
   }
@@ -1240,9 +1477,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               );
               context.go('/home');
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Clear all'),
           ),
         ],

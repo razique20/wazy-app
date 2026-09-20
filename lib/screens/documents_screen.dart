@@ -12,6 +12,7 @@ import '../widgets/indicators/department_logo.dart';
 import '../widgets/indicators/empty_state_illustration.dart';
 import '../widgets/dialogs/natural_language_add_dialog.dart';
 import '../widgets/dialogs/renew_document_dialog.dart';
+import '../widgets/dialogs/upgrade_dialog.dart';
 
 /// Documents tab (Tier 1): the full expiry-tracking workspace — search,
 /// filters and detailed cards with inline actions.
@@ -370,6 +371,8 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
         child: FloatingActionButton.extended(
           heroTag: 'documents_add',
           onPressed: () async {
+            // Free plan document limit — paywall when the quota is full.
+            if (!await enforceDocumentLimit(context)) return;
             await context.push('/scan');
             await _loadData();
           },
@@ -523,6 +526,8 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
           if (!_hasActiveFilters)
             FilledButton.icon(
               onPressed: () async {
+                // Free plan document limit — paywall when the quota is full.
+                if (!await enforceDocumentLimit(context)) return;
                 await context.push('/scan');
                 await _loadData();
               },

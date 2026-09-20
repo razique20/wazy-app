@@ -5,6 +5,7 @@ import '../services/auth_service.dart';
 import '../services/collection_service.dart';
 import '../services/custom_document_type_service.dart';
 import '../services/document_scanner_service.dart';
+import '../services/entitlement_service.dart';
 import '../services/finance_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/dialogs/legal_info_dialogs.dart';
@@ -84,6 +85,8 @@ class _LoginScreenState extends State<LoginScreen> {
       await CustomDocumentTypeService.instance.reset();
       await DocumentScannerService.instance.refresh();
       await FinanceService.instance.refresh();
+      // Load the tier granted to this user (Track 1 entitlements).
+      await EntitlementService.instance.refresh();
 
       if (mounted) context.go('/home');
     } catch (e) {

@@ -62,16 +62,16 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Active documents already past their expiry date.
   List<ExpiryItem> get _expiredItems {
     final now = DateTime.now();
-    return _items
-        .where((i) => i.isActive && i.expiresAt.isBefore(now))
-        .toList()
+    return _items.where((i) => i.isActive && i.expiresAt.isBefore(now)).toList()
       ..sort((a, b) => a.expiresAt.compareTo(b.expiresAt));
   }
 
   Future<void> _loadData() async {
-    final collection =
-        await DocumentCollectionService.instance.getActiveCollection();
-    final items = await DocumentScannerService().getAllItems(includeExpired: true);
+    final collection = await DocumentCollectionService.instance
+        .getActiveCollection();
+    final items = await DocumentScannerService().getAllItems(
+      includeExpired: true,
+    );
     await FinanceService.instance.init();
     if (mounted) {
       setState(() {
@@ -222,7 +222,12 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Expanded(
             child: ElevatedButton.icon(
-              onPressed: () => context.push('/scan'),
+              // Free plan document limit — paywall when the quota is full.
+              onPressed: () async {
+                if (await enforceDocumentLimit(context) && context.mounted) {
+                  await context.push('/scan');
+                }
+              },
               icon: const Icon(Icons.document_scanner_rounded, size: 18),
               label: const Text(
                 'Add Document',
@@ -273,8 +278,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final greeting = hour < 12
         ? 'Good morning'
         : hour < 17
-            ? 'Good afternoon'
-            : 'Good evening';
+        ? 'Good afternoon'
+        : 'Good evening';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -308,10 +313,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const Icon(
-                        Icons.expand_more_rounded,
-                        size: 18,
-                      ),
+                      const Icon(Icons.expand_more_rounded, size: 18),
                     ],
                   ),
                   Text(
@@ -338,11 +340,13 @@ class _HomeScreenState extends State<HomeScreen> {
   int get _notificationCount {
     final expired = _items.where((i) => i.isActive && i.isExpired).length;
     final pending = _items
-        .where((i) =>
-            i.isActive &&
-            !i.isExpired &&
-            i.daysRemaining <= 30 &&
-            i.daysRemaining != _dismissedAttentionCount)
+        .where(
+          (i) =>
+              i.isActive &&
+              !i.isExpired &&
+              i.daysRemaining <= 30 &&
+              i.daysRemaining != _dismissedAttentionCount,
+        )
         .length;
     var spikes = 0;
     if (AlertPreferencesService.instance.billSpikesEnabled) {
@@ -396,44 +400,56 @@ class _HomeScreenState extends State<HomeScreen> {
     final rows = <Widget>[];
 
     // --- Upcoming renewals (within 30 days) ---
-    final pending = _items
-        .where((i) => i.isActive && !i.isExpired && i.daysRemaining <= 30)
-        .toList()
-      ..sort((a, b) => a.expiresAt.compareTo(b.expiresAt));
+    final pending =
+        _items
+            .where((i) => i.isActive && !i.isExpired && i.daysRemaining <= 30)
+            .toList()
+          ..sort((a, b) => a.expiresAt.compareTo(b.expiresAt));
     for (final item in pending) {
-      rows.add(_NotificationRow(
-        icon: Icons.hourglass_top_rounded,
-        color: item.daysRemaining <= 7 ? WazyColors.danger : WazyColors.warning,
-        title: item.displayName,
-        subtitle:
-            'Expires in ${item.daysRemaining} day${item.daysRemaining == 1 ? '' : 's'} — renew soon',
-        onTap: () => context.go('/documents'),
-      ));    }
+      rows.add(
+        _NotificationRow(
+          icon: Icons.hourglass_top_rounded,
+          color: item.daysRemaining <= 7
+              ? WazyColors.danger
+              : WazyColors.warning,
+          title: item.displayName,
+          subtitle:
+              'Expires in ${item.daysRemaining} day${item.daysRemaining == 1 ? '' : 's'} — renew soon',
+          onTap: () => context.go('/documents'),
+        ),
+      );
+    }
 
     // --- Expired documents ---
     for (final item in _items.where((i) => i.isActive && i.isExpired)) {
       final days = now.difference(item.expiresAt).inDays;
-      rows.add(_NotificationRow(
-        icon: Icons.error_outline_rounded,
-        color: WazyColors.danger,
-        title: item.displayName,
-        subtitle:
-            'Expired ${days <= 0 ? 'today' : '$days day${days == 1 ? '' : 's'} ago'} — act now',
-        onTap: () => context.go('/documents'),
-      ));
+      rows.add(
+        _NotificationRow(
+          icon: Icons.error_outline_rounded,
+          color: WazyColors.danger,
+          title: item.displayName,
+          subtitle:
+              'Expired ${days <= 0 ? 'today' : '$days day${days == 1 ? '' : 's'} ago'} — act now',
+          onTap: () => context.go('/documents'),
+        ),
+      );
     }
 
     // --- Bill spikes ---
     if (AlertPreferencesService.instance.billSpikesEnabled) {
-      for (final anomaly in AnomalyDetectionService.instance
-          .detectRecentAnomalies(FinanceService.instance.activeTransactions)) {
-        rows.add(_NotificationRow(
-          icon: Icons.trending_up_rounded,
-          color: WazyColors.warning,
-          title: 'Bill spike: ${anomaly.transaction.title}',
-          subtitle: anomaly.message,
-          onTap: () => context.go('/money'),
-        ));
+      for (final anomaly
+          in AnomalyDetectionService.instance.detectRecentAnomalies(
+            FinanceService.instance.activeTransactions,
+          )) {
+        rows.add(
+          _NotificationRow(
+            icon: Icons.trending_up_rounded,
+            color: WazyColors.warning,
+            title: 'Bill spike: ${anomaly.transaction.title}',
+            subtitle: anomaly.message,
+            onTap: () => context.go('/money'),
+          ),
+        );
       }
     }
 
@@ -451,13 +467,16 @@ class _HomeScreenState extends State<HomeScreen> {
           if (s.status == BudgetAlertLevel.none) continue;
           final pct = (s.ratio * 100).toStringAsFixed(0);
           final exceeded = s.status == BudgetAlertLevel.exceeded;
-          rows.add(_NotificationRow(
-            icon: Icons.account_balance_wallet_rounded,            color: exceeded ? WazyColors.danger : WazyColors.warning,
-            title:
-                '${exceeded ? "Budget exceeded" : "Close to budget"} — ${s.budget.category.displayName}',
-            subtitle: '$pct% of the monthly budget used this month.',
-            onTap: () => context.go('/money'),
-          ));
+          rows.add(
+            _NotificationRow(
+              icon: Icons.account_balance_wallet_rounded,
+              color: exceeded ? WazyColors.danger : WazyColors.warning,
+              title:
+                  '${exceeded ? "Budget exceeded" : "Close to budget"} — ${s.budget.category.displayName}',
+              subtitle: '$pct% of the monthly budget used this month.',
+              onTap: () => context.go('/money'),
+            ),
+          );
         }
       }
     }
@@ -505,8 +524,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.all(32),
                   child: Column(
                     children: [
-                      Icon(Icons.notifications_off_rounded,
-                          size: 40, color: theme.colorScheme.outline),
+                      Icon(
+                        Icons.notifications_off_rounded,
+                        size: 40,
+                        color: theme.colorScheme.outline,
+                      ),
                       const SizedBox(height: 12),
                       Text(
                         'You are all caught up',
@@ -553,8 +575,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ? (isDark ? const Color(0xFF064E3B) : const Color(0xFFECFDF5))
         : (isDark ? const Color(0xFF451A1A) : const Color(0xFFFEF2F2));
     final bannerBorder = pending.isEmpty
-        ? (isDark ? const Color(0xFF059669).withOpacity(0.4) : const Color(0xFFA7F3D0))
-        : (isDark ? const Color(0xFFEF4444).withOpacity(0.4) : const Color(0xFFFCA5A5));
+        ? (isDark
+              ? const Color(0xFF059669).withOpacity(0.4)
+              : const Color(0xFFA7F3D0))
+        : (isDark
+              ? const Color(0xFFEF4444).withOpacity(0.4)
+              : const Color(0xFFFCA5A5));
     final iconColor = pending.isEmpty
         ? (isDark ? const Color(0xFF34D399) : const Color(0xFF059669))
         : (isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626));
@@ -613,19 +639,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       pending.isEmpty
                           ? (_items.isEmpty
-                              ? 'Scan your first document to start tracking.'
-                              : 'Nothing expires in the next 30 days.')
+                                ? 'Scan your first document to start tracking.'
+                                : 'Nothing expires in the next 30 days.')
                           : pending
-                                  .take(2)
-                                  .map((a) => a.displayName)
-                                  .join(', ') +
-                              (pending.length > 2
-                                  ? ' +${pending.length - 2}'
-                                  : ''),
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: subtitleColor,
-                      ),
+                                    .take(2)
+                                    .map((a) => a.displayName)
+                                    .join(', ') +
+                                (pending.length > 2
+                                    ? ' +${pending.length - 2}'
+                                    : ''),
+                      style: TextStyle(fontSize: 13, color: subtitleColor),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -670,8 +693,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildStatsRow(ThemeData theme, UrgencySnapshot urgency) {
     final transactions = FinanceService.instance.activeTransactions;
     final budgets = FinanceService.instance.activeBudgets;
-    final spendByCategory =
-        FinanceMath.spendByCategory(transactions, DateTime.now());
+    final spendByCategory = FinanceMath.spendByCategory(
+      transactions,
+      DateTime.now(),
+    );
 
     // Budget health: ratio of total spend against total limits.
     var totalLimit = 0.0;
@@ -680,8 +705,9 @@ class _HomeScreenState extends State<HomeScreen> {
       totalLimit += b.monthlyLimit;
       totalSpentOnBudgets += spendByCategory[b.category] ?? 0;
     }
-    final healthRatio =
-        totalLimit <= 0 ? null : (totalSpentOnBudgets / totalLimit).clamp(0.0, 1.0);
+    final healthRatio = totalLimit <= 0
+        ? null
+        : (totalSpentOnBudgets / totalLimit).clamp(0.0, 1.0);
 
     final isDark = theme.brightness == Brightness.dark;
     final greenColor = isDark ? Colors.greenAccent : const Color(0xFF059669);
@@ -731,7 +757,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ? '—'
                   : '${(healthRatio * 100).toStringAsFixed(0)}%',
               label: 'Budget',
-              valueColor: healthRatio != null && healthRatio >= 1.0 ? redColor : greenColor,
+              valueColor: healthRatio != null && healthRatio >= 1.0
+                  ? redColor
+                  : greenColor,
             ),
           ),
         ],
@@ -747,8 +775,12 @@ class _HomeScreenState extends State<HomeScreen> {
     required Color valueColor,
   }) {
     final isDark = theme.brightness == Brightness.dark;
-    final neutralIconColor = isDark ? WazyColors.textSecondary : WazyColors.textSecondaryLight;
-    final neutralLabelColor = isDark ? WazyColors.textMuted : WazyColors.textMutedLight;
+    final neutralIconColor = isDark
+        ? WazyColors.textSecondary
+        : WazyColors.textSecondaryLight;
+    final neutralLabelColor = isDark
+        ? WazyColors.textMuted
+        : WazyColors.textMutedLight;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
@@ -778,10 +810,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           Text(
             label,
-            style: TextStyle(
-              color: neutralLabelColor,
-              fontSize: 10,
-            ),
+            style: TextStyle(color: neutralLabelColor, fontSize: 10),
             maxLines: 1,
           ),
         ],
@@ -892,11 +921,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Colors.green,
                     ),
                   ),
-                  Container(
-                    width: 1,
-                    height: 32,
-                    color: theme.dividerColor,
-                  ),
+                  Container(width: 1, height: 32, color: theme.dividerColor),
                   Expanded(
                     child: _moneyColumn(
                       theme,
@@ -905,11 +930,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Colors.red,
                     ),
                   ),
-                  Container(
-                    width: 1,
-                    height: 32,
-                    color: theme.dividerColor,
-                  ),
+                  Container(width: 1, height: 32, color: theme.dividerColor),
                   Expanded(
                     child: _moneyColumn(
                       theme,
@@ -969,7 +990,8 @@ class _HomeScreenState extends State<HomeScreen> {
               if (healthText.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Row(
-                  children: [                    Icon(
+                  children: [
+                    Icon(
                       healthColor == Colors.red
                           ? Icons.error_outline_rounded
                           : Icons.check_circle_outline_rounded,
@@ -1133,10 +1155,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildUpcomingSection(ThemeData theme, UrgencySnapshot urgency) {
     final now = DateTime.now();
-    final upcoming = _items
-        .where((i) => i.isActive && i.expiresAt.isAfter(now))
-        .toList()
-      ..sort((a, b) => a.expiresAt.compareTo(b.expiresAt));
+    final upcoming =
+        _items.where((i) => i.isActive && i.expiresAt.isAfter(now)).toList()
+          ..sort((a, b) => a.expiresAt.compareTo(b.expiresAt));
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1164,7 +1185,9 @@ class _HomeScreenState extends State<HomeScreen> {
           if (upcoming.isEmpty)
             _buildEmptyState(theme)
           else
-            ...upcoming.take(3).map(
+            ...upcoming
+                .take(3)
+                .map(
                   (item) => Padding(
                     padding: const EdgeInsets.only(bottom: 6),
                     child: _UpcomingTile(item: item),
@@ -1185,10 +1208,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Column(
         children: [
-          EmptyStateIllustration(
-            scene: EmptyStateScene.document,
-            size: 104,
-          ),
+          EmptyStateIllustration(scene: EmptyStateScene.document, size: 104),
           const SizedBox(height: 12),
           Text(
             'Nothing tracked yet',
@@ -1278,8 +1298,8 @@ class _UpcomingTile extends StatelessWidget {
                   color: isCritical
                       ? WazyColors.danger
                       : item.daysRemaining <= 30
-                          ? WazyColors.warning
-                          : WazyColors.safe,
+                      ? WazyColors.warning
+                      : WazyColors.safe,
                 ),
               ),
             ],

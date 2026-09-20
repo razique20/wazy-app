@@ -9,6 +9,7 @@ import 'package:wazy/models/expiry_item.dart';
 import 'package:wazy/screens/expiry_list_screen.dart';
 import 'package:wazy/screens/global_search_screen.dart';
 import 'package:wazy/services/document_scanner_service.dart';
+import 'package:wazy/services/entitlement_service.dart';
 import 'package:wazy/services/expiry_report.dart';
 
 ExpiryItem _item({
@@ -288,6 +289,14 @@ void main() {
     });
 
     testWidgets('export entry point is reachable', (tester) async {
+      // Report export is Plus-gated (Track 1): run this test on the Plus
+      // override tier so the export sheet opens instead of the paywall.
+      SharedPreferences.setMockInitialValues({
+        EntitlementService.tierOverrideKey: 'plus',
+      });
+      EntitlementService.instance.reset();
+      await EntitlementService.instance.refresh();
+
       await seedCache([
         _item(id: 'x1', name: 'Fresh Visa', type: DocumentType.visa),
       ]);
@@ -307,6 +316,8 @@ void main() {
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       DocumentScannerService.instance.clearCache();
+      // Isolate from tier overrides left by other groups.
+      EntitlementService.instance.reset();
     });
 
     testWidgets('finds documents by record number in notes', (tester) async {

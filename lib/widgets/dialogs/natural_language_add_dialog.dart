@@ -13,6 +13,7 @@ import '../../services/document_scanner_service.dart';
 import 'companion_suggestion_sheet.dart';
 import '../../services/natural_language_parser_service.dart';
 import '../../services/voice_input_service.dart';
+import 'upgrade_dialog.dart';
 
 /// Modal dialog allowing users to type freeform text to create a document item.
 class NaturalLanguageAddDialog extends StatefulWidget {
@@ -185,6 +186,9 @@ class _NaturalLanguageAddDialogState extends State<NaturalLanguageAddDialog> {
         renewalWarning: daysOffset <= 30 ? 'Expires soon — renew to avoid penalties' : null,
         expiresAt: item.expiryDate,
       );
+
+      // Track 1 gate: respect the Free plan's 10-document quota.
+      if (!await enforceDocumentLimit(context)) return;
 
       await DocumentScannerService.instance.addItem(newItem);
 

@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 
 import '../../models/document_type.dart';
 import '../../models/expiry_item.dart';
+import '../../models/subscription_tier.dart';
 import '../../services/companion_document_factory.dart';
 import '../../services/companion_suggestion_service.dart';
 import '../../services/document_scanner_service.dart';
+import '../../services/entitlement_service.dart';
+import 'upgrade_dialog.dart';
 
 /// Bottom sheet shown after a document is added, suggesting related document
 /// types from the same UAE companion pool that the user does not track yet.
@@ -76,7 +79,21 @@ class CompanionSuggestionSheet extends StatefulWidget {
       );
       if (picked.isEmpty) return;
 
+      var added = 0;
       for (final type in picked) {
+        // Track 1 gate: stop (and paywall) when the Free document quota is
+        // exhausted mid-batch.
+        final used = await EntitlementService.instance.documentsInUse();
+        if (!EntitlementService.instance.canAddDocuments(used)) {
+          final scaffoldContext = navigator.context;
+          if (scaffoldContext.mounted) {
+            await showUpgradeDialog(
+              scaffoldContext,
+              EntitlementFeature.moreDocuments,
+            );
+          }
+          break;
+        }
         await DocumentScannerService.instance.addItem(
           buildCompanionItem(
             type: type,
@@ -84,16 +101,19 @@ class CompanionSuggestionSheet extends StatefulWidget {
             anchoredToName: newItem.displayName,
           ),
         );
+        added++;
       }
-      final messenger = ScaffoldMessenger.maybeOf(navigator.context);
-      messenger?.showSnackBar(
-        SnackBar(
-          content: Text(
-            '${picked.length} related document${picked.length == 1 ? '' : 's'} added ✓',
+      if (added > 0) {
+        final messenger = ScaffoldMessenger.maybeOf(navigator.context);
+        messenger?.showSnackBar(
+          SnackBar(
+            content: Text(
+              '$added related document${added == 1 ? '' : 's'} added ✓',
+            ),
+            backgroundColor: Colors.green,
           ),
-          backgroundColor: Colors.green,
-        ),
-      );
+        );
+      }
     } catch (_) {}
   }
 
@@ -145,13 +165,15 @@ class _CompanionSuggestionSheetState extends State<CompanionSuggestionSheet> {
                     children: [
                       Text(
                         'Add related documents?',
-                        style: theme.textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       Text(
                         'Businesses tracking a ${_typeName(widget.addedType)} usually also track:',
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(color: theme.colorScheme.outline),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.outline,
+                        ),
                       ),
                     ],
                   ),
@@ -255,7 +277,9 @@ class _SuggestionTile extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: selected ? meta.primaryColor : theme.colorScheme.outlineVariant,
+              color: selected
+                  ? meta.primaryColor
+                  : theme.colorScheme.outlineVariant,
               width: selected ? 2 : 1,
             ),
             color: selected
@@ -280,8 +304,9 @@ class _SuggestionTile extends StatelessWidget {
                   children: [
                     Text(
                       meta.displayName,
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w600),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(

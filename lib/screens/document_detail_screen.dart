@@ -9,8 +9,10 @@ import 'package:path_provider/path_provider.dart';
 import '../models/expiry_item.dart';
 import '../models/finance.dart';
 import '../models/renewal_record.dart';
+import '../models/subscription_tier.dart';
 import '../services/finance_service.dart';
 import '../services/document_scanner_service.dart';
+import '../services/entitlement_service.dart';
 import '../services/notification_service.dart';
 import '../widgets/dialogs/renew_document_dialog.dart';
 import '../widgets/widgets.dart';
@@ -36,7 +38,9 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
 
   Future<void> _loadItem() async {
     // Find item by ID directly across all cached documents
-    final item = await DocumentScannerService.instance.getItemById(widget.documentId);
+    final item = await DocumentScannerService.instance.getItemById(
+      widget.documentId,
+    );
     if (mounted) {
       setState(() {
         _item = item;
@@ -55,7 +59,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => context.canPop() ? context.pop() : context.go('/documents'),
+            onPressed: () =>
+                context.canPop() ? context.pop() : context.go('/documents'),
           ),
           title: const Text('Loading...'),
         ),
@@ -69,7 +74,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => context.canPop() ? context.pop() : context.go('/documents'),
+            onPressed: () =>
+                context.canPop() ? context.pop() : context.go('/documents'),
           ),
         ),
         body: Center(
@@ -78,10 +84,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
             children: [
               const Icon(Icons.error_outline, size: 64, color: Colors.grey),
               const SizedBox(height: 16),
-              Text(
-                'Document not found',
-                style: theme.textTheme.titleLarge,
-              ),
+              Text('Document not found', style: theme.textTheme.titleLarge),
               const SizedBox(height: 8),
               Text(
                 'This document may have been removed or expired.',
@@ -91,7 +94,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
               ),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: () => context.canPop() ? context.pop() : context.go('/documents'),
+                onPressed: () =>
+                    context.canPop() ? context.pop() : context.go('/documents'),
                 child: const Text('Back to documents'),
               ),
             ],
@@ -125,10 +129,19 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
             onSelected: (value) => _handleMenuAction(context, value, item),
             itemBuilder: (context) => [
               const PopupMenuItem(value: 'edit', child: Text('Edit document')),
-              const PopupMenuItem(value: 'renew', child: Text('Mark as renewed')),
+              const PopupMenuItem(
+                value: 'renew',
+                child: Text('Mark as renewed'),
+              ),
               const PopupMenuItem(value: 'share', child: Text('Share details')),
-              const PopupMenuItem(value: 'export', child: Text('Export report')),
-              const PopupMenuItem(value: 'delete', child: Text('Remove document')),
+              const PopupMenuItem(
+                value: 'export',
+                child: Text('Export report'),
+              ),
+              const PopupMenuItem(
+                value: 'delete',
+                child: Text('Remove document'),
+              ),
             ],
           ),
         ],
@@ -144,8 +157,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
             const SizedBox(height: 16),
 
             // Warning box
-            if (!item.isExpired)
-              _buildWarningCard(theme, item),
+            if (!item.isExpired) _buildWarningCard(theme, item),
 
             if (item.fileName != null || item.filePath != null) ...[
               const SizedBox(height: 16),
@@ -202,9 +214,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
       decoration: BoxDecoration(
         color: urgency.color.withOpacity(0.06),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: urgency.color.withOpacity(0.2),
-        ),
+        border: Border.all(color: urgency.color.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -260,12 +270,14 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                   color: daysRemaining <= 7
                       ? Colors.red
                       : daysRemaining <= 30
-                          ? Colors.orange
-                          : Colors.green,
+                      ? Colors.orange
+                      : Colors.green,
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  daysRemaining < 0 ? '${-daysRemaining}d overdue' : '$daysRemaining days left',
+                  daysRemaining < 0
+                      ? '${-daysRemaining}d overdue'
+                      : '$daysRemaining days left',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 11,
@@ -304,12 +316,20 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
 
   Widget _buildAttachedFileCard(ThemeData theme, ExpiryItem item) {
     final fileName = item.fileName ?? 'Attached Document';
-    final fileSizeKb = item.fileSize != null ? (item.fileSize! / 1024).toStringAsFixed(0) : null;
-    final ext = fileName.contains('.') ? fileName.split('.').last.toUpperCase() : 'FILE';
+    final fileSizeKb = item.fileSize != null
+        ? (item.fileSize! / 1024).toStringAsFixed(0)
+        : null;
+    final ext = fileName.contains('.')
+        ? fileName.split('.').last.toUpperCase()
+        : 'FILE';
 
     final path = item.filePath;
-    final isNetwork = path != null && (path.startsWith('http://') || path.startsWith('https://'));
-    final file = path != null && path.isNotEmpty && !isNetwork ? File(path) : null;
+    final isNetwork =
+        path != null &&
+        (path.startsWith('http://') || path.startsWith('https://'));
+    final file = path != null && path.isNotEmpty && !isNetwork
+        ? File(path)
+        : null;
     final exists = isNetwork || (file != null && file.existsSync());
 
     if (!exists) {
@@ -382,7 +402,10 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: theme.colorScheme.primary,
                     foregroundColor: theme.colorScheme.onPrimary,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -393,7 +416,10 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.amber.shade900,
                     side: BorderSide(color: Colors.amber.shade400),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
                   ),
                 ),
               ],
@@ -434,7 +460,10 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.primary,
                         borderRadius: BorderRadius.circular(4),
@@ -463,7 +492,9 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  fileSizeKb != null ? 'Attachment file size: $fileSizeKb KB' : 'Document attachment file',
+                  fileSizeKb != null
+                      ? 'Attachment file size: $fileSizeKb KB'
+                      : 'Document attachment file',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.outline,
                   ),
@@ -488,19 +519,23 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
   void _showFilePreview(BuildContext context, ExpiryItem item) {
     final path = item.filePath;
     final name = item.fileName ?? 'Attached Document';
-    final isNetwork = path != null && (path.startsWith('http://') || path.startsWith('https://'));
-    final file = path != null && path.isNotEmpty && !isNetwork ? File(path) : null;
+    final isNetwork =
+        path != null &&
+        (path.startsWith('http://') || path.startsWith('https://'));
+    final file = path != null && path.isNotEmpty && !isNetwork
+        ? File(path)
+        : null;
     final exists = isNetwork || (file != null && file.existsSync());
 
     final lowerPath = (path ?? '').toLowerCase();
-    final isImage = exists && (
-      lowerPath.contains('.png') ||
-      lowerPath.contains('.jpg') ||
-      lowerPath.contains('.jpeg') ||
-      lowerPath.contains('.webp') ||
-      lowerPath.contains('.gif') ||
-      lowerPath.contains('.heic')
-    );
+    final isImage =
+        exists &&
+        (lowerPath.contains('.png') ||
+            lowerPath.contains('.jpg') ||
+            lowerPath.contains('.jpeg') ||
+            lowerPath.contains('.webp') ||
+            lowerPath.contains('.gif') ||
+            lowerPath.contains('.heic'));
 
     showDialog(
       context: context,
@@ -523,8 +558,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                     child: Text(
                       name,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -553,7 +588,9 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                                   fit: BoxFit.contain,
                                   loadingBuilder: (_, child, progress) {
                                     if (progress == null) return child;
-                                    return const Center(child: CircularProgressIndicator());
+                                    return const Center(
+                                      child: CircularProgressIndicator(),
+                                    );
                                   },
                                   errorBuilder: (_, __, ___) => const Center(
                                     child: Text('Error loading cloud image.'),
@@ -563,7 +600,9 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                                   file!,
                                   fit: BoxFit.contain,
                                   errorBuilder: (_, __, ___) => const Center(
-                                    child: Text('Error loading local image file.'),
+                                    child: Text(
+                                      'Error loading local image file.',
+                                    ),
                                   ),
                                 ),
                         ),
@@ -573,7 +612,9 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            exists ? Icons.insert_drive_file_outlined : Icons.find_in_page_outlined,
+                            exists
+                                ? Icons.insert_drive_file_outlined
+                                : Icons.find_in_page_outlined,
                             size: 64,
                             color: Theme.of(context).colorScheme.primary,
                           ),
@@ -597,8 +638,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                             exists
                                 ? 'File path: $path'
                                 : path != null && path.isNotEmpty
-                                    ? 'File was uploaded on another device ($path).'
-                                    : 'No file path stored for this document.',
+                                ? 'File was uploaded on another device ($path).'
+                                : 'No file path stored for this document.',
                             style: TextStyle(
                               fontSize: 11,
                               color: Theme.of(context).colorScheme.outline,
@@ -615,7 +656,10 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
     );
   }
 
-  Future<void> _reuploadAttachment(BuildContext context, ExpiryItem item) async {
+  Future<void> _reuploadAttachment(
+    BuildContext context,
+    ExpiryItem item,
+  ) async {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
@@ -634,7 +678,9 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
       }
 
       final appDocDir = await getApplicationDocumentsDirectory();
-      final targetDir = Directory('${appDocDir.path}/wazy/documents/${item.id}');
+      final targetDir = Directory(
+        '${appDocDir.path}/wazy/documents/${item.id}',
+      );
       if (!targetDir.existsSync()) {
         targetDir.createSync(recursive: true);
       }
@@ -662,9 +708,9 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
       );
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error re-uploading file: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error re-uploading file: $e')));
     }
   }
 
@@ -679,26 +725,30 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
         color: isCritical
             ? theme.colorScheme.errorContainer
             : days <= 30
-                ? Colors.amber.shade50
-                : days <= 60
-                    ? Colors.orange.shade50
-                    : theme.colorScheme.surfaceContainerHighest,
+            ? Colors.amber.shade50
+            : days <= 60
+            ? Colors.orange.shade50
+            : theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isCritical
               ? theme.colorScheme.error
               : days <= 30
-                  ? Colors.amber
-                  : days <= 60
-                      ? Colors.orange
-                      : theme.colorScheme.outline,
+              ? Colors.amber
+              : days <= 60
+              ? Colors.orange
+              : theme.colorScheme.outline,
         ),
       ),
       child: Row(
         children: [
           Icon(
-            isCritical ? Icons.warning_amber_rounded : Icons.info_outline_rounded,
-            color: isCritical ? theme.colorScheme.error : theme.colorScheme.primary,
+            isCritical
+                ? Icons.warning_amber_rounded
+                : Icons.info_outline_rounded,
+            color: isCritical
+                ? theme.colorScheme.error
+                : theme.colorScheme.primary,
             size: 24,
           ),
           const SizedBox(width: 12),
@@ -765,7 +815,11 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
               icon: Icons.timer_outlined,
               label: 'Days remaining',
               value: '${item.daysRemaining} days',
-              valueColor: item.daysRemaining <= 7 ? Colors.red : item.daysRemaining <= 30 ? Colors.amber : null,
+              valueColor: item.daysRemaining <= 7
+                  ? Colors.red
+                  : item.daysRemaining <= 30
+                  ? Colors.amber
+                  : null,
             ),
             _InfoTile(
               icon: Icons.location_on_outlined,
@@ -984,13 +1038,15 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
   }
 
   Widget _buildRenewalProcess(ThemeData theme, ExpiryItem item) {
-    final steps = item.renewalSteps ?? [
-      'Review current document status',
-      'Gather required renewal documents',
-      'Submit renewal application',
-      'Pay applicable fees',
-      'Receive renewed document',
-    ];
+    final steps =
+        item.renewalSteps ??
+        [
+          'Review current document status',
+          'Gather required renewal documents',
+          'Submit renewal application',
+          'Pay applicable fees',
+          'Receive renewed document',
+        ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1029,7 +1085,9 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                     child: Text(
                       '${index + 1}',
                       style: TextStyle(
-                        color: isLast ? Colors.white : theme.colorScheme.outline,
+                        color: isLast
+                            ? Colors.white
+                            : theme.colorScheme.outline,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),
@@ -1108,7 +1166,10 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
               const Spacer(),
               if (hasCustom)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(6),
@@ -1137,11 +1198,28 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
           Align(
             alignment: Alignment.centerLeft,
             child: OutlinedButton.icon(
-              onPressed: () => _showCustomReminderDaysDialog(context, item),
+              onPressed: () async {
+                // Track 1 gate: custom alert days are a Plus feature.
+                if (!EntitlementService.instance.allows(
+                  EntitlementFeature.customReminderDays,
+                )) {
+                  await showUpgradeDialog(
+                    context,
+                    EntitlementFeature.customReminderDays,
+                  );
+                  return;
+                }
+                _showCustomReminderDaysDialog(context, item);
+              },
               icon: const Icon(Icons.tune_rounded, size: 16),
-              label: Text(hasCustom ? 'Edit Alert Days' : 'Set Custom Alert Days'),
+              label: Text(
+                hasCustom ? 'Edit Alert Days' : 'Set Custom Alert Days',
+              ),
               style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
               ),
             ),
           ),
@@ -1195,8 +1273,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                       ? 'No days selected (resets to standard 90/60/30/7 ladder).'
                       : 'Alerts will fire at: ${selected.toList()..sort((a, b) => b.compareTo(a))} days before expiry.',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.outline,
-                      ),
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
                 ),
               ],
             ),
@@ -1207,8 +1285,11 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
               ),
               FilledButton(
                 onPressed: () async {
-                  final sorted = selected.toList()..sort((a, b) => b.compareTo(a));
-                  final updated = item.copyWith(customReminderDays: sorted.isEmpty ? null : sorted);
+                  final sorted = selected.toList()
+                    ..sort((a, b) => b.compareTo(a));
+                  final updated = item.copyWith(
+                    customReminderDays: sorted.isEmpty ? null : sorted,
+                  );
                   await DocumentScannerService.instance.updateItem(updated);
                   if (!context.mounted) return;
                   Navigator.pop(ctx);
@@ -1258,7 +1339,10 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
               ),
               child: Text(
                 '${history.length}',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                ),
               ),
             ),
           ],
@@ -1314,7 +1398,11 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.event_available, color: Colors.green, size: 18),
+                        const Icon(
+                          Icons.event_available,
+                          color: Colors.green,
+                          size: 18,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           'Renewed on ${rec.formattedRenewedAt}',
@@ -1325,7 +1413,10 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                         const Spacer(),
                         if (rec.fee != null && rec.fee! > 0)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.green.withOpacity(0.12),
                               borderRadius: BorderRadius.circular(6),
@@ -1429,10 +1520,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
 
   /// Schedules OS-level local notifications on the ladder
   /// for this document (only tiers still in the future fire).
-  Future<void> _scheduleReminders(
-    BuildContext context,
-    ExpiryItem item,
-  ) async {
+  Future<void> _scheduleReminders(BuildContext context, ExpiryItem item) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
       await NotificationService.instance.scheduleEscalationLadder(
@@ -1446,9 +1534,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
       }
       messenger.showSnackBar(
         SnackBar(
-          content: Text(
-            'Reminders scheduled for ${item.displayName}',
-          ),
+          content: Text('Reminders scheduled for ${item.displayName}'),
           backgroundColor: Colors.green,
         ),
       );
@@ -1485,8 +1571,9 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
           item,
           result.replacementFile!,
         );
-        final refreshed =
-            await DocumentScannerService.instance.getItemById(item.id);
+        final refreshed = await DocumentScannerService.instance.getItemById(
+          item.id,
+        );
         if (refreshed != null) {
           await DocumentScannerService.instance.updateItem(
             refreshed.copyWith(
@@ -1514,7 +1601,9 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
         );
       }
 
-      final updated = await DocumentScannerService.instance.getItemById(item.id);
+      final updated = await DocumentScannerService.instance.getItemById(
+        item.id,
+      );
 
       if (!context.mounted) return;
       setState(() {
@@ -1592,9 +1681,9 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
         );
         break;
       case 'export':
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Report exported (demo)')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Report exported (demo)')));
         break;
       case 'delete':
         _confirmDelete(context, item);
@@ -1620,9 +1709,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
               Navigator.pop(ctx);
               _removeDocument(context, item);
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Remove'),
           ),
         ],
@@ -1655,11 +1742,7 @@ class _InfoTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(
-            icon,
-            size: 16,
-            color: theme.colorScheme.outline,
-          ),
+          Icon(icon, size: 16, color: theme.colorScheme.outline),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -1722,8 +1805,8 @@ class _TimelineStep extends StatelessWidget {
           color: isActive
               ? color
               : isCompleted
-                  ? color.withOpacity(0.4)
-                  : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+              ? color.withOpacity(0.4)
+              : Theme.of(context).colorScheme.outline.withOpacity(0.2),
         ),
         // Content
         Padding(
@@ -1737,15 +1820,15 @@ class _TimelineStep extends StatelessWidget {
                   color: isActive
                       ? color
                       : isCompleted
-                          ? color.withOpacity(0.2)
-                          : Colors.transparent,
+                      ? color.withOpacity(0.2)
+                      : Colors.transparent,
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: isCompleted
                         ? color.withOpacity(0.4)
                         : isActive
-                            ? color
-                            : Colors.transparent,
+                        ? color
+                        : Colors.transparent,
                     width: 2,
                   ),
                 ),
@@ -1754,8 +1837,8 @@ class _TimelineStep extends StatelessWidget {
                   color: isCompleted
                       ? color
                       : isActive
-                          ? Colors.white
-                          : Colors.transparent,
+                      ? Colors.white
+                      : Colors.transparent,
                   size: 16,
                 ),
               ),
@@ -1763,23 +1846,23 @@ class _TimelineStep extends StatelessWidget {
               Text(
                 label,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                      color: isActive
-                          ? color
-                          : isCompleted
-                              ? Colors.grey
-                              : Theme.of(context).colorScheme.outline,
-                    ),
+                  fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                  color: isActive
+                      ? color
+                      : isCompleted
+                      ? Colors.grey
+                      : Theme.of(context).colorScheme.outline,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 2),
               Text(
                 description,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: isActive
-                          ? color
-                          : Theme.of(context).colorScheme.outline,
-                    ),
+                  color: isActive
+                      ? color
+                      : Theme.of(context).colorScheme.outline,
+                ),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,

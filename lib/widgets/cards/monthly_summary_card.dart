@@ -3,9 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../models/subscription_tier.dart';
+import '../../services/entitlement_service.dart';
 import '../../services/finance_service.dart';
 import '../../services/monthly_summary_service.dart';
 import '../../theme/app_theme.dart';
+import '../dialogs/upgrade_dialog.dart';
 
 /// Card on the Money screen rendering the AI Monthly Financial Executive
 /// Summary: template narrative instantly, LLM-polished when a Gemini key is
@@ -72,6 +75,17 @@ class _MonthlySummaryCardState extends State<MonthlySummaryCard> {
   }
 
   Future<void> _toggleVisibility() async {
+    // Track 1 gate: the AI monthly executive summary is a Plus feature.
+    // Expanding is blocked; hiding stays free so the bar never traps a user
+    // who downgraded mid-session.
+    if (!_visible &&
+        !EntitlementService.instance.allows(
+          EntitlementFeature.aiMonthlySummary,
+        )) {
+      await showUpgradeDialog(context, EntitlementFeature.aiMonthlySummary);
+      return;
+    }
+
     final newValue = !_visible;
     setState(() => _visible = newValue);
     if (newValue && MonthlySummaryService.instance.lastNarrative == null) {
@@ -127,8 +141,10 @@ class _MonthlySummaryCardState extends State<MonthlySummaryCard> {
                 const SizedBox(width: 6),
                 if (service.lastUsedLlm && _visible)
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: WazyColors.violetAccent.withAlpha(25),
                       borderRadius: BorderRadius.circular(6),
@@ -149,9 +165,11 @@ class _MonthlySummaryCardState extends State<MonthlySummaryCard> {
                   child: IconButton(
                     padding: EdgeInsets.zero,
                     iconSize: 18,
-                    icon: Icon(_visible
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined),
+                    icon: Icon(
+                      _visible
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                    ),
                     tooltip: _visible ? 'Hide summary' : 'Show summary',
                     onPressed: _toggleVisibility,
                   ),
@@ -167,8 +185,7 @@ class _MonthlySummaryCardState extends State<MonthlySummaryCard> {
                           ? const SizedBox(
                               width: 14,
                               height: 14,
-                              child:
-                                  CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.refresh_rounded),
                       tooltip: 'Regenerate summary',
@@ -195,39 +212,48 @@ class _MonthlySummaryCardState extends State<MonthlySummaryCard> {
                 ),
               if (insights.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                ...insights.take(4).map((insight) => Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            switch (insight.kind) {
-                              MonthlyInsightKind.spendingMove =>
-                                Icons.trending_up_rounded,
-                              MonthlyInsightKind.budgetAlert =>
-                                Icons.warning_amber_rounded,
-                              MonthlyInsightKind.savings => Icons.savings_rounded,
-                              MonthlyInsightKind.positive =>
-                                Icons.check_circle_rounded,
-                            },
-                            size: 16,
-                            color: switch (insight.kind) {
-                              MonthlyInsightKind.spendingMove => WazyColors.danger,
-                              MonthlyInsightKind.budgetAlert => WazyColors.warning,
-                              MonthlyInsightKind.savings => WazyColors.safe,
-                              MonthlyInsightKind.positive => WazyColors.safe,
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              insight.sentence,
-                              style: theme.textTheme.bodySmall?.copyWith(height: 1.35),
+                ...insights
+                    .take(4)
+                    .map(
+                      (insight) => Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              switch (insight.kind) {
+                                MonthlyInsightKind.spendingMove =>
+                                  Icons.trending_up_rounded,
+                                MonthlyInsightKind.budgetAlert =>
+                                  Icons.warning_amber_rounded,
+                                MonthlyInsightKind.savings =>
+                                  Icons.savings_rounded,
+                                MonthlyInsightKind.positive =>
+                                  Icons.check_circle_rounded,
+                              },
+                              size: 16,
+                              color: switch (insight.kind) {
+                                MonthlyInsightKind.spendingMove =>
+                                  WazyColors.danger,
+                                MonthlyInsightKind.budgetAlert =>
+                                  WazyColors.warning,
+                                MonthlyInsightKind.savings => WazyColors.safe,
+                                MonthlyInsightKind.positive => WazyColors.safe,
+                              },
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                insight.sentence,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  height: 1.35,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    )),
+                    ),
               ],
             ],
           ],

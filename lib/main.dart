@@ -11,6 +11,7 @@ import 'services/gemini_api_service.dart';
 import 'services/collection_service.dart';
 import 'services/custom_document_type_service.dart';
 import 'services/document_scanner_service.dart';
+import 'services/entitlement_service.dart';
 import 'services/finance_service.dart';
 import 'services/supabase_service.dart';
 import 'services/theme_service.dart';
@@ -67,6 +68,8 @@ Future<void> _prewarmServices() async {
       DocumentCollectionService.instance.init(),
       DocumentScannerService.instance.init(),
       FinanceService.instance.init(),
+      // Track 1: resolve the user's granted tier for feature gating.
+      EntitlementService.instance.init(),
     ]);
 
     // Initial evaluation once finance data is loaded (catches thresholds

@@ -9,8 +9,10 @@ import 'package:printing/printing.dart';
 
 import '../models/document_type.dart';
 import '../models/expiry_item.dart';
+import '../models/subscription_tier.dart';
 import '../services/collection_service.dart';
 import '../services/document_scanner_service.dart';
+import '../services/entitlement_service.dart';
 import '../services/expiry_report.dart';
 import '../services/urgency_engine.dart';
 import '../widgets/indicators/empty_state_illustration.dart';
@@ -134,9 +136,11 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
                               deleteIcon: const Icon(Icons.close, size: 16),
                               onDeleted: () =>
                                   _updateSpec((s) => s.copyWith(docType: null)),
-                              backgroundColor:
-                                  _spec.docType!.primaryColor.withOpacity(0.15),
-                              labelStyle: TextStyle(color: _spec.docType!.primaryColor),
+                              backgroundColor: _spec.docType!.primaryColor
+                                  .withOpacity(0.15),
+                              labelStyle: TextStyle(
+                                color: _spec.docType!.primaryColor,
+                              ),
                             ),
                             const SizedBox(width: 4),
                           ]
@@ -148,8 +152,12 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
                               deleteIcon: const Icon(Icons.close, size: 16),
                               onDeleted: () =>
                                   _updateSpec((s) => s.copyWith(urgency: null)),
-                              backgroundColor: _spec.urgency!.color.withOpacity(0.15),
-                              labelStyle: TextStyle(color: _spec.urgency!.color),
+                              backgroundColor: _spec.urgency!.color.withOpacity(
+                                0.15,
+                              ),
+                              labelStyle: TextStyle(
+                                color: _spec.urgency!.color,
+                              ),
                             ),
                             const SizedBox(width: 4),
                           ]
@@ -158,11 +166,17 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
                         ? [
                             _urgencyStatusChips[_spec.reminderStatus] != null
                                 ? Chip(
-                                    label:
-                                        Text(_urgencyStatusChips[_spec.reminderStatus]!),
-                                    deleteIcon: const Icon(Icons.close, size: 16),
+                                    label: Text(
+                                      _urgencyStatusChips[_spec
+                                          .reminderStatus]!,
+                                    ),
+                                    deleteIcon: const Icon(
+                                      Icons.close,
+                                      size: 16,
+                                    ),
                                     onDeleted: () => _updateSpec(
-                                        (s) => s.copyWith(reminderStatus: 0)),
+                                      (s) => s.copyWith(reminderStatus: 0),
+                                    ),
                                   )
                                 : const SizedBox.shrink(),
                           ]
@@ -177,7 +191,10 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
                               ),
                               deleteIcon: const Icon(Icons.close, size: 16),
                               onDeleted: () => _updateSpec(
-                                  (s) => s.copyWith(status: ExpiryStatusFilter.active)),
+                                (s) => s.copyWith(
+                                  status: ExpiryStatusFilter.active,
+                                ),
+                              ),
                             ),
                             const SizedBox(width: 4),
                           ]
@@ -187,8 +204,9 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
                             Chip(
                               label: Text(_collectionName(_spec.collectionId!)),
                               deleteIcon: const Icon(Icons.close, size: 16),
-                              onDeleted: () =>
-                                  _updateSpec((s) => s.copyWith(collectionId: null)),
+                              onDeleted: () => _updateSpec(
+                                (s) => s.copyWith(collectionId: null),
+                              ),
                             ),
                             const SizedBox(width: 4),
                           ]
@@ -200,12 +218,13 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
                                 _spec.daysMin > 0 && _spec.daysMax < 730
                                     ? '${_spec.daysMin}–${_spec.daysMax} days'
                                     : _spec.daysMin > 0
-                                        ? '${_spec.daysMin}+ days'
-                                        : '≤ ${_spec.daysMax} days',
+                                    ? '${_spec.daysMin}+ days'
+                                    : '≤ ${_spec.daysMax} days',
                               ),
                               deleteIcon: const Icon(Icons.close, size: 16),
                               onDeleted: () => _updateSpec(
-                                  (s) => s.copyWith(daysMin: 0, daysMax: 730)),
+                                (s) => s.copyWith(daysMin: 0, daysMax: 730),
+                              ),
                             ),
                             const SizedBox(width: 4),
                           ]
@@ -223,7 +242,11 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
                 padding: const EdgeInsets.all(12),
                 child: Row(
                   children: [
-                    Icon(Icons.warning_amber_rounded, color: Colors.amber, size: 24),
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      color: Colors.amber,
+                      size: 24,
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -258,8 +281,8 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : _filteredItems.isEmpty
-                    ? _buildEmptyState(theme)
-                    : _buildList(theme),
+                ? _buildEmptyState(theme)
+                : _buildList(theme),
           ),
         ],
       ),
@@ -279,7 +302,9 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            _hasActiveFilters ? 'No documents match filters' : 'No upcoming expiries',
+            _hasActiveFilters
+                ? 'No documents match filters'
+                : 'No upcoming expiries',
             style: theme.textTheme.titleMedium?.copyWith(
               color: theme.colorScheme.outline,
             ),
@@ -297,7 +322,12 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
           const SizedBox(height: 24),
           if (!_hasActiveFilters)
             ElevatedButton.icon(
-              onPressed: () => context.push('/scan'),
+              onPressed: () async {
+                // Free plan document limit — paywall when the quota is full.
+                if (await enforceDocumentLimit(context) && context.mounted) {
+                  await context.push('/scan');
+                }
+              },
               icon: const Icon(Icons.add),
               label: const Text('Upload documents'),
             ),
@@ -352,7 +382,10 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
                 child: Row(
                   children: [
                     Expanded(
@@ -366,7 +399,11 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
                     Text(
                       '$daysLeft days left',
                       style: TextStyle(
-                        color: daysLeft <= 7 ? Colors.red : daysLeft <= 30 ? Colors.amber : theme.colorScheme.primary,
+                        color: daysLeft <= 7
+                            ? Colors.red
+                            : daysLeft <= 30
+                            ? Colors.amber
+                            : theme.colorScheme.primary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -376,7 +413,10 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
               const Divider(height: 1),
               // Actions
               ListTile(
-                leading: const Icon(Icons.alarm_add_rounded, color: Colors.amber),
+                leading: const Icon(
+                  Icons.alarm_add_rounded,
+                  color: Colors.amber,
+                ),
                 title: const Text('Set reminder'),
                 subtitle: const Text('90 / 60 / 30 day reminders'),
                 onTap: () {
@@ -385,7 +425,10 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.assignment_turned_in, color: Colors.blue),
+                leading: const Icon(
+                  Icons.assignment_turned_in,
+                  color: Colors.blue,
+                ),
                 title: const Text('Assign to team member'),
                 subtitle: const Text('Notify responsible person'),
                 onTap: () {
@@ -403,7 +446,10 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.task_alt_rounded, color: Colors.purple),
+                leading: const Icon(
+                  Icons.task_alt_rounded,
+                  color: Colors.purple,
+                ),
                 title: const Text('Mark as renewed'),
                 subtitle: const Text('Document has been renewed'),
                 onTap: () {
@@ -418,7 +464,9 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
                 onTap: () {
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Downloading ${item.displayName}...')),
+                    SnackBar(
+                      content: Text('Downloading ${item.displayName}...'),
+                    ),
                   );
                 },
               ),
@@ -432,7 +480,13 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
   void _showAssignDialog(BuildContext context, ExpiryItem item) {
     final theme = Theme.of(context);
     final nameController = TextEditingController();
-    final team = ['Ahmed Al Mansoori', 'Sarah Khan', 'Mohammed Hassan', 'Priya Sharma', 'Omar Ibrahim'];
+    final team = [
+      'Ahmed Al Mansoori',
+      'Sarah Khan',
+      'Mohammed Hassan',
+      'Priya Sharma',
+      'Omar Ibrahim',
+    ];
 
     showDialog(
       context: context,
@@ -451,14 +505,16 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
             const SizedBox(height: 12),
             const Text('Quick select:'),
             const SizedBox(height: 8),
-            ...team.map((member) => ListTile(
-              title: Text(member),
-              onTap: () {
-                nameController.text = member;
-                Navigator.pop(ctx);
-                _assign(context, item, member);
-              },
-            )),
+            ...team.map(
+              (member) => ListTile(
+                title: Text(member),
+                onTap: () {
+                  nameController.text = member;
+                  Navigator.pop(ctx);
+                  _assign(context, item, member);
+                },
+              ),
+            ),
           ],
         ),
         actions: [
@@ -548,7 +604,11 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
     }
   }
 
-  Future<void> _assign(BuildContext context, ExpiryItem item, String name) async {
+  Future<void> _assign(
+    BuildContext context,
+    ExpiryItem item,
+    String name,
+  ) async {
     try {
       await DocumentScannerService.instance.assignTo(item.id, name);
       await _loadData();
@@ -605,8 +665,9 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
           item,
           result.replacementFile!,
         );
-        final refreshed =
-            await DocumentScannerService.instance.getItemById(item.id);
+        final refreshed = await DocumentScannerService.instance.getItemById(
+          item.id,
+        );
         if (refreshed != null) {
           await DocumentScannerService.instance.updateItem(
             refreshed.copyWith(
@@ -694,163 +755,208 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Column(
-                  children: [
-                    // Document type filter
-                    const Text('Document type', style: TextStyle(fontWeight: FontWeight.w500)),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        FilterChip(
-                          label: const Text('All types'),
-                          selected: _spec.docType == null,
-                          onSelected: (_) {
-                            _updateSpec((s) => s.copyWith(docType: null));
-                            Navigator.pop(ctx);
-                          },
-                        ),
-                        ...DocumentTypeRegistry.instance.typesForPicker
-                            .map((type) => FilterChip(
-                          avatar: Icon(type.icon, size: 16, color: type.primaryColor),
-                          label: Text(type.displayName),
-                          selected: _spec.docType?.key == type.key,
-                          onSelected: (_) {
-                            _updateSpec((s) => s.copyWith(docType: type));
-                            Navigator.pop(ctx);
-                          },
-                          selectedColor: type.primaryColor.withOpacity(0.2),
-                        )),
-                      ],
-                    ),
-                    const Divider(height: 24),
-                    // Urgency filter
-                    const Text('Urgency level', style: TextStyle(fontWeight: FontWeight.w500)),
-                    const SizedBox(height: 8),
-                    ...UrgencyLevel.values.map((level) => FilterChip(
-                      avatar: Icon(
-                        level.icon,
-                        size: 16,
-                        color: level == UrgencyLevel.critical ? Colors.red : level.color,
+                    children: [
+                      // Document type filter
+                      const Text(
+                        'Document type',
+                        style: TextStyle(fontWeight: FontWeight.w500),
                       ),
-                      label: Text(level.title),
-                      selected: _spec.urgency?.priority == level.priority,
-                      onSelected: (_) {
-                        _updateSpec((s) => s.copyWith(urgency: level));
-                        Navigator.pop(ctx);
-                      },
-                      selectedColor: level.color.withOpacity(0.2),
-                    )),
-                    const Divider(height: 24),
-                    // Urgency status filter
-                    const Text('Urgency status', style: TextStyle(fontWeight: FontWeight.w500)),
-                    const SizedBox(height: 8),
-                    ...List.generate(_urgencyStatusChips.length, (i) {
-                      if (i == 0) return const SizedBox.shrink();
-                      return FilterChip(
-                        label: Text(_urgencyStatusChips[i] ?? ''),
-                        selected: _spec.reminderStatus == i,
-                        onSelected: (_) {
-                          _updateSpec((s) => s.copyWith(reminderStatus: i));
-                          Navigator.pop(ctx);
-                        },
-                      );
-                    }),
-                    const Divider(height: 24),
-                    // Lifecycle status filter
-                    const Text('Status', style: TextStyle(fontWeight: FontWeight.w500)),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        for (final status in ExpiryStatusFilter.values)
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
                           FilterChip(
-                            label: Text(
-                              status == ExpiryStatusFilter.active
-                                  ? 'Active'
-                                  : status == ExpiryStatusFilter.expired
-                                      ? 'Expired'
-                                      : 'All',
-                            ),
-                            selected: _spec.status == status,
+                            label: const Text('All types'),
+                            selected: _spec.docType == null,
                             onSelected: (_) {
-                              _updateSpec((s) => s.copyWith(status: status));
+                              _updateSpec((s) => s.copyWith(docType: null));
                               Navigator.pop(ctx);
                             },
                           ),
-                      ],
-                    ),
-                    const Divider(height: 24),
-                    // Collection filter
-                    const Text('Collection', style: TextStyle(fontWeight: FontWeight.w500)),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        FilterChip(
-                          label: const Text('All collections'),
-                          selected: _spec.collectionId == null,
+                          ...DocumentTypeRegistry.instance.typesForPicker.map(
+                            (type) => FilterChip(
+                              avatar: Icon(
+                                type.icon,
+                                size: 16,
+                                color: type.primaryColor,
+                              ),
+                              label: Text(type.displayName),
+                              selected: _spec.docType?.key == type.key,
+                              onSelected: (_) {
+                                _updateSpec((s) => s.copyWith(docType: type));
+                                Navigator.pop(ctx);
+                              },
+                              selectedColor: type.primaryColor.withOpacity(0.2),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 24),
+                      // Urgency filter
+                      const Text(
+                        'Urgency level',
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 8),
+                      ...UrgencyLevel.values.map(
+                        (level) => FilterChip(
+                          avatar: Icon(
+                            level.icon,
+                            size: 16,
+                            color: level == UrgencyLevel.critical
+                                ? Colors.red
+                                : level.color,
+                          ),
+                          label: Text(level.title),
+                          selected: _spec.urgency?.priority == level.priority,
                           onSelected: (_) {
-                            _updateSpec((s) => s.copyWith(collectionId: null));
+                            _updateSpec((s) => s.copyWith(urgency: level));
                             Navigator.pop(ctx);
                           },
+                          selectedColor: level.color.withOpacity(0.2),
                         ),
-                        ...DocumentCollectionService.instance.collections.map(
-                          (c) => FilterChip(
-                            avatar: Icon(c.icon, size: 16),
-                            label: Text(c.name),
-                            selected: _spec.collectionId == c.id,
+                      ),
+                      const Divider(height: 24),
+                      // Urgency status filter
+                      const Text(
+                        'Urgency status',
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 8),
+                      ...List.generate(_urgencyStatusChips.length, (i) {
+                        if (i == 0) return const SizedBox.shrink();
+                        return FilterChip(
+                          label: Text(_urgencyStatusChips[i] ?? ''),
+                          selected: _spec.reminderStatus == i,
+                          onSelected: (_) {
+                            _updateSpec((s) => s.copyWith(reminderStatus: i));
+                            Navigator.pop(ctx);
+                          },
+                        );
+                      }),
+                      const Divider(height: 24),
+                      // Lifecycle status filter
+                      const Text(
+                        'Status',
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final status in ExpiryStatusFilter.values)
+                            FilterChip(
+                              label: Text(
+                                status == ExpiryStatusFilter.active
+                                    ? 'Active'
+                                    : status == ExpiryStatusFilter.expired
+                                    ? 'Expired'
+                                    : 'All',
+                              ),
+                              selected: _spec.status == status,
+                              onSelected: (_) {
+                                _updateSpec((s) => s.copyWith(status: status));
+                                Navigator.pop(ctx);
+                              },
+                            ),
+                        ],
+                      ),
+                      const Divider(height: 24),
+                      // Collection filter
+                      const Text(
+                        'Collection',
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          FilterChip(
+                            label: const Text('All collections'),
+                            selected: _spec.collectionId == null,
                             onSelected: (_) {
-                              _updateSpec((s) => s.copyWith(collectionId: c.id));
+                              _updateSpec(
+                                (s) => s.copyWith(collectionId: null),
+                              );
                               Navigator.pop(ctx);
                             },
                           ),
-                        ),
-                      ],
-                    ),
-                    const Divider(height: 24),
-                    // Days-remaining range
-                    const Text('Days remaining', style: TextStyle(fontWeight: FontWeight.w500)),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: _daysRangePresets
-                          .map((preset) => FilterChip(
+                          ...DocumentCollectionService.instance.collections.map(
+                            (c) => FilterChip(
+                              avatar: Icon(c.icon, size: 16),
+                              label: Text(c.name),
+                              selected: _spec.collectionId == c.id,
+                              onSelected: (_) {
+                                _updateSpec(
+                                  (s) => s.copyWith(collectionId: c.id),
+                                );
+                                Navigator.pop(ctx);
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 24),
+                      // Days-remaining range
+                      const Text(
+                        'Days remaining',
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _daysRangePresets
+                            .map(
+                              (preset) => FilterChip(
                                 label: Text(preset.label),
-                                selected: _spec.daysMin == preset.min &&
+                                selected:
+                                    _spec.daysMin == preset.min &&
                                     _spec.daysMax == preset.max,
                                 onSelected: (_) {
-                                  _updateSpec((s) => s.copyWith(
-                                      daysMin: preset.min, daysMax: preset.max));
+                                  _updateSpec(
+                                    (s) => s.copyWith(
+                                      daysMin: preset.min,
+                                      daysMax: preset.max,
+                                    ),
+                                  );
                                   Navigator.pop(ctx);
                                 },
-                              ))
-                          .toList(),
-                    ),
-                    const Divider(height: 24),
-                    // Sort order
-                    const Text('Sort by', style: TextStyle(fontWeight: FontWeight.w500)),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: ExpirySortMode.values
-                          .map((mode) => ChoiceChip(
+                              ),
+                            )
+                            .toList(),
+                      ),
+                      const Divider(height: 24),
+                      // Sort order
+                      const Text(
+                        'Sort by',
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: ExpirySortMode.values
+                            .map(
+                              (mode) => ChoiceChip(
                                 label: Text(mode.label),
                                 selected: _spec.sortMode == mode,
                                 onSelected: (_) {
-                                  _updateSpec((s) => s.copyWith(sortMode: mode));
+                                  _updateSpec(
+                                    (s) => s.copyWith(sortMode: mode),
+                                  );
                                   Navigator.pop(ctx);
                                 },
-                              ))
-                          .toList(),
-                    ),
-                  ],
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
               ),
             ],
           ),
@@ -864,11 +970,17 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
   // ----------------------------------------------------------------
 
   Future<void> _exportReport() async {
+    // Track 1 gate: PDF/CSV report export is a Plus feature.
+    if (!EntitlementService.instance.allows(EntitlementFeature.reportExport)) {
+      await showUpgradeDialog(context, EntitlementFeature.reportExport);
+      return;
+    }
+
     final exportItems = _filteredItems;
     if (exportItems.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nothing to export')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Nothing to export')));
       return;
     }
 
@@ -911,7 +1023,9 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(path != null ? 'CSV saved to $path' : 'Export cancelled'),
+            content: Text(
+              path != null ? 'CSV saved to $path' : 'Export cancelled',
+            ),
           ),
         );
       } else {

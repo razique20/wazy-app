@@ -9,17 +9,20 @@ import 'package:intl/intl.dart';
 
 import '../models/expiry_item.dart';
 import '../models/finance.dart';
+import '../models/subscription_tier.dart';
 import '../services/alert_preferences_service.dart';
 import '../services/anomaly_detection_service.dart';
 import '../services/budget_alert_service.dart';
 import '../services/collection_service.dart';
 import '../services/document_scanner_service.dart';
+import '../services/entitlement_service.dart';
 import '../services/finance_service.dart';
 import '../services/smart_category_engine.dart';
 import '../theme/app_theme.dart';
 import '../widgets/cash_flow_forecast_chart.dart';
 import '../widgets/indicators/empty_state_illustration.dart';
 import '../widgets/dialogs/natural_language_money_add_dialog.dart';
+import '../widgets/dialogs/upgrade_dialog.dart';
 import '../widgets/cards/monthly_summary_card.dart';
 import 'package:uuid/uuid.dart';
 
@@ -102,8 +105,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
     final theme = Theme.of(context);
     final now = DateTime.now();
     final summary = FinanceMath.summaryForMonth(_transactions, now);
-    final spendByCategory =
-        FinanceMath.spendByCategory(_transactions, now);
+    final spendByCategory = FinanceMath.spendByCategory(_transactions, now);
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
@@ -136,7 +138,10 @@ class _MoneyScreenState extends State<MoneyScreen> {
           heroTag: 'money_add_record',
           onPressed: _showAddTransactionSheet,
           icon: const Icon(Icons.add_rounded),
-          label: const Text('Add Record', style: TextStyle(fontWeight: FontWeight.bold)),
+          label: const Text(
+            'Add Record',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           backgroundColor: WazyColors.violetAccent,
           foregroundColor: Colors.white,
         ),
@@ -148,47 +153,49 @@ class _MoneyScreenState extends State<MoneyScreen> {
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 180),
-              children: [
-                // 1. Key numbers: net / income / spend.
-                _buildFinancialOverviewCard(theme, summary),
-                // 2. Urgent anomalies (section adds its own top spacing).
-                _buildBillSpikeAlertsSection(theme),
-                const SizedBox(height: 12),
-                // 3. Budget control.
-                _buildBudgetsSection(theme, spendByCategory),
-                const SizedBox(height: 24),
-                // 4. Spending analysis.
-                _buildPaceCard(theme, summary),
-                const SizedBox(height: 24),
-                _buildWeeklyChart(theme),
-                const SizedBox(height: 24),
-                _buildCategoryBreakdown(theme, spendByCategory, summary.expense),
-                const SizedBox(height: 24),
-                _buildTopExpenses(theme),
-                const SizedBox(height: 24),
-                // 5. Compact AI summary, below the spending story it reports on.
-                const MonthlySummaryCard(),
-                const SizedBox(height: 24),
-                // 6. Upcoming renewals & forecast.
-                _buildSmallRenewalOutlookCard(theme),
-                const SizedBox(height: 24),
-                _buildRenewalBreakdown(theme),
-                const SizedBox(height: 24),
-                _buildCashFlowSection(theme),
-                const SizedBox(height: 24),
-                // 7. Planning & history.
-                _buildRecurringSection(theme),
-                const SizedBox(height: 24),
-                _buildEnvelopesSection(theme),
-                const SizedBox(height: 24),
-                _buildTransactionsSection(theme),
-              ],
-            ),
+                children: [
+                  // 1. Key numbers: net / income / spend.
+                  _buildFinancialOverviewCard(theme, summary),
+                  // 2. Urgent anomalies (section adds its own top spacing).
+                  _buildBillSpikeAlertsSection(theme),
+                  const SizedBox(height: 12),
+                  // 3. Budget control.
+                  _buildBudgetsSection(theme, spendByCategory),
+                  const SizedBox(height: 24),
+                  // 4. Spending analysis.
+                  _buildPaceCard(theme, summary),
+                  const SizedBox(height: 24),
+                  _buildWeeklyChart(theme),
+                  const SizedBox(height: 24),
+                  _buildCategoryBreakdown(
+                    theme,
+                    spendByCategory,
+                    summary.expense,
+                  ),
+                  const SizedBox(height: 24),
+                  _buildTopExpenses(theme),
+                  const SizedBox(height: 24),
+                  // 5. Compact AI summary, below the spending story it reports on.
+                  const MonthlySummaryCard(),
+                  const SizedBox(height: 24),
+                  // 6. Upcoming renewals & forecast.
+                  _buildSmallRenewalOutlookCard(theme),
+                  const SizedBox(height: 24),
+                  _buildRenewalBreakdown(theme),
+                  const SizedBox(height: 24),
+                  _buildCashFlowSection(theme),
+                  const SizedBox(height: 24),
+                  // 7. Planning & history.
+                  _buildRecurringSection(theme),
+                  const SizedBox(height: 24),
+                  _buildEnvelopesSection(theme),
+                  const SizedBox(height: 24),
+                  _buildTransactionsSection(theme),
+                ],
+              ),
             ),
     );
   }
-
-
 
   // ------------------------------------------------------------------
   // Financial Overview (Month Income, Spend & Net)
@@ -206,10 +213,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            Color(0xFF1E1B4B),
-            Color(0xFF312E81),
-          ],
+          colors: [Color(0xFF1E1B4B), Color(0xFF312E81)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -257,7 +261,10 @@ class _MoneyScreenState extends State<MoneyScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: WazyColors.cyanAccent,
                   foregroundColor: const Color(0xFF0A0E1A),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   visualDensity: VisualDensity.compact,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -283,7 +290,9 @@ class _MoneyScreenState extends State<MoneyScreen> {
             style: TextStyle(
               fontSize: 30,
               fontWeight: FontWeight.w800,
-              color: summary.net >= 0 ? WazyColors.cyanAccent : Colors.redAccent,
+              color: summary.net >= 0
+                  ? WazyColors.cyanAccent
+                  : Colors.redAccent,
               letterSpacing: -0.5,
             ),
           ),
@@ -316,7 +325,10 @@ class _MoneyScreenState extends State<MoneyScreen> {
                         children: [
                           const Text(
                             'Income',
-                            style: TextStyle(fontSize: 11, color: Colors.white60),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.white60,
+                            ),
                           ),
                           Text(
                             MoneyFormat.aed(summary.income),
@@ -357,7 +369,10 @@ class _MoneyScreenState extends State<MoneyScreen> {
                         children: [
                           const Text(
                             'Spend',
-                            style: TextStyle(fontSize: 11, color: Colors.white60),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.white60,
+                            ),
                           ),
                           Text(
                             MoneyFormat.aed(summary.expense),
@@ -403,9 +418,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-              color: WazyColors.warning.withOpacity(0.5),
-            ),
+            side: BorderSide(color: WazyColors.warning.withOpacity(0.5)),
           ),
           color: isDark
               ? const Color(0xFF2A2118)
@@ -435,12 +448,17 @@ class _MoneyScreenState extends State<MoneyScreen> {
                         'Bill Spike Alert${anomalies.length > 1 ? "s" : ""}',
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.amberAccent : Colors.orange.shade900,
+                          color: isDark
+                              ? Colors.amberAccent
+                              : Colors.orange.shade900,
                         ),
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: WazyColors.warning.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(6),
@@ -502,7 +520,10 @@ class _MoneyScreenState extends State<MoneyScreen> {
                       ),
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.red.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(4),
@@ -538,9 +559,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: BorderSide(
-          color: theme.colorScheme.outlineVariant.withAlpha(80),
-        ),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withAlpha(80)),
       ),
       color: isDark ? const Color(0xFF1E2430) : Colors.white,
       child: Padding(
@@ -584,8 +603,11 @@ class _MoneyScreenState extends State<MoneyScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: (_renewalOutlook90 > 0 ? WazyColors.warning : WazyColors.safe)
-                    .withAlpha(20),
+                color:
+                    (_renewalOutlook90 > 0
+                            ? WazyColors.warning
+                            : WazyColors.safe)
+                        .withAlpha(20),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
@@ -593,7 +615,9 @@ class _MoneyScreenState extends State<MoneyScreen> {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
-                  color: _renewalOutlook90 > 0 ? WazyColors.warning : WazyColors.safe,
+                  color: _renewalOutlook90 > 0
+                      ? WazyColors.warning
+                      : WazyColors.safe,
                 ),
               ),
             ),
@@ -605,6 +629,11 @@ class _MoneyScreenState extends State<MoneyScreen> {
 
   Widget _buildCashFlowSection(ThemeData theme) {
     final isDark = theme.brightness == Brightness.dark;
+    // Track 1 gate: the 90-day forecast is a Plus feature. On Free the card
+    // renders locked and taps open the upgrade dialog instead of the screen.
+    final forecastLocked = !EntitlementService.instance.allows(
+      EntitlementFeature.cashFlowForecast,
+    );
     final forecast = FinanceMath.calculate90DayCashFlow(
       transactions: _transactions,
       recurringTemplates: _recurring,
@@ -616,14 +645,21 @@ class _MoneyScreenState extends State<MoneyScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: theme.colorScheme.outlineVariant.withAlpha(80),
-        ),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withAlpha(80)),
       ),
       color: isDark ? const Color(0xFF1E2430) : Colors.white,
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () => context.push('/cash-flow-forecast'),
+        onTap: () async {
+          if (forecastLocked) {
+            await showUpgradeDialog(
+              context,
+              EntitlementFeature.cashFlowForecast,
+            );
+            return;
+          }
+          await context.push('/cash-flow-forecast');
+        },
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Row(
@@ -654,26 +690,44 @@ class _MoneyScreenState extends State<MoneyScreen> {
                           ),
                         ),
                         const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: (netPositive ? WazyColors.safe : WazyColors.danger).withAlpha(25),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            '${netPositive ? '+' : ''}${forecast.percentChange.toStringAsFixed(1)}% (90D)',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: netPositive ? WazyColors.safe : WazyColors.danger,
+                        if (forecastLocked)
+                          Icon(
+                            Icons.lock_rounded,
+                            size: 14,
+                            color: theme.colorScheme.outline,
+                          )
+                        else
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color:
+                                  (netPositive
+                                          ? WazyColors.safe
+                                          : WazyColors.danger)
+                                      .withAlpha(25),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '${netPositive ? '+' : ''}${forecast.percentChange.toStringAsFixed(1)}% (90D)',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: netPositive
+                                    ? WazyColors.safe
+                                    : WazyColors.danger,
+                              ),
                             ),
                           ),
-                        ),
                       ],
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Projected 90D: ${MoneyFormat.aed(forecast.projectedEndBalance)} • Renewals: ${MoneyFormat.aed(forecast.totalRenewalOutflow)}',
+                      forecastLocked
+                          ? 'Plus feature — project your balance 90 days ahead'
+                          : 'Projected 90D: ${MoneyFormat.aed(forecast.projectedEndBalance)} • Renewals: ${MoneyFormat.aed(forecast.totalRenewalOutflow)}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.outline,
                         fontSize: 11,
@@ -683,10 +737,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
                   ],
                 ),
               ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: Colors.grey,
-              ),
+              const Icon(Icons.chevron_right_rounded, color: Colors.grey),
             ],
           ),
         ),
@@ -718,7 +769,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
         ),
         const SizedBox(width: 10),
         Expanded(
-          child:          _SummaryCard(
+          child: _SummaryCard(
             label: 'Spent',
             value: MoneyFormat.aed(summary.expense),
             valueColor: redColor,
@@ -727,7 +778,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
         ),
         const SizedBox(width: 10),
         Expanded(
-          child:          _SummaryCard(
+          child: _SummaryCard(
             label: 'Net',
             value: MoneyFormat.aed(summary.net),
             valueColor: summary.net >= 0 ? greenColor : redColor,
@@ -767,7 +818,11 @@ class _MoneyScreenState extends State<MoneyScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.speed_rounded, size: 18, color: theme.colorScheme.primary),
+              Icon(
+                Icons.speed_rounded,
+                size: 18,
+                color: theme.colorScheme.primary,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -801,9 +856,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
                 child: _paceColumn(
                   theme,
                   'Safe to spend / day',
-                  summary.net > 0
-                      ? MoneyFormat.aed(affordableDaily)
-                      : '—',
+                  summary.net > 0 ? MoneyFormat.aed(affordableDaily) : '—',
                   color: summary.net > 0 ? Colors.green : Colors.red,
                 ),
               ),
@@ -825,8 +878,12 @@ class _MoneyScreenState extends State<MoneyScreen> {
     );
   }
 
-  Widget _paceColumn(ThemeData theme, String label, String value,
-      {Color? color}) {
+  Widget _paceColumn(
+    ThemeData theme,
+    String label,
+    String value, {
+    Color? color,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -860,15 +917,16 @@ class _MoneyScreenState extends State<MoneyScreen> {
     final now = DateTime.now();
     // Start of the current week (Monday).
     final thisMonday = now.subtract(Duration(days: now.weekday - 1));
-    final mondayDate = DateTime(thisMonday.year, thisMonday.month, thisMonday.day);
-
-    final buckets = List<_WeekBucket>.generate(
-      6,
-      (i) {
-        final start = mondayDate.subtract(Duration(days: (5 - i) * 7));
-        return _WeekBucket(start, start.add(const Duration(days: 7)));
-      },
+    final mondayDate = DateTime(
+      thisMonday.year,
+      thisMonday.month,
+      thisMonday.day,
     );
+
+    final buckets = List<_WeekBucket>.generate(6, (i) {
+      final start = mondayDate.subtract(Duration(days: (5 - i) * 7));
+      return _WeekBucket(start, start.add(const Duration(days: 7)));
+    });
 
     for (final t in _transactions) {
       if (t.kind != FinanceKind.expense) continue;
@@ -925,7 +983,9 @@ class _MoneyScreenState extends State<MoneyScreen> {
                               width: 22,
                               decoration: BoxDecoration(
                                 color: b.spend > 0
-                                    ? theme.colorScheme.primary.withOpacity(0.75)
+                                    ? theme.colorScheme.primary.withOpacity(
+                                        0.75,
+                                      )
                                     : theme.colorScheme.surfaceContainerHighest,
                                 borderRadius: BorderRadius.circular(4),
                               ),
@@ -1004,7 +1064,11 @@ class _MoneyScreenState extends State<MoneyScreen> {
                 for (final e in entries) ...[
                   Row(
                     children: [
-                      Icon(e.key.icon, size: 16, color: theme.colorScheme.primary),
+                      Icon(
+                        e.key.icon,
+                        size: 16,
+                        color: theme.colorScheme.primary,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -1060,19 +1124,26 @@ class _MoneyScreenState extends State<MoneyScreen> {
 
   Widget _buildTopExpenses(ThemeData theme) {
     final now = DateTime.now();
-    final expenses = _transactions
-        .where((t) =>
-            t.kind == FinanceKind.expense &&
-            t.occurredAt.year == now.year &&
-            t.occurredAt.month == now.month)
-        .toList()
-      ..sort((a, b) => b.amount.compareTo(a.amount));
+    final expenses =
+        _transactions
+            .where(
+              (t) =>
+                  t.kind == FinanceKind.expense &&
+                  t.occurredAt.year == now.year &&
+                  t.occurredAt.month == now.month,
+            )
+            .toList()
+          ..sort((a, b) => b.amount.compareTo(a.amount));
     final top = expenses.take(5).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader(theme, 'Biggest expenses', Icons.local_fire_department_rounded),
+        _sectionHeader(
+          theme,
+          'Biggest expenses',
+          Icons.local_fire_department_rounded,
+        ),
         const SizedBox(height: 12),
         if (top.isEmpty)
           _hintCard(
@@ -1114,8 +1185,9 @@ class _MoneyScreenState extends State<MoneyScreen> {
                       top[i].title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium
-                          ?.copyWith(fontWeight: FontWeight.w500),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     subtitle: Text(
                       '${top[i].category.displayName} • ${top[i].occurredAt.day}/${top[i].occurredAt.month}',
@@ -1146,14 +1218,17 @@ class _MoneyScreenState extends State<MoneyScreen> {
   Widget _buildRenewalBreakdown(ThemeData theme) {
     final now = DateTime.now();
     final cutoff = now.add(const Duration(days: 90));
-    final upcoming = _items
-        .where((i) =>
-            i.isActive &&
-            i.expiresAt.isAfter(now) &&
-            i.expiresAt.isBefore(cutoff) &&
-            (i.renewalFee ?? 0) > 0)
-        .toList()
-      ..sort((a, b) => a.expiresAt.compareTo(b.expiresAt));
+    final upcoming =
+        _items
+            .where(
+              (i) =>
+                  i.isActive &&
+                  i.expiresAt.isAfter(now) &&
+                  i.expiresAt.isBefore(cutoff) &&
+                  (i.renewalFee ?? 0) > 0,
+            )
+            .toList()
+          ..sort((a, b) => a.expiresAt.compareTo(b.expiresAt));
 
     if (upcoming.isEmpty) return const SizedBox.shrink();
 
@@ -1178,7 +1253,9 @@ class _MoneyScreenState extends State<MoneyScreen> {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: upcoming[idx].docType.primaryColor.withOpacity(0.12),
+                      color: upcoming[idx].docType.primaryColor.withOpacity(
+                        0.12,
+                      ),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
@@ -1191,8 +1268,9 @@ class _MoneyScreenState extends State<MoneyScreen> {
                     upcoming[idx].displayName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(fontWeight: FontWeight.w500),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   subtitle: Text(
                     'Due ${ExpiryItem.formatDate(upcoming[idx].expiresAt)}',
@@ -1225,7 +1303,8 @@ class _MoneyScreenState extends State<MoneyScreen> {
   ) {
     final overallBudget = FinanceService.instance.activeOverallBudget;
     final totalAllocated = FinanceMath.totalBudgetAllocated(_budgets);
-    final isOverAllocated = overallBudget != null && totalAllocated > overallBudget;
+    final isOverAllocated =
+        overallBudget != null && totalAllocated > overallBudget;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1281,7 +1360,9 @@ class _MoneyScreenState extends State<MoneyScreen> {
                     TextButton.icon(
                       onPressed: _showOverallBudgetSheet,
                       icon: Icon(
-                        overallBudget == null ? Icons.add_rounded : Icons.edit_rounded,
+                        overallBudget == null
+                            ? Icons.add_rounded
+                            : Icons.edit_rounded,
                         size: 16,
                       ),
                       label: Text(
@@ -1309,7 +1390,9 @@ class _MoneyScreenState extends State<MoneyScreen> {
                           color: isOverAllocated
                               ? theme.colorScheme.error
                               : theme.colorScheme.onSurfaceVariant,
-                          fontWeight: isOverAllocated ? FontWeight.bold : FontWeight.w500,
+                          fontWeight: isOverAllocated
+                              ? FontWeight.bold
+                              : FontWeight.w500,
                         ),
                       ),
                       Text(
@@ -1331,12 +1414,13 @@ class _MoneyScreenState extends State<MoneyScreen> {
                     child: LinearProgressIndicator(
                       value: (totalAllocated / overallBudget).clamp(0.0, 1.0),
                       minHeight: 8,
-                      backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                      backgroundColor:
+                          theme.colorScheme.surfaceContainerHighest,
                       color: isOverAllocated
                           ? theme.colorScheme.error
                           : (totalAllocated == overallBudget
-                              ? Colors.orange
-                              : theme.colorScheme.primary),
+                                ? Colors.orange
+                                : theme.colorScheme.primary),
                     ),
                   ),
                 ] else ...[
@@ -1408,8 +1492,10 @@ class _MoneyScreenState extends State<MoneyScreen> {
               child: _RecurringCard(
                 template: r,
                 transactions: _transactions,
-                onToggle: () => FinanceService.instance
-                    .setRecurringActive(r.id, !r.isActive),
+                onToggle: () => FinanceService.instance.setRecurringActive(
+                  r.id,
+                  !r.isActive,
+                ),
                 onEdit: () => _showRecurringSheet(existing: r),
                 onDelete: () => FinanceService.instance.deleteRecurring(r.id),
               ),
@@ -1467,7 +1553,8 @@ class _MoneyScreenState extends State<MoneyScreen> {
                 envelope: envelope,
                 onAdd: () => _adjustEnvelope(envelope, 100),
                 onWithdraw: () => _adjustEnvelope(envelope, -100),
-                onDelete: () => FinanceService.instance.deleteEnvelope(envelope.id),
+                onDelete: () =>
+                    FinanceService.instance.deleteEnvelope(envelope.id),
               ),
             ),
           ),
@@ -1501,11 +1588,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader(
-          theme,
-          'Transactions',
-          Icons.receipt_long_rounded,
-        ),
+        _sectionHeader(theme, 'Transactions', Icons.receipt_long_rounded),
         const SizedBox(height: 12),
         if (recent.isEmpty)
           _hintCard(
@@ -1555,8 +1638,9 @@ class _MoneyScreenState extends State<MoneyScreen> {
     if (created.kind == FinanceKind.expense &&
         created.category == FinanceCategory.renewals &&
         created.documentId != null) {
-      final item =
-          await DocumentScannerService.instance.getItemById(created.documentId!);
+      final item = await DocumentScannerService.instance.getItemById(
+        created.documentId!,
+      );
       if (item != null && mounted) {
         await _offerMarkAsRenewed(item, paymentAmount: created.amount);
       }
@@ -1593,12 +1677,21 @@ class _MoneyScreenState extends State<MoneyScreen> {
       ),
     );
     if (renewed != true || !mounted) return;
-    final newExpiry = DateTime(item.expiresAt.year + 1, item.expiresAt.month, item.expiresAt.day);
-    await DocumentScannerService.instance.markAsRenewed(item.id, newExpiryDate: newExpiry);
+    final newExpiry = DateTime(
+      item.expiresAt.year + 1,
+      item.expiresAt.month,
+      item.expiresAt.day,
+    );
+    await DocumentScannerService.instance.markAsRenewed(
+      item.id,
+      newExpiryDate: newExpiry,
+    );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${item.displayName} renewed — now expires ${ExpiryItem.formatDate(newExpiry)} ✓'),
+        content: Text(
+          '${item.displayName} renewed — now expires ${ExpiryItem.formatDate(newExpiry)} ✓',
+        ),
         backgroundColor: Colors.green,
       ),
     );
@@ -1614,7 +1707,9 @@ class _MoneyScreenState extends State<MoneyScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
         child: _OverallBudgetFormSheet(currentLimit: current),
       ),
     );
@@ -1640,7 +1735,9 @@ class _MoneyScreenState extends State<MoneyScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
         child: _BudgetFormSheet(
           existing: existing,
           maxAllowedLimit: maxAllowed,
@@ -1661,13 +1758,12 @@ class _MoneyScreenState extends State<MoneyScreen> {
       builder: (_) => const _EnvelopeFormSheet(),
     );
     if (result == null) return;
-    await FinanceService.instance
-        .addEnvelope(result.$1, result.$2, result.$3);
+    await FinanceService.instance.addEnvelope(result.$1, result.$2, result.$3);
   }
 
   Future<void> _runAutoCategorizationAI() async {
-    final updatedCount =
-        await FinanceService.instance.autoCategorizeExistingTransactions();
+    final updatedCount = await FinanceService.instance
+        .autoCategorizeExistingTransactions();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -1676,8 +1772,9 @@ class _MoneyScreenState extends State<MoneyScreen> {
               ? 'AI Auto-Categorized $updatedCount transaction${updatedCount > 1 ? "s" : ""}! ✨'
               : 'All transactions are already accurately categorized! ✓',
         ),
-        backgroundColor:
-            updatedCount > 0 ? WazyColors.violetAccent : Colors.green,
+        backgroundColor: updatedCount > 0
+            ? WazyColors.violetAccent
+            : Colors.green,
       ),
     );
     _reload();
@@ -1688,6 +1785,12 @@ class _MoneyScreenState extends State<MoneyScreen> {
   // ------------------------------------------------------------------
 
   Future<void> _exportCsv() async {
+    // Track 1 gate: CSV/PDF report export is a Plus feature.
+    if (!EntitlementService.instance.allows(EntitlementFeature.reportExport)) {
+      await showUpgradeDialog(context, EntitlementFeature.reportExport);
+      return;
+    }
+
     final csv = FinanceMath.toCsv(_transactions);
     try {
       final path = await FilePicker.platform.saveFile(
@@ -1707,9 +1810,9 @@ class _MoneyScreenState extends State<MoneyScreen> {
       // saveFile unsupported on this platform — fall back to clipboard.
       await Clipboard.setData(ClipboardData(text: csv));
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('CSV copied to clipboard')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('CSV copied to clipboard')));
     }
   }
 
@@ -1738,7 +1841,11 @@ class _MoneyScreenState extends State<MoneyScreen> {
           ),
         ),
         if (actionLabel != null)
-          TextButton(key: actionKey, onPressed: onAction, child: Text(actionLabel)),
+          TextButton(
+            key: actionKey,
+            onPressed: onAction,
+            child: Text(actionLabel),
+          ),
       ],
     );
   }
@@ -1793,8 +1900,12 @@ class _SummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final neutralIconColor = isDark ? WazyColors.textSecondary : WazyColors.textSecondaryLight;
-    final neutralLabelColor = isDark ? WazyColors.textMuted : WazyColors.textMutedLight;
+    final neutralIconColor = isDark
+        ? WazyColors.textSecondary
+        : WazyColors.textSecondaryLight;
+    final neutralLabelColor = isDark
+        ? WazyColors.textMuted
+        : WazyColors.textMutedLight;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -1823,13 +1934,7 @@ class _SummaryCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              color: neutralLabelColor,
-              fontSize: 10,
-            ),
-          ),
+          Text(label, style: TextStyle(color: neutralLabelColor, fontSize: 10)),
         ],
       ),
     );
@@ -1862,8 +1967,8 @@ class _BudgetRow extends StatelessWidget {
     final barColor = over
         ? Colors.red
         : ratio > 0.8
-            ? Colors.orange
-            : theme.colorScheme.primary;
+        ? Colors.orange
+        : theme.colorScheme.primary;
 
     return InkWell(
       onTap: onEdit,
@@ -1883,8 +1988,9 @@ class _BudgetRow extends StatelessWidget {
                 Expanded(
                   child: Text(
                     budget.category.displayName,
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(fontWeight: FontWeight.w500),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
                 Text(
@@ -1918,8 +2024,10 @@ class _BudgetRow extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'Over budget by ${MoneyFormat.aed(spent - limit)}',
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: Colors.red, fontSize: 11),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: Colors.red,
+                    fontSize: 11,
+                  ),
                 ),
               ),
             ],
@@ -1965,8 +2073,9 @@ class _EnvelopeCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   envelope.name,
-                  style: theme.textTheme.bodyMedium
-                      ?.copyWith(fontWeight: FontWeight.w500),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
               Text(
@@ -2058,8 +2167,11 @@ class _TransactionTile extends StatelessWidget {
               color: amountColor.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(transaction.category.icon,
-                size: 18, color: amountColor),
+            child: Icon(
+              transaction.category.icon,
+              size: 18,
+              color: amountColor,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -2068,8 +2180,9 @@ class _TransactionTile extends StatelessWidget {
               children: [
                 Text(
                   transaction.title,
-                  style: theme.textTheme.bodyMedium
-                      ?.copyWith(fontWeight: FontWeight.w500),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -2116,11 +2229,12 @@ class _TransactionFormSheetState extends State<_TransactionFormSheet> {
   final _amountController = TextEditingController();
 
   /// Active, non-expired documents offered as the payment's linked document.
-  List<ExpiryItem> _activeDocuments() => DocumentScannerService.instance
-      .getAllItemsSync()
-      .where((i) => i.isActive && !i.isExpired)
-      .toList()
-    ..sort((a, b) => a.expiresAt.compareTo(b.expiresAt));
+  List<ExpiryItem> _activeDocuments() =>
+      DocumentScannerService.instance
+          .getAllItemsSync()
+          .where((i) => i.isActive && !i.isExpired)
+          .toList()
+        ..sort((a, b) => a.expiresAt.compareTo(b.expiresAt));
 
   @override
   void initState() {
@@ -2156,7 +2270,8 @@ class _TransactionFormSheetState extends State<_TransactionFormSheet> {
     if (title.isEmpty || amount == null || amount <= 0) return;
 
     final now = DateTime.now();
-    final activeCollectionId = DocumentCollectionService.instance.activeCollectionId;
+    final activeCollectionId =
+        DocumentCollectionService.instance.activeCollectionId;
     final transaction = FinanceTransaction(
       id: const Uuid().v4(),
       collectionId: activeCollectionId,
@@ -2238,8 +2353,9 @@ class _TransactionFormSheetState extends State<_TransactionFormSheet> {
           children: [
             Text(
               'Add record',
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w600),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: 16),
             SegmentedButton<FinanceKind>(
@@ -2278,18 +2394,24 @@ class _TransactionFormSheetState extends State<_TransactionFormSheet> {
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 6),
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: WazyColors.cyanAccent.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                          color: WazyColors.cyanAccent.withOpacity(0.4)),
+                        color: WazyColors.cyanAccent.withOpacity(0.4),
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.auto_awesome_rounded,
-                            size: 14, color: WazyColors.cyanAccent),
+                        const Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 14,
+                          color: WazyColors.cyanAccent,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           'AI Suggested: ${_aiPrediction!.category.displayName} (${(_aiPrediction!.confidence * 100).toStringAsFixed(0)}%)',
@@ -2308,8 +2430,9 @@ class _TransactionFormSheetState extends State<_TransactionFormSheet> {
             const SizedBox(height: 12),
             TextField(
               controller: _amountController,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: const InputDecoration(
                 labelText: 'Amount (AED)',
                 border: OutlineInputBorder(),
@@ -2336,7 +2459,8 @@ class _TransactionFormSheetState extends State<_TransactionFormSheet> {
                     ),
                   )
                   .toList(),
-              onChanged: (c) => setState(() => _category = c ?? FinanceCategory.other),
+              onChanged: (c) =>
+                  setState(() => _category = c ?? FinanceCategory.other),
             ),
             const SizedBox(height: 12),
             if (_kind == FinanceKind.expense) ...[
@@ -2378,10 +2502,7 @@ class _TransactionFormSheetState extends State<_TransactionFormSheet> {
               ),
             ),
             const SizedBox(height: 8),
-            FilledButton(
-              onPressed: _submit,
-              child: const Text('Save'),
-            ),
+            FilledButton(onPressed: _submit, child: const Text('Save')),
           ],
         ),
       ),
@@ -2415,7 +2536,9 @@ class _RecurringCard extends StatelessWidget {
     final amountColor = isIncome ? Colors.green : Colors.red;
 
     // How many auto-logged entries this template has produced.
-    final loggedCount = transactions.where((t) => t.note != null && t.note!.contains('recurring template')).length;
+    final loggedCount = transactions
+        .where((t) => t.note != null && t.note!.contains('recurring template'))
+        .length;
 
     final nextDue = RecurrenceMath.nextOccurrence(
       template,
@@ -2436,9 +2559,13 @@ class _RecurringCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(template.category.icon,
-                    size: 18,
-                    color: template.isActive ? amountColor : theme.colorScheme.outline),
+                Icon(
+                  template.category.icon,
+                  size: 18,
+                  color: template.isActive
+                      ? amountColor
+                      : theme.colorScheme.outline,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -2457,7 +2584,9 @@ class _RecurringCard extends StatelessWidget {
                   '${isIncome ? '+' : '-'}${MoneyFormat.aed(template.amount)}',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: template.isActive ? amountColor : theme.colorScheme.outline,
+                    color: template.isActive
+                        ? amountColor
+                        : theme.colorScheme.outline,
                   ),
                 ),
                 IconButton(
@@ -2566,8 +2695,7 @@ class _RecurringFormSheetState extends State<_RecurringFormSheet> {
         currency: existing?.currency ?? 'AED',
         frequency: _frequency,
         dayOfMonth: _dayOfMonth,
-        startDate:
-            existing?.startDate ?? DateTime(now.year, now.month, 1),
+        startDate: existing?.startDate ?? DateTime(now.year, now.month, 1),
         endDate: _endDate,
         isActive: existing?.isActive ?? true,
         lastLoggedAt: existing?.lastLoggedAt,
@@ -2593,8 +2721,9 @@ class _RecurringFormSheetState extends State<_RecurringFormSheet> {
             children: [
               Text(
                 _isEditing ? 'Edit recurring' : 'New recurring transaction',
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w600),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
@@ -2633,8 +2762,9 @@ class _RecurringFormSheetState extends State<_RecurringFormSheet> {
               const SizedBox(height: 12),
               TextField(
                 controller: _amountController,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: const InputDecoration(
                   labelText: 'Amount (AED)',
                   border: OutlineInputBorder(),
@@ -2661,17 +2791,13 @@ class _RecurringFormSheetState extends State<_RecurringFormSheet> {
                       ),
                     )
                     .toList(),
-                onChanged: (c) => setState(() => _category = c ?? FinanceCategory.other),
+                onChanged: (c) =>
+                    setState(() => _category = c ?? FinanceCategory.other),
               ),
               const SizedBox(height: 12),
               SegmentedButton<RecurrenceFrequency>(
                 segments: RecurrenceFrequency.values
-                    .map(
-                      (f) => ButtonSegment(
-                        value: f,
-                        label: Text(f.label),
-                      ),
-                    )
+                    .map((f) => ButtonSegment(value: f, label: Text(f.label)))
                     .toList(),
                 selected: {_frequency},
                 onSelectionChanged: (selection) =>
@@ -2713,7 +2839,9 @@ class _RecurringFormSheetState extends State<_RecurringFormSheet> {
                 onTap: () async {
                   final picked = await showDatePicker(
                     context: context,
-                    initialDate: _endDate ?? DateTime.now().add(const Duration(days: 365)),
+                    initialDate:
+                        _endDate ??
+                        DateTime.now().add(const Duration(days: 365)),
                     firstDate: DateTime.now(),
                     lastDate: DateTime.now().add(const Duration(days: 3650)),
                   );
@@ -2743,7 +2871,8 @@ class _OverallBudgetFormSheet extends StatefulWidget {
   const _OverallBudgetFormSheet({this.currentLimit});
 
   @override
-  State<_OverallBudgetFormSheet> createState() => _OverallBudgetFormSheetState();
+  State<_OverallBudgetFormSheet> createState() =>
+      _OverallBudgetFormSheetState();
 }
 
 class _OverallBudgetFormSheetState extends State<_OverallBudgetFormSheet> {
@@ -2753,7 +2882,9 @@ class _OverallBudgetFormSheetState extends State<_OverallBudgetFormSheet> {
   void initState() {
     super.initState();
     _limitController = TextEditingController(
-      text: widget.currentLimit != null ? widget.currentLimit!.toStringAsFixed(0) : '',
+      text: widget.currentLimit != null
+          ? widget.currentLimit!.toStringAsFixed(0)
+          : '',
     );
   }
 
@@ -2787,7 +2918,9 @@ class _OverallBudgetFormSheetState extends State<_OverallBudgetFormSheet> {
               widget.currentLimit == null
                   ? 'Set overall monthly budget'
                   : 'Edit overall monthly budget',
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: 6),
             Text(
@@ -2800,7 +2933,9 @@ class _OverallBudgetFormSheetState extends State<_OverallBudgetFormSheet> {
             TextField(
               controller: _limitController,
               autofocus: true,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: const InputDecoration(
                 labelText: 'Total Monthly Budget (AED)',
                 border: OutlineInputBorder(),
@@ -2880,8 +3015,11 @@ class _BudgetFormSheetState extends State<_BudgetFormSheet> {
       return;
     }
 
-    if (widget.maxAllowedLimit != null && val > widget.maxAllowedLimit! + 0.01) {
-      final maxStr = MoneyFormat.aed(widget.maxAllowedLimit! < 0 ? 0 : widget.maxAllowedLimit!);
+    if (widget.maxAllowedLimit != null &&
+        val > widget.maxAllowedLimit! + 0.01) {
+      final maxStr = MoneyFormat.aed(
+        widget.maxAllowedLimit! < 0 ? 0 : widget.maxAllowedLimit!,
+      );
       final msg = widget.maxAllowedLimit! <= 0
           ? 'Overall monthly budget is fully allocated'
           : 'Exceeds remaining monthly budget ($maxStr)';
@@ -2898,7 +3036,9 @@ class _BudgetFormSheetState extends State<_BudgetFormSheet> {
     if (_errorText != null) return;
     final limit = double.tryParse(_limitController.text.trim());
     if (limit == null || limit <= 0) return;
-    if (widget.maxAllowedLimit != null && limit > widget.maxAllowedLimit! + 0.01) return;
+    if (widget.maxAllowedLimit != null &&
+        limit > widget.maxAllowedLimit! + 0.01)
+      return;
     Navigator.pop(context, (_category, limit));
   }
 
@@ -2916,23 +3056,31 @@ class _BudgetFormSheetState extends State<_BudgetFormSheet> {
           children: [
             Text(
               widget.existing == null ? 'Add budget' : 'Edit budget',
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w600),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             if (maxLimit != null) ...[
               const SizedBox(height: 6),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: maxLimit <= 0
                       ? theme.colorScheme.errorContainer.withValues(alpha: 0.3)
-                      : theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                      : theme.colorScheme.primaryContainer.withValues(
+                          alpha: 0.3,
+                        ),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   children: [
                     Icon(
-                      maxLimit <= 0 ? Icons.warning_amber_rounded : Icons.info_outline_rounded,
+                      maxLimit <= 0
+                          ? Icons.warning_amber_rounded
+                          : Icons.info_outline_rounded,
                       size: 16,
                       color: maxLimit <= 0
                           ? theme.colorScheme.error
@@ -2977,13 +3125,15 @@ class _BudgetFormSheetState extends State<_BudgetFormSheet> {
                     ),
                   )
                   .toList(),
-              onChanged: (c) => setState(() => _category = c ?? FinanceCategory.other),
+              onChanged: (c) =>
+                  setState(() => _category = c ?? FinanceCategory.other),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _limitController,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: InputDecoration(
                 labelText: 'Monthly limit (AED)',
                 border: const OutlineInputBorder(),
@@ -3029,8 +3179,7 @@ class _EnvelopeFormSheetState extends State<_EnvelopeFormSheet> {
   void _submit() {
     final name = _nameController.text.trim();
     final target = double.tryParse(_targetController.text.trim());
-    final monthly =
-        double.tryParse(_monthlyController.text.trim()) ?? 0;
+    final monthly = double.tryParse(_monthlyController.text.trim()) ?? 0;
     if (name.isEmpty || target == null || target <= 0) return;
     Navigator.pop(context, (name, target, monthly));
   }
@@ -3049,43 +3198,46 @@ class _EnvelopeFormSheetState extends State<_EnvelopeFormSheet> {
             children: [
               Text(
                 'New savings envelope',
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w600),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                hintText: 'e.g. Trade licence renewal',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Name',
+                  hintText: 'e.g. Trade licence renewal',
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _targetController,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Target amount (AED)',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _targetController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: const InputDecoration(
+                  labelText: 'Target amount (AED)',
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _monthlyController,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Monthly contribution (optional)',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _monthlyController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: const InputDecoration(
+                  labelText: 'Monthly contribution (optional)',
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-                  const SizedBox(height: 20),
-                  FilledButton(
-                    onPressed: _submit,
-                    child: const Text('Create envelope'),
-                  ),
+              const SizedBox(height: 20),
+              FilledButton(
+                onPressed: _submit,
+                child: const Text('Create envelope'),
+              ),
             ],
           ),
         ),
