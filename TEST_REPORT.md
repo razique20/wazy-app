@@ -1,5 +1,69 @@
 # Wazy App — Full Flow Test Report
 
+**Date:** 2026-09-20 (latest) · previous run: 2026-09-19 (§6 below)
+**Branch:** `main` · **Head:** `9c4a3f7` + 2 uncommitted files (see §0.1)
+**Environment:** macOS (darwin) · Flutter SDK 3.38.x (Dart 3.11)
+
+---
+
+## 0. Run of 2026-09-20 — Track 1 monetization + Settings redesign
+
+### 0.1 Features implemented today
+
+| # | Feature | Files | Commit/State |
+|---|---------|-------|--------------|
+| 1 | **Track 1 freemium paywall** — `EntitlementService` resolves the tier from `public.user_tiers` (Free/Plus/Business) with per-tier limits; gates document cap, company collections, exports, AI summary | `lib/models/subscription_tier.dart` (new), `lib/services/entitlement_service.dart` (new), `lib/widgets/dialogs/upgrade_dialog.dart` (new) | `9c4a3f7` pushed |
+| 2 | **Upgrade request flow** — plan sheet (Plus/Business × 1/3/12-month billing) drafts a pre-filled email to the support inbox; clipboard fallback when no mail app | `lib/services/upgrade_request_service.dart` (new), `upgrade_dialog.dart` | `9c4a3f7` pushed |
+| 3 | **Profile subscription section** — tier badge, plan-expiry countdown, expired banner, Upgrade/Extend/Renew actions | `lib/screens/profile_screen.dart` | `9c4a3f7` pushed |
+| 4 | **Feature gating wired into screens** — 11th-document gate, company-collection gate, export gate (tests run on Plus override), AI summary gate | `home_screen.dart`, `documents_screen.dart`, `expiry_list_screen.dart`, `money_screen.dart`, `monthly_summary_card.dart`, `test/filters_search_test.dart` | `9c4a3f7` pushed |
+| 5 | **DB schema for tiers** — `user_tiers` + `user_tier_audit` tables, RLS self-read policy, service-role write guard, auto-expire trigger | `supabase/user_tiers_schema.sql` (new) | `9c4a3f7` pushed |
+| 6 | **Admin console pairing docs** — `MONETIZATION.md`, `TIER_MANAGEMENT_PROMPT.md` | docs | `9c4a3f7` pushed |
+| 7 | **iOS Podfile.lock refresh** — speech_to_text 7.2.0 darwin pod + CwlCatchException | `ios/Podfile.lock` | `fac8206` pushed |
+| 8 | **Settings page reorganization** — 10 sections → 6; removed duplicate Account section, fake Danger Zone (demo-only snackbar), two dead "Coming soon" toggles, disabled WhatsApp timing row, Save button (all controls now auto-save + re-schedule OS reminders instantly) | `lib/screens/profile_screen.dart` | uncommitted |
+| 9 | **Plan-expiry fix (`expires_at`)** — app now reads the Admin Console's `expires_at` column (fallback to `plan_ends_at`) so admin-granted plan durations actually expire; previously the expiry check never fired and paid features would have lasted forever | `lib/services/entitlement_service.dart` | uncommitted |
+| 10 | **Admin console DB auto-expire trigger** — section 4 added to the console's schema: expired grants snap to Free (+ audit row) on next write | `../wazy-admin/supabase/user_tiers_schema.sql` (separate repo) | uncommitted in wazy-admin |
+
+### 0.2 Verification of this run
+
+| # | Check | Command | Result |
+|---|-------|---------|--------|
+| 1 | Static analysis | `flutter analyze --no-pub` | ✅ 0 errors · 24 warnings (same pre-existing set as 09-19) · 183 infos |
+| 2 | Full test suite | `flutter test` | ✅ 192/192 passed |
+| 3 | Targeted analyze after each edit | `flutter analyze <file>` | ✅ clean on `entitlement_service.dart`; `profile_screen.dart` at the 12-issue pre-existing baseline (no new lints) |
+| 4 | Gated-test verification | `flutter test test/filters_search_test.dart` | ✅ 26/26 (export test runs on Plus override) |
+
+> Android build not re-run today — no Android config changed since the 09-19 green build. Not applicable.
+
+### 0.3 Bugs found & fixed today
+
+| Bug | Root cause | Fix |
+|-----|-----------|-----|
+| App showed Free while Admin Console showed Business for user `e20ba0ca…` | Two schema generations in production: console writes `expires_at`, app read `plan_ends_at` (null) → expiry invisible, no countdown | App reads `expires_at` with graceful retry for deployments lacking the column (feature #9) |
+| Paid plan would never expire in-app | Same root cause — downgrade condition tested `_planEndsAt` which stayed null forever | Same fix; verified `refresh()` now resolves 2026-10-20 from the live DB |
+| "Clear all documents" (Danger Zone) did nothing — demo snackbar only | Placeholder never implemented | Section removed rather than shipping a destructive control that lies (feature #8) |
+
+### 0.4 Known open items (non-blocking)
+
+1. **Trigger not yet applied to production DB** — the wazy-admin schema section 4 must be pasted once into Supabase Dashboard → SQL Editor (no DDL via API). Until then, the DB row keeps the expired tier until the next admin write; app + console already treat it as Free at read time.
+2. **Edit Profile no longer edits the name** — the name is always derived from the sign-in email (pre-existing behavior: the sheet edit was overwritten on every load); role + phone remain editable.
+3. **WhatsApp / Email alert channels** remain unimplemented server-side; their dead UI toggles were removed from Settings.
+4. **Uncommitted work** — features #8 and #9 are still local; commit before the next pull.
+
+### 0.5 Verdict
+
+| Gate | Status |
+|------|--------|
+| Analyze errors = 0 | ✅ |
+| All tests pass (192) | ✅ |
+| New lints introduced | ✅ none (baseline unchanged) |
+| Monetization contract (app ↔ console ↔ DB) | ✅ aligned after feature #9 + #10 |
+
+---
+
+## 6. Previous run — 2026-09-19
+
+> Report preserved as written; its internal section numbers (§1–§5) refer to that run only.
+
 **Date:** 2026-09-19
 **Branch:** `main` · **Head:** `ddbadbd` (docs + fixes) → see commit list below
 **Environment:** macOS (darwin) · Flutter SDK 3.38.x (Dart 3.11) · Gradle debug toolchain

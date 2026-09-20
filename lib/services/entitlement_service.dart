@@ -47,7 +47,8 @@ class EntitlementService extends ChangeNotifier {
   bool get isInitialized => _initialized;
 
   /// When the paid plan expires (null on Free or when the admin hasn't set
-  /// an end date). Read from `user_tiers.plan_ends_at`.
+  /// an end date). Read from `user_tiers.plan_ends_at`, falling back to
+  /// `user_tiers.expires_at` (the Admin Console's column).
   DateTime? get planEndsAt => _planEndsAt;
 
   /// Plan duration id chosen at purchase: `1_month`, `3_months`, `1_year`.
@@ -78,22 +79,38 @@ class EntitlementService extends ChangeNotifier {
   /// Re-read the tier (cold start, sign-in, or returning from an upgrade
   /// that the admin has just processed).
   Future<void> refresh() async {
-    final prefs = await SharedPreferences.getInstance();    var resolved = SubscriptionTier.tryFromId(prefs.getString(tierOverrideKey)) ??
+    final prefs = await SharedPreferences.getInstance();
+    var resolved = SubscriptionTier.tryFromId(prefs.getString(tierOverrideKey)) ??
         SubscriptionTier.free;
 
     final client = SupabaseService.clientOrNull;
     final userId = AuthService.instance.currentUserId;
     if (client != null && userId != null) {
       try {
-        final row = await client
-            .from('user_tiers')
-            .select('tier, plan_duration, plan_ends_at')
-            .eq('user_id', userId)
-            .maybeSingle();
+        Map<String, dynamic>? row;
+        try {
+          row = await client
+              .from('user_tiers')
+              .select('tier, plan_duration, plan_ends_at, expires_at')
+              .eq('user_id', userId)
+              .maybeSingle();
+        } catch (_) {
+          // Deployment without the Admin Console's expires_at column —
+          // retry with the original Flutter-schema columns only.
+          row = await client
+              .from('user_tiers')
+              .select('tier, plan_duration, plan_ends_at')
+              .eq('user_id', userId)
+              .maybeSingle();
+        }
         final serverTier = SubscriptionTier.tryFromId(row?['tier'] as String?);
         if (serverTier != null) resolved = serverTier;
         _planDuration = row?['plan_duration'] as String?;
-        final endsAt = row?['plan_ends_at'];
+        // The paid plan ends at `plan_ends_at` (Flutter schema) or
+        // `expires_at` (Admin Console schema) — whichever is set. Without
+        // this fallback an admin-granted expiry is invisible to the app and
+        // an expired plan would keep its paid features forever.
+        final endsAt = (row?['plan_ends_at'] ?? row?['expires_at']) as String?;
         _planEndsAt = endsAt is String ? DateTime.tryParse(endsAt)?.toUtc() : null;
       } catch (_) {
         // Table missing or unreachable — keep the local/default tier so the
