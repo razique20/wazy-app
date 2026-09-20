@@ -18,8 +18,17 @@ import '../services/theme_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/widgets.dart';
 
-/// Personal settings: account, notification preferences, and management of
-/// the user's document collections (built-in Personal + company collections).
+/// Personal settings: profile, subscription, collections, and preferences.
+///
+/// Organized top-to-bottom in the order a user needs it:
+/// 1. Profile header (identity, edit profile)
+/// 2. Subscription (current plan, upgrade/renew)
+/// 3. My Collections (document workspaces)
+/// 4. Preferences (theme, alert switches, AI summary key)
+/// 5. Reminder Schedule (when renewal alerts fire)
+/// 6. Sign out
+///
+/// Every control saves immediately — there is no Save button.
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -31,19 +40,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   List<DocumentCollection> _collections = [];
   String _activeId = DocumentCollection.personalId;
   bool _loading = true;
-  bool _saving = false;
   String _userName = 'Unknown User';
   String _userRole = 'Document Admin';
   String _userPhone = '';
   bool _notificationsEnabled = true;
   bool _billSpikesEnabled = true;
   bool _budgetAlertsEnabled = true;
-  bool _whatsappAlertsEnabled =
-      false; // kept so the pref survives; WhatsApp is inactive
   int _reminderCadence = 90;
   int _taskCadence = 60;
   int _escalationCadence = 30;
-  int _whatsappCadence = 7;
   String _geminiKey = '';
 
   @override
@@ -89,11 +94,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _billSpikesEnabled = AlertPreferencesService.instance.billSpikesEnabled;
       _budgetAlertsEnabled =
           AlertPreferencesService.instance.budgetAlertsEnabled;
-      _whatsappAlertsEnabled = prefs.getBool('whatsappAlertsEnabled') ?? true;
       _reminderCadence = prefs.getInt('reminderCadence') ?? 90;
       _taskCadence = prefs.getInt('taskCadence') ?? 60;
       _escalationCadence = prefs.getInt('escalationCadence') ?? 30;
-      _whatsappCadence = prefs.getInt('whatsappCadence') ?? 7;
       _geminiKey = prefs.getString('gemini.apiKey.v1') ?? '';
     });
   }
@@ -150,20 +153,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Future<void> _saveSettings() async {
-    setState(() => _saving = true);
+  /// Persists the profile details edited in the bottom sheet.
+  Future<void> _saveProfileDetails() async {
     final prefs = await SharedPreferences.getInstance();
-    // userName is always derived from Supabase email — not saved locally.
+    // userName is always derived from the sign-in email — not saved locally.
     await prefs.setString('userRole', _userRole);
     await prefs.setString('userPhone', _userPhone);
+  }
+
+  /// Persists reminder prefs and re-applies the OS reminder schedule so
+  /// changes take effect immediately — there is no Save button on this page.
+  Future<void> _applyReminderSettings() async {
+    final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('notificationsEnabled', _notificationsEnabled);
-    await prefs.setBool('whatsappAlertsEnabled', _whatsappAlertsEnabled);
     await prefs.setInt('reminderCadence', _reminderCadence);
     await prefs.setInt('taskCadence', _taskCadence);
     await prefs.setInt('escalationCadence', _escalationCadence);
-    await prefs.setInt('whatsappCadence', _whatsappCadence);
-
-    // Apply the master notifications toggle to the scheduled OS reminders.
     try {
       final items = await DocumentScannerService.instance.getAllItems();
       for (final item in items) {
@@ -180,17 +185,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (_) {
       // Non-fatal: scheduling may be unavailable (e.g. plugin not ready).
     }
-
-    if (mounted) {
-      setState(() => _saving = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Settings saved')));
-    }
   }
 
   Future<void> _editProfile(BuildContext context) async {
-    final nameCtrl = TextEditingController(text: _userName);
     final roleCtrl = TextEditingController(text: _userRole);
     final phoneCtrl = TextEditingController(text: _userPhone);
 
@@ -220,7 +217,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const Icon(Icons.edit_note_rounded, size: 24),
                     const SizedBox(width: 8),
                     Text(
-                      'Edit User Profile',
+                      'Edit Profile',
                       style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -233,15 +230,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                TextField(
-                  controller: nameCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Full Name',
-                    prefixIcon: Icon(Icons.person_outline),
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
                 TextField(
                   controller: roleCtrl,
                   decoration: const InputDecoration(
@@ -267,19 +255,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: FilledButton.icon(
                     onPressed: () {
                       setState(() {
-                        _userName = nameCtrl.text.trim().isEmpty
-                            ? _userName
-                            : nameCtrl.text.trim();
                         _userRole = roleCtrl.text.trim().isEmpty
                             ? _userRole
                             : roleCtrl.text.trim();
                         _userPhone = phoneCtrl.text.trim();
                       });
                       Navigator.pop(ctx);
-                      _saveSettings();
+                      _saveProfileDetails();
                     },
                     icon: const Icon(Icons.check_circle_outline),
-                    label: const Text('Save Profile'),
+                    label: const Text('Save'),
                   ),
                 ),
               ],
@@ -433,375 +418,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // User Profile & Account Header Card
+                  // 1. Profile header — identity, sync state, edit profile.
                   _buildProfileHeaderCard(theme, signedInEmail),
 
                   const SizedBox(height: 20),
 
-                  // Subscription & tier management (Track 1)
+                  // 2. Subscription — current plan, expiry, upgrade/renew.
                   _buildSubscriptionSection(context, theme),
 
                   const SizedBox(height: 20),
 
-                  // Collections manager
+                  // 3. Collections — group documents per company.
                   _buildCollectionsSection(context, theme),
 
                   const SizedBox(height: 20),
 
-                  // Account section — always visible so sign-in state and
-                  // sign-out stay discoverable. In local-only mode (no
-                  // Supabase credentials) it explains how to enable auth.
-                  if (SupabaseService.hasCredentials)
-                    _buildAccountSection(theme, signedInEmail)
-                  else
-                    _buildLocalModeSection(theme),
-                  const SizedBox(height: 20),
-
-                  // Appearance / Dark Mode
-                  _buildSection(
-                    context,
-                    'Appearance',
-                    Icons.palette_outlined,
-                    theme,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Theme',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          SizedBox(
-                            width: double.infinity,
-                            child: SegmentedButton<ThemeMode>(
-                              segments: const [
-                                ButtonSegment(
-                                  value: ThemeMode.system,
-                                  icon: Icon(Icons.brightness_auto, size: 18),
-                                  label: Text('System'),
-                                ),
-                                ButtonSegment(
-                                  value: ThemeMode.light,
-                                  icon: Icon(Icons.light_mode, size: 18),
-                                  label: Text('Light'),
-                                ),
-                                ButtonSegment(
-                                  value: ThemeMode.dark,
-                                  icon: Icon(Icons.dark_mode, size: 18),
-                                  label: Text('Dark'),
-                                ),
-                              ],
-                              selected: {ThemeService.instance.mode},
-                              onSelectionChanged: (selected) {
-                                ThemeService.instance.setMode(selected.first);
-                                setState(() {}); // update selected highlight
-                              },
-                              showSelectedIcon: false,
-                              style: ButtonStyle(
-                                visualDensity: VisualDensity.compact,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  // 4. Preferences — theme, alert switches, AI summary key.
+                  _buildPreferencesSection(context, theme),
 
                   const SizedBox(height: 20),
 
-                  // Notification settings
-                  _buildSection(
-                    context,
-                    'Notifications & Alerts',
-                    Icons.notifications_active_rounded,
-                    theme,
-                    child: Column(
-                      children: [
-                        SwitchListTile(
-                          title: const Text('Enable notifications'),
-                          subtitle: const Text('Receive renewal alerts'),
-                          value: _notificationsEnabled,
-                          onChanged: (value) {
-                            setState(() => _notificationsEnabled = value);
-                            _markDirty();
-                          },
-                        ),
-                        const Divider(height: 1),
-                        // Saved immediately; takes effect without pressing Save.
-                        SwitchListTile(
-                          title: const Text('Bill spike alerts'),
-                          subtitle: const Text(
-                            'Flag bills unusually higher than your average',
-                          ),
-                          value: _billSpikesEnabled,
-                          onChanged: (value) async {
-                            setState(() => _billSpikesEnabled = value);
-                            await AlertPreferencesService.instance
-                                .setBillSpikesEnabled(value);
-                          },
-                        ),
-                        const Divider(height: 1),
-                        // Saved immediately: silences the snackbar, the OS
-                        // budget notification and the Money tab badge.
-                        SwitchListTile(
-                          title: const Text('Budget alerts'),
-                          subtitle: const Text(
-                            'Warn when spending nears a category budget',
-                          ),
-                          value: _budgetAlertsEnabled,
-                          onChanged: (value) async {
-                            setState(() => _budgetAlertsEnabled = value);
-                            await AlertPreferencesService.instance
-                                .setBudgetAlertsEnabled(value);
-                          },
-                        ),
-                        const Divider(height: 1),
-                        // WhatsApp alerts need a server-side provider —
-                        // inactive until the Edge Function exists.
-                        SwitchListTile(
-                          title: const Text('WhatsApp alerts'),
-                          subtitle: const Text(
-                            'Coming soon — needs WhatsApp Business API',
-                          ),
-                          value: false,
-                          onChanged: null,
-                        ),
-                        const Divider(height: 1),
-                        // Email alerts need a server-side provider —
-                        // inactive until the Edge Function exists.
-                        SwitchListTile(
-                          title: const Text('Email alerts'),
-                          subtitle: const Text(
-                            'Coming soon — needs a mail provider',
-                          ),
-                          value: false,
-                          onChanged: null,
-                        ),
-                      ],
-                    ),
-                  ),
+                  // 5. Reminder schedule — when renewal alerts fire.
+                  _buildReminderTimingSection(context, theme),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
 
-                  // Alert cadence settings
-                  _buildSection(
-                    context,
-                    'Alert Timing',
-                    Icons.event_repeat_rounded,
-                    theme,
-                    child: Column(
-                      children: [
-                        ListTile(
-                          leading: const CircleAvatar(
-                            backgroundColor: Colors.indigo,
-                            child: Icon(
-                              Icons.notifications_active,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ),
-                          title: const Text('90-day reminder'),
-                          subtitle: const Text(
-                            'First notification when expiry is 90 days away',
-                          ),
-                          trailing: DropdownButton<int>(
-                            value: _reminderCadence,
-                            underline: const SizedBox(),
-                            items: [30, 60, 90, 120].map((d) {
-                              return DropdownMenuItem(
-                                value: d,
-                                child: Text('$d days'),
-                              );
-                            }).toList(),
-                            onChanged: (v) {
-                              if (v != null) {
-                                setState(() => _reminderCadence = v);
-                                _markDirty();
-                              }
-                            },
-                          ),
-                        ),
-                        const Divider(height: 1),
-                        ListTile(
-                          leading: const CircleAvatar(
-                            backgroundColor: Colors.amber,
-                            child: Icon(
-                              Icons.assignment_turned_in,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ),
-                          title: const Text('60-day task'),
-                          subtitle: const Text(
-                            'Assign renewal task to responsible person',
-                          ),
-                          trailing: DropdownButton<int>(
-                            value: _taskCadence,
-                            underline: const SizedBox(),
-                            items: [30, 45, 60, 75, 90].map((d) {
-                              return DropdownMenuItem(
-                                value: d,
-                                child: Text('$d days'),
-                              );
-                            }).toList(),
-                            onChanged: (v) {
-                              if (v != null) {
-                                setState(() => _taskCadence = v);
-                                _markDirty();
-                              }
-                            },
-                          ),
-                        ),
-                        const Divider(height: 1),
-                        ListTile(
-                          leading: const CircleAvatar(
-                            backgroundColor: Colors.orange,
-                            child: Icon(
-                              Icons.priority_high_rounded,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ),
-                          title: const Text('30-day escalation'),
-                          subtitle: const Text(
-                            'Escalate to management / stakeholders',
-                          ),
-                          trailing: DropdownButton<int>(
-                            value: _escalationCadence,
-                            underline: const SizedBox(),
-                            items: [15, 21, 30, 45].map((d) {
-                              return DropdownMenuItem(
-                                value: d,
-                                child: Text('$d days'),
-                              );
-                            }).toList(),
-                            onChanged: (v) {
-                              if (v != null) {
-                                setState(() => _escalationCadence = v);
-                                _markDirty();
-                              }
-                            },
-                          ),
-                        ),
-                        const Divider(height: 1),
-                        ListTile(
-                          enabled: false,
-                          leading: const CircleAvatar(
-                            backgroundColor: Colors.red,
-                            child: Icon(
-                              Icons.whatshot_rounded,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ),
-                          title: const Text('7-day WhatsApp'),
-                          subtitle: const Text(
-                            'Coming soon — needs WhatsApp Business API',
-                          ),
-                          trailing: DropdownButton<int>(
-                            value: _whatsappCadence,
-                            underline: const SizedBox(),
-                            items: [3, 5, 7, 10].map((d) {
-                              return DropdownMenuItem(
-                                value: d,
-                                child: Text('$d days'),
-                              );
-                            }).toList(),
-                            onChanged: null,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Danger zone
-                  _buildSection(
-                    context,
-                    'Danger Zone',
-                    Icons.warning_amber_rounded,
-                    theme,
-                    child: Column(
-                      children: [
-                        ListTile(
-                          leading: const Icon(
-                            Icons.delete_forever,
-                            color: Colors.red,
-                          ),
-                          title: const Text('Clear all documents'),
-                          subtitle: const Text(
-                            'Remove every tracked document in the active collection',
-                          ),
-                          onTap: () => _confirmClearAll(context),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // AI Executive Summary — Gemini API key configuration.
-                  // Key stays on-device (SharedPreferences) and only gates the
-                  // LLM polish pass; the summary itself works without it.
-                  _buildSection(
-                    context,
-                    'AI Executive Summary',
-                    Icons.auto_awesome_motion_rounded,
-                    theme,
-                    child: Column(
-                      children: [
-                        ListTile(
-                          leading: const CircleAvatar(
-                            backgroundColor: Colors.deepPurple,
-                            child: Icon(
-                              Icons.auto_awesome_rounded,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ),
-                          title: const Text('Gemini API key'),
-                          subtitle: Text(
-                            _geminiKey.isEmpty
-                                ? 'Not set — summaries use built-in templates'
-                                : 'Configured — summaries are AI-polished',
-                          ),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.edit_rounded, size: 20),
-                            onPressed: _editGeminiKey,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 40),
-
-                  // Save button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _saving ? null : _saveSettings,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      child: _saving
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('Save Settings'),
-                    ),
-                  ),
+                  // 6. Account — sign out (sign-in lives on the profile card).
+                  if (SupabaseService.hasCredentials &&
+                      AuthService.instance.isSignedIn)
+                    _buildSignOutButton(theme),
 
                   const SizedBox(height: 24),
                 ],
@@ -811,7 +456,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // ------------------------------------------------------------------
-  // User Profile Header Card
+  // 1. User Profile Header Card
   // ------------------------------------------------------------------
 
   Widget _buildProfileHeaderCard(ThemeData theme, String? email) {
@@ -1055,7 +700,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // ------------------------------------------------------------------
-  // Subscription section (Track 1)
+  // 2. Subscription section (Track 1)
   // ------------------------------------------------------------------
 
   Widget _buildSubscriptionSection(BuildContext context, ThemeData theme) {
@@ -1159,7 +804,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Text(
                         'Your ${info.name} plan expired on '
                         '${_formatDate(planEndsAt!)} — features are locked '
-                        'again. Tap Upgrade Plan to renew.',
+                        'again. Tap Renew Plan to resubscribe.',
                         style: theme.textTheme.bodySmall?.copyWith(
                           fontWeight: FontWeight.w600,
                           color: WazyColors.danger,
@@ -1199,19 +844,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
               )
-            else if (isExpired)
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: () => showTierRequestSheet(context),
-                  icon: const Icon(Icons.autorenew_rounded, size: 18),
-                  label: const Text('Renew Plan'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: WazyColors.navyPrimary,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              )
             else
               Text(
                 'You are on the highest plan — thanks for supporting Wazy!',
@@ -1235,7 +867,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // ------------------------------------------------------------------
-  // Collections section
+  // 3. Collections section
   // ------------------------------------------------------------------
 
   Widget _buildCollectionsSection(BuildContext context, ThemeData theme) {
@@ -1340,82 +972,260 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildAccountSection(ThemeData theme, String? email) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(
-              Icons.account_circle_outlined,
-              size: 20,
-              color: theme.colorScheme.outline,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'Account',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Card(
-          child: ListTile(
-            leading: const Icon(Icons.alternate_email),
-            title: Text(email ?? 'Signed in'),
-            subtitle: const Text('Signed in with Supabase Auth'),
-            trailing: TextButton.icon(
-              onPressed: _signOut,
-              icon: const Icon(Icons.logout, size: 18),
-              label: const Text('Sign out'),
+  // ------------------------------------------------------------------
+  // 4. Preferences — theme, alert switches, AI summary key.
+  //    Every control saves immediately.
+  // ------------------------------------------------------------------
+
+  Widget _buildPreferencesSection(BuildContext context, ThemeData theme) {
+    return _buildSection(
+      context,
+      'Preferences',
+      Icons.tune_rounded,
+      theme,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Theme',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: SegmentedButton<ThemeMode>(
+                    segments: const [
+                      ButtonSegment(
+                        value: ThemeMode.system,
+                        icon: Icon(Icons.brightness_auto, size: 18),
+                        label: Text('System'),
+                      ),
+                      ButtonSegment(
+                        value: ThemeMode.light,
+                        icon: Icon(Icons.light_mode, size: 18),
+                        label: Text('Light'),
+                      ),
+                      ButtonSegment(
+                        value: ThemeMode.dark,
+                        icon: Icon(Icons.dark_mode, size: 18),
+                        label: Text('Dark'),
+                      ),
+                    ],
+                    selected: {ThemeService.instance.mode},
+                    onSelectionChanged: (selected) {
+                      ThemeService.instance.setMode(selected.first);
+                      setState(() {}); // update selected highlight
+                    },
+                    showSelectedIcon: false,
+                    style: ButtonStyle(
+                      visualDensity: VisualDensity.compact,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
-      ],
+          const Divider(height: 1),
+          SwitchListTile(
+            title: const Text('Renewal notifications'),
+            subtitle: const Text('Remind me before documents expire'),
+            value: _notificationsEnabled,
+            onChanged: (value) async {
+              setState(() => _notificationsEnabled = value);
+              await _applyReminderSettings();
+            },
+          ),
+          const Divider(height: 1),
+          // Saved immediately; silences the spike snackbar.
+          SwitchListTile(
+            title: const Text('Bill spike alerts'),
+            subtitle: const Text(
+              'Flag bills unusually higher than your average',
+            ),
+            value: _billSpikesEnabled,
+            onChanged: (value) async {
+              setState(() => _billSpikesEnabled = value);
+              await AlertPreferencesService.instance.setBillSpikesEnabled(value);
+            },
+          ),
+          const Divider(height: 1),
+          // Saved immediately: silences the snackbar, the OS budget
+          // notification and the Money tab badge.
+          SwitchListTile(
+            title: const Text('Budget alerts'),
+            subtitle: const Text(
+              'Warn when spending nears a category budget',
+            ),
+            value: _budgetAlertsEnabled,
+            onChanged: (value) async {
+              setState(() => _budgetAlertsEnabled = value);
+              await AlertPreferencesService.instance.setBudgetAlertsEnabled(value);
+            },
+          ),
+          const Divider(height: 1),
+          // AI Executive Summary — Gemini API key configuration. Key stays
+          // on-device and only gates the LLM polish pass; the summary works
+          // without it.
+          ListTile(
+            leading: const CircleAvatar(
+              backgroundColor: Colors.deepPurple,
+              child: Icon(
+                Icons.auto_awesome_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
+            ),
+            title: const Text('AI Executive Summary'),
+            subtitle: Text(
+              _geminiKey.isEmpty
+                  ? 'Uses built-in templates — add a Gemini key for AI polish'
+                  : 'Gemini key configured — summaries are AI-polished',
+            ),
+            trailing: IconButton(
+              icon: const Icon(Icons.edit_rounded, size: 20),
+              onPressed: _editGeminiKey,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildLocalModeSection(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(
-              Icons.account_circle_outlined,
-              size: 20,
-              color: theme.colorScheme.outline,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'Account & Authentication',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
+  // ------------------------------------------------------------------
+  // 5. Reminder Schedule — when the renewal alert ladder fires.
+  //    Each change is saved and re-applied to scheduled OS reminders
+  //    immediately.
+  // ------------------------------------------------------------------
+
+  Widget _buildReminderTimingSection(BuildContext context, ThemeData theme) {
+    return _buildSection(
+      context,
+      'Reminder Schedule',
+      Icons.event_repeat_rounded,
+      theme,
+      child: Column(
+        children: [
+          ListTile(
+            leading: const CircleAvatar(
+              backgroundColor: Colors.indigo,
+              child: Icon(
+                Icons.notifications_active,
+                color: Colors.white,
+                size: 18,
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Card(
-          child: ListTile(
-            leading: const Icon(Icons.cloud_off_outlined),
-            title: const Text('Local Workspace Mode'),
+            title: const Text('First reminder'),
             subtitle: const Text(
-              'Operating in offline local mode. Tap to navigate to the Sign In page.',
+              'First notification when an expiry is this far away',
             ),
-            trailing: FilledButton.icon(
-              onPressed: () => context.go('/login'),
-              icon: const Icon(Icons.login, size: 16),
-              label: const Text('Sign In'),
-              style: FilledButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-              ),
+            trailing: DropdownButton<int>(
+              value: _reminderCadence,
+              underline: const SizedBox(),
+              items: [30, 60, 90, 120].map((d) {
+                return DropdownMenuItem(
+                  value: d,
+                  child: Text('$d days'),
+                );
+              }).toList(),
+              onChanged: (v) async {
+                if (v != null) {
+                  setState(() => _reminderCadence = v);
+                  await _applyReminderSettings();
+                }
+              },
             ),
           ),
+          const Divider(height: 1),
+          ListTile(
+            leading: const CircleAvatar(
+              backgroundColor: Colors.amber,
+              child: Icon(
+                Icons.assignment_turned_in,
+                color: Colors.white,
+                size: 18,
+              ),
+            ),
+            title: const Text('Renewal task'),
+            subtitle: const Text(
+              'Assign the renewal task to a responsible person',
+            ),
+            trailing: DropdownButton<int>(
+              value: _taskCadence,
+              underline: const SizedBox(),
+              items: [30, 45, 60, 75, 90].map((d) {
+                return DropdownMenuItem(
+                  value: d,
+                  child: Text('$d days'),
+                );
+              }).toList(),
+              onChanged: (v) async {
+                if (v != null) {
+                  setState(() => _taskCadence = v);
+                  await _applyReminderSettings();
+                }
+              },
+            ),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: const CircleAvatar(
+              backgroundColor: Colors.orange,
+              child: Icon(
+                Icons.priority_high_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
+            ),
+            title: const Text('Escalation'),
+            subtitle: const Text(
+              'Escalate to management / stakeholders',
+            ),
+            trailing: DropdownButton<int>(
+              value: _escalationCadence,
+              underline: const SizedBox(),
+              items: [15, 21, 30, 45].map((d) {
+                return DropdownMenuItem(
+                  value: d,
+                  child: Text('$d days'),
+                );
+              }).toList(),
+              onChanged: (v) async {
+                if (v != null) {
+                  setState(() => _escalationCadence = v);
+                  await _applyReminderSettings();
+                }
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // 6. Sign out
+  // ------------------------------------------------------------------
+
+  Widget _buildSignOutButton(ThemeData theme) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: _signOut,
+        icon: const Icon(Icons.logout_rounded, size: 18),
+        label: const Text('Sign out'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: theme.colorScheme.error,
+          side: BorderSide(color: theme.colorScheme.error.withAlpha(100)),
+          padding: const EdgeInsets.symmetric(vertical: 14),
         ),
-      ],
+      ),
     );
   }
 
@@ -1445,43 +1255,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 8),
         Card(child: Column(children: [const Divider(height: 1), child])),
       ],
-    );
-  }
-
-  void _markDirty() {
-    // Mark as dirty - settings need saving
-  }
-
-  void _confirmClearAll(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Clear all documents'),
-        content: const Text(
-          'This will remove all documents from the active collection. '
-          'This action cannot be undone. Are you sure?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('All documents cleared (demo)'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              context.go('/home');
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Clear all'),
-          ),
-        ],
-      ),
     );
   }
 }
