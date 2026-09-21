@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -14,8 +16,14 @@ import '../widgets/dialogs/natural_language_add_dialog.dart';
 import '../widgets/dialogs/renew_document_dialog.dart';
 import '../widgets/dialogs/upgrade_dialog.dart';
 
-/// Documents tab (Tier 1): the full expiry-tracking workspace — search,
-/// filters and detailed cards with inline actions.
+/// Documents tab (Tier 1): the full expiry-tracking workspace.
+///
+/// Same anatomy as the redesigned Home tab: a navy hero header carrying the
+/// greeting, a live count, and the primary actions; below it a rounded
+/// content sheet with the search field, filter chips, compact insight tiles,
+/// and the document cards. Search is inline (`onChanged`), and the document
+/// type picker plus sort order live in bottom sheets behind the filter and
+/// sort buttons.
 class DocumentsScreen extends StatefulWidget {
   const DocumentsScreen({super.key});
 
@@ -62,7 +70,6 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
   _DocFilter _filter = _DocFilter.all;
   _DocSort _sort = _DocSort.dueDate;
   DocumentTypeMeta? _typeFilter;
-  bool _showFilters = false;
 
   @override
   void initState() {
@@ -83,9 +90,11 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
   }
 
   Future<void> _loadData() async {
-    // Include expired documents so the "Expired" filter and the insights
-    // header can show documents that already lapsed.
-    final items = await DocumentScannerService().getAllItems(includeExpired: true);
+    // Include expired documents so the "Expired" filter and the header can
+    // show documents that already lapsed.
+    final items = await DocumentScannerService().getAllItems(
+      includeExpired: true,
+    );
     if (mounted) {
       setState(() {
         _items = items;
@@ -102,7 +111,9 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
           !i.displayName.toLowerCase().contains(_query.toLowerCase())) {
         return false;
       }
-      if (_typeFilter != null && i.docType.key != _typeFilter!.key) return false;
+      if (_typeFilter != null && i.docType.key != _typeFilter!.key) {
+        return false;
+      }
       switch (_filter) {
         case _DocFilter.all:
           return true;
@@ -128,7 +139,10 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
         });
       case _DocSort.name:
         list.sort(
-            (a, b) => a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()));
+          (a, b) => a.displayName.toLowerCase().compareTo(
+            b.displayName.toLowerCase(),
+          ),
+        );
       case _DocSort.fee:
         list.sort((a, b) {
           final aFee = a.renewalFee ?? 0;
@@ -140,19 +154,22 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     return list;
   }
 
-  /// Nearest document needing action — shown in the insights header.
+  /// Nearest upcoming document — shown in the insights tiles.
   ExpiryItem? get _nextDue {
     final now = DateTime.now();
-    final active = _items.where((i) => i.isActive && i.expiresAt.isAfter(now)).toList()
-      ..sort((a, b) => a.expiresAt.compareTo(b.expiresAt));
+    final active =
+        _items.where((i) => i.isActive && i.expiresAt.isAfter(now)).toList()
+          ..sort((a, b) => a.expiresAt.compareTo(b.expiresAt));
     return active.isEmpty ? null : active.first;
   }
 
   double get _totalUpcomingFees {
     final now = DateTime.now();
     return _items
-        .where((i) =>
-            i.isActive && i.expiresAt.isAfter(now) && (i.renewalFee ?? 0) > 0)
+        .where(
+          (i) =>
+              i.isActive && i.expiresAt.isAfter(now) && (i.renewalFee ?? 0) > 0,
+        )
         .fold(0.0, (sum, i) => sum + i.renewalFee!);
   }
 
@@ -171,266 +188,672 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final urgency = UrgencyEngine().compute(_items);
+    final isDark = theme.brightness == Brightness.dark;
     final filtered = _filtered;
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
-      appBar: AppBar(
-        title: const Text('Documents'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.bolt_rounded),
-            tooltip: 'Quick Add with Natural Language',
-            onPressed: () async {
-              final created = await NaturalLanguageAddDialog.show(context);
-              if (created != null) _loadData();
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.saved_search_rounded),
-            tooltip: 'Search all documents',
-            onPressed: () => context.push('/search'),
-          ),
-          IconButton(
-            icon: Icon(
-              _showFilters ? Icons.filter_alt : Icons.filter_alt_outlined,
-            ),
-            tooltip: 'Filters',
-            onPressed: () => setState(() => _showFilters = !_showFilters),
-          ),
-          PopupMenuButton<_DocSort>(
-            icon: const Icon(Icons.sort_rounded),
-            tooltip: 'Sort by',
-            onSelected: (sort) => setState(() => _sort = sort),
-            itemBuilder: (ctx) => _DocSort.values
-                .map(
-                  (s) => PopupMenuItem(
-                    value: s,
-                    child: Row(
-                      children: [
-                        Icon(
-                          s.icon,
-                          size: 18,
-                          color: _sort == s
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.outline,
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          s.label,
-                          style: TextStyle(
-                            fontWeight: _sort == s
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                          ),
-                        ),
-                        const Spacer(),
-                        if (_sort == s)
-                          Icon(
-                            Icons.check_rounded,
-                            size: 18,
-                            color: theme.colorScheme.primary,
-                          ),
-                      ],
-                    ),
-                  ),
-                )
-                .toList(),
-          ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(64),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: searchField(),
-          ),
-        ),
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadData,
-              child: CustomScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                slivers: [
-                  // Filter chips row
-                  SliverToBoxAdapter(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-                      child: Row(
-                        children: [
-                          _statusChip(theme, 'All', _DocFilter.all,
-                              _items.where((i) => i.isActive || i.isExpired).length),
-                          _statusChip(theme, 'Critical', _DocFilter.critical,
-                              urgency.criticalCount),
-                          _statusChip(theme, '≤30 days', _DocFilter.upcoming,
-                              urgency.highCount),
-                          _statusChip(theme, 'Later', _DocFilter.later,
-                              urgency.mediumCount + urgency.lowCount),
-                          _statusChip(theme, 'Expired', _DocFilter.expired,
-                              _items.where((i) => !i.isActive && i.isExpired).length),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Type filter chips
-                  if (_showFilters)
+      // Navy backdrop behind the hero; the content sheet covers the rest.
+      // Same backdrop colors as the redesigned Home tab.
+      backgroundColor: isDark
+          ? WazyColors.obsidian
+          : WazyColors.navyPrimaryDark,
+      body: SafeArea(
+        bottom: false,
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                color: theme.colorScheme.secondary,
+                onRefresh: _loadData,
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
                     SliverToBoxAdapter(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-                        child: Row(
+                      child: _buildHeroHeader(theme, urgency, filtered.length),
+                    ),
+                    SliverToBoxAdapter(
+                      child: Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(24),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _typeChip(theme, null, 'All types'),
-                            ...DocumentTypeRegistry.instance.typesForPicker
-                                .map((t) => _typeChip(theme, t, t.displayName)),
+                            const SizedBox(height: 16),
+                            // Inline search field, styled like the tiles.
+                            _buildSearchField(theme),
+                            const SizedBox(height: 12),
+                            // Status filter chips.
+                            _buildStatusChips(theme, urgency),
+                            // Active-filter summary: visible only when it
+                            // matters, so the sheet never shows a phantom gap.
+                            if (_hasActiveFilters) ...[
+                              const SizedBox(height: 8),
+                              _buildActiveFiltersRow(theme),
+                            ],
+                            const SizedBox(height: 16),
+                            // Insight tiles: what the list means at a glance.
+                            _buildInsights(theme, urgency, filtered.length),
+                            const SizedBox(height: 16),
+                            // Document list.
+                            _buildDocumentList(theme, filtered),
+                            // Keep the last card scrollable clear of the
+                            // floating nav pill (height + margins ≈ 80).
+                            SizedBox(
+                              height:
+                                  8 +
+                                  MediaQuery.of(context).padding.bottom +
+                                  80,
+                            ),
                           ],
                         ),
                       ),
                     ),
-                  // Clear filters
-                  if (_hasActiveFilters)
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: ActionChip(
-                            avatar: Icon(
-                              Icons.close,
-                              size: 16,
-                              color: theme.brightness == Brightness.dark
-                                  ? WazyColors.textSecondary
-                                  : WazyColors.textPrimaryLight,
-                            ),
-                            label: Text(
-                              'Clear filters',
-                              style: TextStyle(
-                                color: theme.brightness == Brightness.dark
-                                    ? WazyColors.textPrimary
-                                    : WazyColors.textPrimaryLight,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            onPressed: _clearFilters,
-                            backgroundColor: theme.brightness == Brightness.dark
-                                ? WazyColors.slate
-                                : WazyColors.cloud,
-                            side: BorderSide(
-                              color: theme.brightness == Brightness.dark
-                                  ? WazyColors.slateLight.withOpacity(0.3)
-                                  : WazyColors.fog,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  // Insights header
-                  SliverToBoxAdapter(
-                    child: _InsightsHeader(
-                      count: filtered.length,
-                      urgency: urgency,
-                      nextDue: _nextDue,
-                      totalUpcomingFees: _totalUpcomingFees,
-                    ),
-                  ),
-                  // Cards
-                  if (filtered.isEmpty)
+                    // White filler: extends the sheet across the rest of the
+                    // viewport when content is short, and into overscroll —
+                    // the navy backdrop never peeks out below the content,
+                    // behind the floating nav pill. Kept empty: a
+                    // fill-remaining sliver queries the child's intrinsics
+                    // during overscroll, which a shrinkWrap list can't do.
                     SliverFillRemaining(
                       hasScrollBody: false,
-                      child: _buildEmptyState(theme),
-                    )
-                  else
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 180),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) => Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: _DocumentCard(
-                              item: filtered[index],
-                              onTap: () async {
-                                await context
-                                    .push('/document/${filtered[index].id}');
-                                await _loadData();
-                              },
-                              onAction: () =>
-                                  _showActionSheet(context, filtered[index]),
-                            ),
-                          ),
-                          childCount: filtered.length,
-                        ),
-                      ),
+                      fillOverscroll: true,
+                      child: ColoredBox(color: theme.colorScheme.surface),
                     ),
-                ],
+                  ],
+                ),
               ),
-            ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 115),
-        child: FloatingActionButton.extended(
-          heroTag: 'documents_add',
-          onPressed: () async {
-            // Free plan document limit — paywall when the quota is full.
-            if (!await enforceDocumentLimit(context)) return;
-            await context.push('/scan');
-            await _loadData();
-          },
-          icon: const Icon(Icons.add_rounded),
-          label: const Text('Add Document'),
-          backgroundColor: WazyColors.navyPrimary,
-          foregroundColor: Colors.white,
-        ),
       ),
     );
   }
 
-  Widget searchField() {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    return TextField(
-      onChanged: (v) => setState(() => _query = v),
-      style: TextStyle(
-        color: isDark ? WazyColors.textPrimary : WazyColors.textPrimaryLight,
-        fontSize: 14,
+  // ------------------------------------------------------------------
+  // Hero header: greeting, live status line, action pills
+  // ------------------------------------------------------------------
+
+  Widget _buildHeroHeader(
+    ThemeData theme,
+    UrgencySnapshot urgency,
+    int visibleCount,
+  ) {
+    final pending = urgency.pendingActions.length;
+    final expired = _items.where((i) => i.isActive && i.isExpired).length;
+
+    // Compact hero (deliberately smaller than Home's): one status line that
+    // doubles as the filter feedback — "shown" only appears while filters
+    // narrow the list.
+    final statusPart = expired > 0
+        ? '$expired expired'
+        : pending > 0
+        ? '$pending need attention'
+        : 'All on track';
+    final scopePart = _hasActiveFilters
+        ? '$visibleCount of ${_items.length} shown'
+        : '${_items.length} tracked';
+    final subtitle = '$statusPart · $scopePart';
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'Documents',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Spacer(),
+              // Quick Add with Natural Language (AI-assisted add).
+              _HeroIconButton(
+                icon: Icons.bolt_rounded,
+                tooltip: 'Quick Add with Natural Language',
+                onTap: () async {
+                  final created = await NaturalLanguageAddDialog.show(context);
+                  if (created != null) _loadData();
+                },
+              ),
+              const SizedBox(width: 8),
+              _HeroIconButton(
+                icon: Icons.saved_search_rounded,
+                tooltip: 'Search all documents',
+                onTap: () => context.push('/search'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Single-line live status + scope.
+          Text(
+            subtitle,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.white.withOpacity(0.7),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 12),
+          // Action pills: filter + sort, mirroring Home's Record/Budget row.
+          Row(
+            children: [
+              _HeroActionPill(
+                icon: Icons.filter_alt_rounded,
+                label: 'Filter',
+                outlined: true,
+                onTap: _showTypeFilterSheet,
+              ),
+              const SizedBox(width: 10),
+              _HeroActionPill(
+                icon: Icons.sort_rounded,
+                label: 'Sort',
+                outlined: true,
+                onTap: _showSortSheet,
+              ),
+              const Spacer(),
+              _HeroActionPill(
+                icon: Icons.add_rounded,
+                label: 'Add',
+                filled: true,
+                onTap: _openScanner,
+              ),
+            ],
+          ),
+        ],
       ),
-      decoration: InputDecoration(
-        isDense: true,
-        hintText: 'Search documents…',
-        hintStyle: TextStyle(
-          color: isDark ? WazyColors.textMuted : WazyColors.textMutedLight,
+    );
+  }
+
+  /// Open the scan flow after enforcing the free-tier document limit.
+  Future<void> _openScanner() async {
+    if (!await enforceDocumentLimit(context)) return;
+    if (mounted) await context.push('/scan');
+  }
+
+  // ------------------------------------------------------------------
+  // Content sheet: search, chips, insights, list
+  // ------------------------------------------------------------------
+
+  Widget _buildSearchField(ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: TextField(
+        onChanged: (v) => setState(() => _query = v),
+        style: TextStyle(
+          color: isDark ? WazyColors.textPrimary : WazyColors.textPrimaryLight,
           fontSize: 14,
         ),
-        prefixIcon: Icon(
-          Icons.search,
-          size: 20,
-          color: isDark ? WazyColors.textSecondary : WazyColors.textSecondaryLight,
-        ),
-        suffixIcon: _query.isEmpty
-            ? null
-            : IconButton(
-                icon: Icon(
-                  Icons.close,
-                  size: 18,
-                  color: isDark ? WazyColors.textSecondary : WazyColors.textSecondaryLight,
+        decoration: InputDecoration(
+          isDense: true,
+          hintText: 'Search documents…',
+          hintStyle: TextStyle(
+            color: isDark ? WazyColors.textMuted : WazyColors.textMutedLight,
+            fontSize: 14,
+          ),
+          prefixIcon: Icon(
+            Icons.search,
+            size: 20,
+            color: isDark
+                ? WazyColors.textSecondary
+                : WazyColors.textSecondaryLight,
+          ),
+          suffixIcon: _query.isEmpty
+              ? null
+              : IconButton(
+                  icon: Icon(
+                    Icons.close,
+                    size: 18,
+                    color: isDark
+                        ? WazyColors.textSecondary
+                        : WazyColors.textSecondaryLight,
+                  ),
+                  onPressed: () => setState(() => _query = ''),
                 ),
-                onPressed: () => setState(() => _query = ''),
-              ),
-        filled: true,
-        fillColor: isDark
-            ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.5)
-            : WazyColors.cloud,
-        contentPadding: EdgeInsets.zero,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
+          filled: true,
+          fillColor: isDark
+              ? WazyColors.slate.withOpacity(0.55)
+              : WazyColors.cloud,
+          contentPadding: EdgeInsets.zero,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide.none,
+          ),
         ),
       ),
     );
   }
 
+  Widget _buildStatusChips(ThemeData theme, UrgencySnapshot urgency) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          _statusChip(
+            theme,
+            'All',
+            _DocFilter.all,
+            _items.where((i) => i.isActive || i.isExpired).length,
+          ),
+          _statusChip(
+            theme,
+            'Critical',
+            _DocFilter.critical,
+            urgency.criticalCount,
+          ),
+          _statusChip(
+            theme,
+            '≤30 days',
+            _DocFilter.upcoming,
+            urgency.highCount,
+          ),
+          _statusChip(
+            theme,
+            'Later',
+            _DocFilter.later,
+            urgency.mediumCount + urgency.lowCount,
+          ),
+          _statusChip(
+            theme,
+            'Expired',
+            _DocFilter.expired,
+            _items.where((i) => !i.isActive && i.isExpired).length,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// One-line summary of the active filters, with a clear action.
+  Widget _buildActiveFiltersRow(ThemeData theme) {
+    final parts = <String>[
+      if (_query.isNotEmpty) '"${_query.trim()}"',
+      if (_typeFilter != null) _typeFilter!.displayName,
+      if (_filter != _DocFilter.all)
+        switch (_filter) {
+          _DocFilter.all => '',
+          _DocFilter.critical => 'Critical',
+          _DocFilter.upcoming => '≤30 days',
+          _DocFilter.later => 'Later',
+          _DocFilter.expired => 'Expired',
+        },
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          Icon(
+            Icons.filter_alt_rounded,
+            size: 14,
+            color: theme.colorScheme.primary,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'Filtered: ${parts.where((p) => p.isNotEmpty).join(' · ')}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          GestureDetector(
+            onTap: _clearFilters,
+            child: Text(
+              'Clear',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // Insights — two tiles, mirroring Home's categories grid styling
+  // ------------------------------------------------------------------
+
+  Widget _buildInsights(
+    ThemeData theme,
+    UrgencySnapshot urgency,
+    int visibleCount,
+  ) {
+    final isDark = theme.brightness == Brightness.dark;
+    final tileBg = isDark
+        ? WazyColors.slate.withOpacity(0.55)
+        : WazyColors.cloud;
+    final pending = urgency.pendingActions.length;
+    final nextDue = _nextDue;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: _insightTile(
+              theme,
+              tileBg: tileBg,
+              icon: Icons.hourglass_top_rounded,
+              label: 'Next due',
+              value: nextDue == null
+                  ? '—'
+                  : '${nextDue.displayName} · ${nextDue.daysRemaining}d',
+              iconColor: pending > 0
+                  ? (isDark ? WazyColors.danger : const Color(0xFFDC2626))
+                  : (isDark ? WazyColors.textPrimary : WazyColors.navyPrimary),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _insightTile(
+              theme,
+              tileBg: tileBg,
+              icon: Icons.payments_rounded,
+              label: 'Upcoming fees',
+              value: _totalUpcomingFees > 0
+                  ? MoneyFormat.aed(_totalUpcomingFees, symbol: 'AED ')
+                  : '—',
+              iconColor: isDark
+                  ? WazyColors.textPrimary
+                  : WazyColors.navyPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _insightTile(
+    ThemeData theme, {
+    required Color tileBg,
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color iconColor,
+  }) {
+    final isDark = theme.brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: tileBg,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: iconColor),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.85),
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // Document list — compact cards, tinted left accent by urgency
+  // ------------------------------------------------------------------
+
+  Widget _buildDocumentList(ThemeData theme, List<ExpiryItem> filtered) {
+    if (filtered.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: _buildEmptyState(theme),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: [
+          for (final item in filtered)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _DocumentCard(
+                item: item,
+                onTap: () async {
+                  await context.push('/document/${item.id}');
+                  await _loadData();
+                },
+                onAction: () => _showActionSheet(context, item),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(ThemeData theme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          EmptyStateIllustration(
+            scene: _hasActiveFilters
+                ? EmptyStateScene.search
+                : EmptyStateScene.document,
+            size: 104,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            _hasActiveFilters ? 'No documents match' : 'Nothing tracked yet',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _hasActiveFilters
+                ? 'Try a different filter or clear the search.'
+                : 'Scan a trade licence, visa or Ejari to start tracking its expiry.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.outline.withOpacity(0.7),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          if (!_hasActiveFilters)
+            FilledButton.icon(
+              onPressed: _openScanner,
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: const Text('Add first document'),
+            )
+          else
+            TextButton(
+              onPressed: _clearFilters,
+              child: const Text('Clear filters'),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // Filter & sort bottom sheets
+  // ------------------------------------------------------------------
+
+  void _showTypeFilterSheet() {
+    final theme = Theme.of(context);
+    showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: theme.colorScheme.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(sheetContext).size.height * 0.7,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.outline.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'Document type',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.apps_rounded),
+                      title: const Text('All types'),
+                      trailing: _typeFilter == null
+                          ? const Icon(Icons.check_circle, color: Colors.green)
+                          : null,
+                      onTap: () => Navigator.pop(sheetContext, '__all__'),
+                    ),
+                    for (final t
+                        in DocumentTypeRegistry.instance.typesForPicker)
+                      ListTile(
+                        leading: Icon(t.icon, color: t.primaryColor),
+                        title: Text(t.displayName),
+                        trailing: _typeFilter?.key == t.key
+                            ? const Icon(
+                                Icons.check_circle,
+                                color: Colors.green,
+                              )
+                            : null,
+                        onTap: () => Navigator.pop(sheetContext, t.key),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ).then((value) {
+      if (value == null || !mounted) return;
+      setState(() {
+        _typeFilter = value == '__all__'
+            ? null
+            : DocumentTypeRegistry.instance.typesForPicker
+                  .where((t) => t.key == value)
+                  .firstOrNull;
+      });
+    });
+  }
+
+  void _showSortSheet() {
+    final theme = Theme.of(context);
+    showModalBottomSheet<_DocSort>(
+      context: context,
+      backgroundColor: theme.colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.outline.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Sort by',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const Divider(height: 1),
+            for (final s in _DocSort.values)
+              ListTile(
+                leading: Icon(
+                  s.icon,
+                  color: _sort == s
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.outline,
+                ),
+                title: Text(s.label),
+                trailing: _sort == s
+                    ? Icon(
+                        Icons.check_rounded,
+                        color: theme.colorScheme.primary,
+                      )
+                    : null,
+                onTap: () => Navigator.pop(sheetContext, s),
+              ),
+          ],
+        ),
+      ),
+    ).then((value) {
+      if (value is _DocSort && mounted) setState(() => _sort = value);
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // Status chips
+  // ------------------------------------------------------------------
+
   Widget _statusChip(
-      ThemeData theme, String label, _DocFilter filter, int count) {
+    ThemeData theme,
+    String label,
+    _DocFilter filter,
+    int count,
+  ) {
     final isDark = theme.brightness == Brightness.dark;
     final selected = _filter == filter;
     return Padding(
@@ -441,7 +864,9 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
           style: TextStyle(
             color: selected
                 ? (isDark ? WazyColors.cyanSecondary : WazyColors.navyPrimary)
-                : (isDark ? WazyColors.textSecondary : WazyColors.textPrimaryLight),
+                : (isDark
+                      ? WazyColors.textSecondary
+                      : WazyColors.textPrimaryLight),
             fontWeight: selected ? FontWeight.bold : FontWeight.w500,
             fontSize: 12,
           ),
@@ -457,89 +882,10 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
         side: BorderSide(
           color: selected
               ? (isDark ? WazyColors.cyanSecondary : WazyColors.navyPrimary)
-              : (isDark ? WazyColors.slateLight.withOpacity(0.3) : WazyColors.fog),
+              : (isDark
+                    ? WazyColors.slateLight.withOpacity(0.3)
+                    : WazyColors.fog),
         ),
-      ),
-    );
-  }
-
-  Widget _typeChip(ThemeData theme, DocumentTypeMeta? type, String label) {
-    final isDark = theme.brightness == Brightness.dark;
-    final selected = _typeFilter?.key == type?.key;
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: FilterChip(
-        avatar: type != null
-            ? Icon(
-                type.icon,
-                size: 16,
-                color: selected
-                    ? (isDark ? WazyColors.cyanSecondary : WazyColors.navyPrimary)
-                    : type.primaryColor,
-              )
-            : null,
-        label: Text(
-          label,
-          style: TextStyle(
-            color: selected
-                ? (isDark ? WazyColors.cyanSecondary : WazyColors.navyPrimary)
-                : (isDark ? WazyColors.textSecondary : WazyColors.textPrimaryLight),
-            fontWeight: selected ? FontWeight.bold : FontWeight.w500,
-            fontSize: 12,
-          ),
-        ),
-        selected: selected,
-        onSelected: (_) => setState(() => _typeFilter = type),
-        showCheckmark: false,
-        backgroundColor: isDark ? WazyColors.slate : WazyColors.cloud,
-        selectedColor: isDark
-            ? WazyColors.navyPrimary.withOpacity(0.4)
-            : WazyColors.navyPrimary.withOpacity(0.12),
-        side: BorderSide(
-          color: selected
-              ? (isDark ? WazyColors.cyanSecondary : WazyColors.navyPrimary)
-              : (isDark ? WazyColors.slateLight.withOpacity(0.3) : WazyColors.fog),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(ThemeData theme) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          EmptyStateIllustration(
-            scene: _hasActiveFilters
-                ? EmptyStateScene.search
-                : EmptyStateScene.document,
-            size: 120,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _hasActiveFilters ? 'No documents match' : 'No documents yet',
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: theme.colorScheme.outline,
-            ),
-          ),
-          const SizedBox(height: 8),
-          if (!_hasActiveFilters)
-            FilledButton.icon(
-              onPressed: () async {
-                // Free plan document limit — paywall when the quota is full.
-                if (!await enforceDocumentLimit(context)) return;
-                await context.push('/scan');
-                await _loadData();
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('Add first document'),
-            )
-          else
-            TextButton(
-              onPressed: _clearFilters,
-              child: const Text('Clear filters'),
-            ),
-        ],
       ),
     );
   }
@@ -576,8 +922,9 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                   Expanded(
                     child: Text(
                       item.displayName,
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w600),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -588,8 +935,8 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                       color: item.daysRemaining <= 7
                           ? Colors.red
                           : item.daysRemaining <= 30
-                              ? Colors.orange
-                              : theme.colorScheme.primary,
+                          ? Colors.orange
+                          : theme.colorScheme.primary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -598,22 +945,28 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
             ),
             const Divider(height: 1),
             ListTile(
-              leading: const Icon(Icons.event_available_rounded,
-                  color: Colors.green),
+              leading: const Icon(
+                Icons.event_available_rounded,
+                color: Colors.green,
+              ),
               title: const Text('Mark as renewed'),
               subtitle: const Text('Reset the expiry clock'),
               onTap: () => Navigator.pop(ctx, 'renewed'),
             ),
             ListTile(
-              leading:
-                  const Icon(Icons.edit_calendar_rounded, color: Colors.blue),
+              leading: const Icon(
+                Icons.edit_calendar_rounded,
+                color: Colors.blue,
+              ),
               title: const Text('Update expiry date'),
               subtitle: const Text('Correct or adjust the date'),
               onTap: () => Navigator.pop(ctx, 'date'),
             ),
             ListTile(
-              leading: const Icon(Icons.person_add_alt_rounded,
-                  color: Colors.indigo),
+              leading: const Icon(
+                Icons.person_add_alt_rounded,
+                color: Colors.indigo,
+              ),
               title: const Text('Assign to…'),
               subtitle: const Text('Responsible team member'),
               onTap: () => Navigator.pop(ctx, 'assign'),
@@ -663,8 +1016,9 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
           item,
           result.replacementFile!,
         );
-        final refreshed =
-            await DocumentScannerService.instance.getItemById(item.id);
+        final refreshed = await DocumentScannerService.instance.getItemById(
+          item.id,
+        );
         if (refreshed != null) {
           await DocumentScannerService.instance.updateItem(
             refreshed.copyWith(
@@ -747,9 +1101,9 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     await DocumentScannerService.instance.assignTo(item.id, name);
     await _loadData();
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Assigned to $name')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Assigned to $name')));
   }
 
   Future<void> _confirmDelete(ExpiryItem item) async {
@@ -777,176 +1131,118 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     await DocumentScannerService.instance.removeItem(item.id);
     await _loadData();
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${item.displayName} deleted')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('${item.displayName} deleted')));
   }
 }
 
 // ====================================================================
-// Insights header — explains what the list means at a glance
+// Frosted hero widgets — same look as Home's
 // ====================================================================
 
-class _InsightsHeader extends StatelessWidget {
-  final int count;
-  final UrgencySnapshot urgency;
-  final ExpiryItem? nextDue;
-  final double totalUpcomingFees;
+/// Frosted glass icon button used in the hero header.
+class _HeroIconButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
 
-  const _InsightsHeader({
-    required this.count,
-    required this.urgency,
-    required this.nextDue,
-    required this.totalUpcomingFees,
+  const _HeroIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final pending = urgency.pendingActions.length;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: isDark
-              ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.35)
-              : WazyColors.cloud,
-          borderRadius: BorderRadius.circular(14),
-          border: isDark ? null : Border.all(color: WazyColors.fog.withOpacity(0.5)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    pending == 0
-                        ? '$count tracked · all on track'
-                        : '$count tracked · $pending need attention',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      color: isDark ? WazyColors.textPrimary : WazyColors.textPrimaryLight,
-                    ),
-                  ),
-                ),
-                if (urgency.criticalCount > 0)
-                  _insightPill(
-                    theme,
-                    '${urgency.criticalCount} critical',
-                    isDark ? Colors.redAccent : const Color(0xFFDC2626),
-                  ),
-                if (urgency.highCount > 0) ...[
-                  const SizedBox(width: 6),
-                  _insightPill(
-                    theme,
-                    '${urgency.highCount} due ≤30d',
-                    isDark ? Colors.orangeAccent : const Color(0xFFD97706),
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: _insightItem(
-                    theme,
-                    icon: Icons.hourglass_top_rounded,
-                    label: 'Next due',
-                    value: nextDue == null
-                        ? '—'
-                        : '${nextDue!.displayName} · ${nextDue!.daysRemaining}d',
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _insightItem(
-                    theme,
-                    icon: Icons.payments_rounded,
-                    label: 'Upcoming fees',
-                    value: totalUpcomingFees > 0
-                        ? MoneyFormat.aed(totalUpcomingFees, symbol: 'AED ')
-                        : '—',
-                  ),
-                ),
-              ],
-            ),
-          ],
+    return Material(
+      color: Colors.white.withOpacity(0.14),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Tooltip(
+          message: tooltip,
+          child: SizedBox(
+            width: 38,
+            height: 38,
+            child: Icon(icon, color: Colors.white, size: 20),
+          ),
         ),
       ),
     );
   }
+}
 
-  Widget _insightPill(ThemeData theme, String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(10),
+/// Outlined / filled action pill inside the hero header, mirroring Home's
+/// Record/Budget pills.
+class _HeroActionPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool filled;
+  final bool outlined;
+  final VoidCallback onTap;
+
+  const _HeroActionPill({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.filled = false,
+    this.outlined = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    assert(!(filled && outlined));
+    final Color bg;
+    final Color fg;
+    final BorderSide side;
+    if (filled) {
+      bg = WazyColors.cyanSecondary;
+      fg = const Color(0xFF0A0E1A);
+      side = BorderSide.none;
+    } else {
+      bg = Colors.white.withOpacity(0.10);
+      fg = Colors.white;
+      side = BorderSide(color: Colors.white.withOpacity(0.25));
+    }
+
+    return Material(
+      color: bg,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: side,
       ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: color,
+      child: InkWell(
+        customBorder: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
         ),
-      ),
-    );
-  }
-
-  Widget _insightItem(
-    ThemeData theme, {
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    final isDark = theme.brightness == Brightness.dark;
-    final labelColor = isDark ? WazyColors.textMuted : WazyColors.textSecondaryLight;
-    final valueColor = isDark ? WazyColors.textPrimary : WazyColors.textPrimaryLight;
-
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: labelColor),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
+              Icon(icon, size: 16, color: fg),
+              const SizedBox(width: 6),
               Text(
                 label,
                 style: TextStyle(
-                  color: labelColor,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              Text(
-                value,
-                style: TextStyle(
-                  color: valueColor,
+                  color: fg,
                   fontWeight: FontWeight.w600,
-                  fontSize: 12,
+                  fontSize: 13,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
         ),
-      ],
+      ),
     );
   }
 }
 
 // ====================================================================
-// Detailed document card
+// Detailed document card — compact, tinted accent, inline actions
 // ====================================================================
 
 class _DocumentCard extends StatelessWidget {
@@ -963,19 +1259,22 @@ class _DocumentCard extends StatelessWidget {
   Color _accentColor(bool isDark) {
     final days = item.daysRemaining;
     if (isDark) {
-      if (days < 0) return WazyColors.danger;
       if (days <= 7) return WazyColors.danger;
       if (days <= 30) return WazyColors.warning;
       if (days <= 60) return WazyColors.caution;
       return WazyColors.safe;
     } else {
-      if (days < 0) return const Color(0xFFDC2626); // Dark Red
-      if (days <= 7) return const Color(0xFFDC2626);
-      if (days <= 30) return const Color(0xFFD97706); // Dark Amber/Orange
-      if (days <= 60) return const Color(0xFFB45309); // Dark Ochre/Gold
-      return const Color(0xFF059669); // Dark Emerald Green
+      if (days <= 7) return const Color(0xFFDC2626); // Dark red
+      if (days <= 30) return const Color(0xFFD97706); // Dark amber
+      if (days <= 60) return const Color(0xFFB45309); // Dark ochre
+      return const Color(0xFF059669); // Dark emerald
     }
   }
+
+  /// Accent used for the left edge tint. Expired documents keep the danger
+  /// accent even when `daysRemaining` reaches other bands.
+  Color _edgeAccent(bool isDark) =>
+      item.daysRemaining < 0 ? WazyColors.danger : _accentColor(isDark);
 
   String get _statusLabel {
     final days = item.daysRemaining;
@@ -1015,7 +1314,7 @@ class _DocumentCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final accent = _accentColor(isDark);
+    final accent = _edgeAccent(isDark);
 
     return Material(
       color: isDark
@@ -1036,198 +1335,229 @@ class _DocumentCard extends StatelessWidget {
                   : WazyColors.fog.withOpacity(0.5),
             ),
           ),
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header row
-              Row(
-                children: [
-                  DepartmentLogo(
-                    item: item,
-                    size: 44,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
+          // IntrinsicHeight: the colored edge must stretch to the card's
+          // height, but the card sits in an unbounded scroll context where
+          // CrossAxisAlignment.stretch alone would force infinite height.
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Colored urgency edge.
+                Container(width: 4, color: accent.withOpacity(0.8)),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          item.displayName,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                            color: isDark ? WazyColors.textPrimary : WazyColors.textPrimaryLight,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        // Header row.
+                        Row(
+                          children: [
+                            DepartmentLogo(item: item, size: 44),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.displayName,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                      color: isDark
+                                          ? WazyColors.textPrimary
+                                          : WazyColors.textPrimaryLight,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    item.docType.displayName,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: isDark
+                                          ? WazyColors.textMuted
+                                          : WazyColors.textSecondaryLight,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  item.daysRemaining < 0
+                                      ? '${-item.daysRemaining}d overdue'
+                                      : '${item.daysRemaining}d left',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                    color: accent,
+                                  ),
+                                ),
+                                Container(
+                                  margin: const EdgeInsets.only(top: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: accent.withOpacity(
+                                      isDark ? 0.15 : 0.10,
+                                    ),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    _statusLabel,
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: accent,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          item.docType.displayName,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isDark ? WazyColors.textMuted : WazyColors.textSecondaryLight,
+                        // Time-remaining progress bar.
+                        const SizedBox(height: 12),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: _timeProgress,
+                            minHeight: 5,
+                            backgroundColor: isDark
+                                ? theme.colorScheme.surfaceContainerHighest
+                                : WazyColors.mist,
+                            valueColor: AlwaysStoppedAnimation<Color>(accent),
                           ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _timeProgress >= 1.0
+                              ? 'Renewal window fully elapsed'
+                              : '${(100 - _timeProgress * 100).toStringAsFixed(0)}% of the renewal window left',
+                          style: TextStyle(
+                            color: isDark
+                                ? WazyColors.textMuted
+                                : WazyColors.textMutedLight,
+                            fontSize: 10,
+                          ),
+                        ),
+                        // Detail rows.
+                        const SizedBox(height: 10),
+                        Divider(
+                          height: 1,
+                          color: isDark
+                              ? WazyColors.slateLight.withOpacity(0.3)
+                              : WazyColors.fog.withOpacity(0.5),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 4,
+                          children: [
+                            _detail(
+                              theme,
+                              Icons.calendar_today_rounded,
+                              'Expires ${ExpiryItem.formatDate(item.expiresAt)}',
+                            ),
+                            _detail(
+                              theme,
+                              Icons.account_balance_rounded,
+                              item.docType.renewalAuthority,
+                            ),
+                            if (item.location != null)
+                              _detail(
+                                theme,
+                                Icons.location_on_outlined,
+                                item.location!,
+                              ),
+                            if (item.assignedTo != null)
+                              _detail(
+                                theme,
+                                Icons.person_outline_rounded,
+                                'Owner: ${item.assignedTo}',
+                              ),
+                            if (item.renewalFee != null && item.renewalFee! > 0)
+                              _detail(
+                                theme,
+                                Icons.payments_outlined,
+                                'Renewal fee AED ${item.renewalFee!.toStringAsFixed(0)}',
+                              ),
+                            _detail(
+                              theme,
+                              Icons.notifications_active_outlined,
+                              _reminderText,
+                            ),
+                          ],
+                        ),
+                        // Renewal warning — expiry-aware fallback keeps this
+                        // meaningful even when no warning was stored.
+                        if (item.daysRemaining <= 30) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            item.effectiveRenewalWarning,
+                            style: TextStyle(
+                              color: accent,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                        // Inline actions.
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: onAction,
+                                icon: Icon(
+                                  Icons.more_horiz_rounded,
+                                  size: 16,
+                                  color: isDark
+                                      ? WazyColors.cyanSecondary
+                                      : WazyColors.navyPrimary,
+                                ),
+                                label: Text(
+                                  'Actions',
+                                  style: TextStyle(
+                                    color: isDark
+                                        ? WazyColors.cyanSecondary
+                                        : WazyColors.navyPrimary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                  ),
+                                  side: BorderSide(
+                                    color: isDark
+                                        ? WazyColors.cyanSecondary.withOpacity(
+                                            0.4,
+                                          )
+                                        : WazyColors.navyPrimary.withOpacity(
+                                            0.3,
+                                          ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        item.daysRemaining < 0
-                            ? '${-item.daysRemaining}d overdue'
-                            : '${item.daysRemaining}d left',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          color: accent,
-                        ),
-                      ),
-                      Container(
-                        margin: const EdgeInsets.only(top: 2),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: accent.withOpacity(isDark ? 0.15 : 0.10),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          _statusLabel,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: accent,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              // Time-remaining progress bar
-              const SizedBox(height: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: _timeProgress,
-                  minHeight: 5,
-                  backgroundColor: isDark
-                      ? theme.colorScheme.surfaceContainerHighest
-                      : WazyColors.mist,
-                  valueColor: AlwaysStoppedAnimation<Color>(accent),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _timeProgress >= 1.0
-                    ? 'Renewal window fully elapsed'
-                    : '${(100 - _timeProgress * 100).toStringAsFixed(0)}% of the renewal window left',
-                style: TextStyle(
-                  color: isDark ? WazyColors.textMuted : WazyColors.textMutedLight,
-                  fontSize: 10,
-                ),
-              ),
-              // Detail rows
-              const SizedBox(height: 10),
-              Divider(
-                height: 1,
-                color: isDark
-                    ? WazyColors.slateLight.withOpacity(0.3)
-                    : WazyColors.fog.withOpacity(0.5),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 12,
-                runSpacing: 4,
-                children: [
-                  _detail(
-                    theme,
-                    Icons.calendar_today_rounded,
-                    'Expires ${ExpiryItem.formatDate(item.expiresAt)}',
-                  ),
-                  _detail(
-                    theme,
-                    Icons.account_balance_rounded,
-                    item.docType.renewalAuthority,
-                  ),
-                  if (item.location != null)
-                    _detail(
-                      theme,
-                      Icons.location_on_outlined,
-                      item.location!,
-                    ),
-                  if (item.assignedTo != null)
-                    _detail(
-                      theme,
-                      Icons.person_outline_rounded,
-                      'Owner: ${item.assignedTo}',
-                    ),
-                  if (item.renewalFee != null && item.renewalFee! > 0)
-                    _detail(
-                      theme,
-                      Icons.payments_outlined,
-                      'Renewal fee AED ${item.renewalFee!.toStringAsFixed(0)}',
-                    ),
-                  _detail(
-                    theme,
-                    Icons.notifications_active_outlined,
-                    _reminderText,
-                  ),
-                ],
-              ),
-              // Renewal warning — expiry-aware fallback keeps this
-              // meaningful even when no warning was stored on the item.
-              if (item.daysRemaining <= 30) ...[
-                const SizedBox(height: 8),
-                Text(
-                  item.effectiveRenewalWarning,
-                  style: TextStyle(
-                    color: accent,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
-              // Quick action: mark renewed
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: onAction,
-                      icon: Icon(
-                        Icons.more_horiz_rounded,
-                        size: 16,
-                        color: isDark ? WazyColors.cyanSecondary : WazyColors.navyPrimary,
-                      ),
-                      label: Text(
-                        'Actions',
-                        style: TextStyle(
-                          color: isDark ? WazyColors.cyanSecondary : WazyColors.navyPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        side: BorderSide(
-                          color: isDark
-                              ? WazyColors.cyanSecondary.withOpacity(0.4)
-                              : WazyColors.navyPrimary.withOpacity(0.3),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -1248,7 +1578,9 @@ class _DocumentCard extends StatelessWidget {
         Text(
           text,
           style: TextStyle(
-            color: isDark ? WazyColors.textSecondary : WazyColors.textPrimaryLight,
+            color: isDark
+                ? WazyColors.textSecondary
+                : WazyColors.textPrimaryLight,
             fontSize: 12,
           ),
         ),
