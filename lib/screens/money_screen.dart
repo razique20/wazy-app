@@ -360,9 +360,6 @@ class _MoneyScreenState extends State<MoneyScreen> {
         ],
       ),
     );
-        ],
-      ),
-    );
   }
 
   /// Horizontal inset for cards inside the content sheet (the old layout
