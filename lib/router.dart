@@ -179,17 +179,17 @@ final router = GoRouter(
   errorBuilder: (context, state) => Scaffold(
     body: Center(child: Text('Page not found: ${state.uri}')),
   ),
-);
-
-/// Bottom navigation shell with the four main tabs.
+);/// Bottom navigation shell with the four main tabs.
 ///
 /// Floating dark pill design: icon-only destinations with a filled circular
-/// indicator for the active tab, and a distinct search action in the middle
-/// that opens the global search on the root navigator.
+/// indicator for the active tab.
 ///
 /// Destinations carry live context:
 /// * Documents — red badge when any tracked document needs action (≤30 days).
 /// * Money — amber dot when a budget is ≥80% used, red when ≥100%.
+///
+/// Global search stays reachable from the Home categories grid, the
+/// Documents hero, and the Money/Settings quick actions.
 class _AppShell extends StatefulWidget {
   final StatefulNavigationShell navigationShell;
 
@@ -302,13 +302,6 @@ class _AppShellState extends State<_AppShell> {
                   onTap: () => _goBranch(1),
                 ),
                 _NavPillItem(
-                  icon: Icons.search_rounded,
-                  active: false,
-                  tooltip: 'Search',
-                  isSearchAction: true,
-                  onTap: () => context.push('/search'),
-                ),
-                _NavPillItem(
                   icon: widget.navigationShell.currentIndex == 2
                       ? Icons.description_rounded
                       : Icons.description_outlined,
@@ -350,9 +343,6 @@ class _NavPillItem extends StatelessWidget {
   final bool showDot;
   final Color? dotColor;
 
-  /// The middle search action renders slightly recessed instead of active.
-  final bool isSearchAction;
-
   const _NavPillItem({
     required this.icon,
     required this.active,
@@ -360,7 +350,6 @@ class _NavPillItem extends StatelessWidget {
     required this.onTap,
     this.showDot = false,
     this.dotColor,
-    this.isSearchAction = false,
   });
 
   @override
@@ -385,18 +374,14 @@ class _NavPillItem extends StatelessWidget {
                       shape: BoxShape.circle,
                       color: active
                           ? Colors.white.withOpacity(0.16)
-                          : isSearchAction
-                              ? Colors.white.withOpacity(0.08)
-                              : Colors.transparent,
+                          : Colors.transparent,
                     ),
                     child: Icon(
                       icon,
                       size: 22,
                       color: active
                           ? Colors.white
-                          : Colors.white.withOpacity(
-                              isSearchAction ? 0.85 : 0.55,
-                            ),
+                          : Colors.white.withOpacity(0.55),
                     ),
                   ),
                   if (showDot)

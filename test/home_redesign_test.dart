@@ -55,12 +55,13 @@ void main() {
         tester.view.physicalSize.height / tester.view.devicePixelRatio;
     expect(iconCenter.dy, greaterThan(screenH * 0.85));
 
-    // All five pill actions are present (4 tabs + center search).
+    // All four tab destinations are present (center search action was
+    // removed from the pill).
     expect(find.byTooltip('Home'), findsOneWidget);
     expect(find.byTooltip('Money'), findsOneWidget);
-    expect(find.byTooltip('Search'), findsOneWidget);
     expect(find.byTooltip('Documents'), findsOneWidget);
     expect(find.byTooltip('Profile'), findsOneWidget);
+    expect(find.byTooltip('Search'), findsNothing);
 
     // Tap the Money tab through the pill and back home.
     await tester.tap(find.byTooltip('Money'));
