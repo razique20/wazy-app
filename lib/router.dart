@@ -259,8 +259,8 @@ class _AppShellState extends State<_AppShell> {
       bottomNavigationBar: SafeArea(
         top: false,
         child: Container(
-          margin: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          margin: const EdgeInsets.only(left: 16, right: 16, bottom: 0),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
             // Near-black like the reference bar — must stay clearly distinct
             // from the navy hero backdrop on the Home tab.
