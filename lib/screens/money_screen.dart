@@ -19,7 +19,6 @@ import '../services/entitlement_service.dart';
 import '../services/finance_service.dart';
 import '../services/smart_category_engine.dart';
 import '../theme/app_theme.dart';
-import '../widgets/cash_flow_forecast_chart.dart';
 import '../widgets/indicators/empty_state_illustration.dart';
 import '../widgets/dialogs/natural_language_money_add_dialog.dart';
 import '../widgets/dialogs/upgrade_dialog.dart';
@@ -107,287 +106,227 @@ class _MoneyScreenState extends State<MoneyScreen> {
     final summary = FinanceMath.summaryForMonth(_transactions, now);
     final spendByCategory = FinanceMath.spendByCategory(_transactions, now);
 
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
-      appBar: AppBar(
-        title: const Text('Money'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.auto_awesome_rounded),
-            tooltip: 'Auto-Categorize with AI',
-            onPressed: _runAutoCategorizationAI,
-          ),
-          IconButton(
-            icon: const Icon(Icons.bolt_rounded),
-            tooltip: 'Quick Add with Natural Language',
-            onPressed: () async {
-              final created = await NaturalLanguageMoneyAddDialog.show(context);
-              if (created != null) _reload();
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.ios_share_rounded),
-            tooltip: 'Export CSV',
-            onPressed: _transactions.isEmpty ? null : _exportCsv,
-          ),
-        ],
-      ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 115),
-        child: FloatingActionButton.extended(
-          heroTag: 'money_add_record',
-          onPressed: _showAddTransactionSheet,
-          icon: const Icon(Icons.add_rounded),
-          label: const Text(
-            'Add Record',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          backgroundColor: WazyColors.violetAccent,
-          foregroundColor: Colors.white,
-        ),
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _reload,
-              child: ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 180),
-                children: [
-                  // 1. Key numbers: net / income / spend.
-                  _buildFinancialOverviewCard(theme, summary),
-                  // 2. Urgent anomalies (section adds its own top spacing).
-                  _buildBillSpikeAlertsSection(theme),
-                  const SizedBox(height: 12),
-                  // 3. Budget control.
-                  _buildBudgetsSection(theme, spendByCategory),
-                  const SizedBox(height: 24),
-                  // 4. Spending analysis.
-                  _buildPaceCard(theme, summary),
-                  const SizedBox(height: 24),
-                  _buildWeeklyChart(theme),
-                  const SizedBox(height: 24),
-                  _buildCategoryBreakdown(
-                    theme,
-                    spendByCategory,
-                    summary.expense,
-                  ),
-                  const SizedBox(height: 24),
-                  _buildTopExpenses(theme),
-                  const SizedBox(height: 24),
-                  // 5. Compact AI summary, below the spending story it reports on.
-                  const MonthlySummaryCard(),
-                  const SizedBox(height: 24),
-                  // 6. Upcoming renewals & forecast.
-                  _buildSmallRenewalOutlookCard(theme),
-                  const SizedBox(height: 24),
-                  _buildRenewalBreakdown(theme),
-                  const SizedBox(height: 24),
-                  _buildCashFlowSection(theme),
-                  const SizedBox(height: 24),
-                  // 7. Planning & history.
-                  _buildRecurringSection(theme),
-                  const SizedBox(height: 24),
-                  _buildEnvelopesSection(theme),
-                  const SizedBox(height: 24),
-                  _buildTransactionsSection(theme),
-                ],
+      // Navy backdrop behind the hero; the content sheet covers the rest.
+      // Same backdrop colors as the redesigned Home and Documents tabs.
+      backgroundColor:
+          isDark ? WazyColors.obsidian : WazyColors.navyPrimaryDark,
+      body: SafeArea(
+        bottom: false,
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                color: theme.colorScheme.secondary,
+                onRefresh: _reload,
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: _buildHeroHeader(theme, summary),
+                    ),
+                    SliverToBoxAdapter(
+                      child: Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(24),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 20),
+                            // Urgent anomalies (section owns its top spacing).
+                            _sheetPadding(_buildBillSpikeAlertsSection(theme)),
+                            const SizedBox(height: 12),
+                            // 1. Budget control.
+                            _sheetPadding(
+                              _buildBudgetsSection(theme, spendByCategory),
+                            ),
+                            const SizedBox(height: 24),
+                            // 2. Spending analysis.
+                            _sheetPadding(_buildPaceCard(theme, summary)),
+                            const SizedBox(height: 24),
+                            _sheetPadding(_buildWeeklyChart(theme)),
+                            const SizedBox(height: 24),
+                            _sheetPadding(
+                              _buildCategoryBreakdown(
+                                theme,
+                                spendByCategory,
+                                summary.expense,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            _sheetPadding(_buildTopExpenses(theme)),
+                            const SizedBox(height: 24),
+                            // 3. Compact AI summary, below the spending story
+                            //    it reports on.
+                            _sheetPadding(const MonthlySummaryCard()),
+                            const SizedBox(height: 24),
+                            // 4. Upcoming renewals & forecast.
+                            _sheetPadding(_buildSmallRenewalOutlookCard(theme)),
+                            const SizedBox(height: 24),
+                            _sheetPadding(_buildRenewalBreakdown(theme)),
+                            const SizedBox(height: 24),
+                            _sheetPadding(_buildCashFlowSection(theme)),
+                            const SizedBox(height: 24),
+                            // 5. Planning & history.
+                            _sheetPadding(_buildRecurringSection(theme)),
+                            const SizedBox(height: 24),
+                            _sheetPadding(_buildEnvelopesSection(theme)),
+                            const SizedBox(height: 24),
+                            _sheetPadding(_buildTransactionsSection(theme)),
+                            // Keep the last card scrollable clear of the
+                            // floating nav pill (height + margins ≈ 80).
+                            SizedBox(
+                              height:
+                                  8 +
+                                  MediaQuery.of(context).padding.bottom +
+                                  80,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // White filler: extends the sheet across the rest of the
+                    // viewport when content is short, and into overscroll —
+                    // the navy backdrop never peeks out below the content,
+                    // behind the floating nav pill.
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      fillOverscroll: true,
+                      child: ColoredBox(color: theme.colorScheme.surface),
+                    ),
+                  ],
+                ),
               ),
-            ),
+      ),
     );
   }
 
   // ------------------------------------------------------------------
-  // Financial Overview (Month Income, Spend & Net)
+  // Hero header: title, quick actions, month net + action pills
   // ------------------------------------------------------------------
 
-  Widget _buildFinancialOverviewCard(
+  /// Navy gradient hero, same family as Home/Documents: title + quick
+  /// actions, one live status line, the month net as the headline number,
+  /// and the primary action pills.
+  Widget _buildHeroHeader(
     ThemeData theme,
     ({double income, double expense, double net}) summary,
   ) {
     final monthName = DateFormat('MMMM yyyy').format(DateTime.now());
-    const greenColor = Color(0xFF10B981);
-    const redColor = Color(0xFFEF4444);
 
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1E1B4B), Color(0xFF312E81)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF312E81).withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header: Month Title & Add Record Button
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.insights_rounded,
-                    size: 20,
-                    color: WazyColors.cyanAccent,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '$monthName Overview',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
+              Text(
+                'Money',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-              ElevatedButton.icon(
-                onPressed: _showAddTransactionSheet,
-                icon: const Icon(Icons.add_rounded, size: 16),
-                label: const Text(
-                  'Add Record',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: WazyColors.cyanAccent,
-                  foregroundColor: const Color(0xFF0A0E1A),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  visualDensity: VisualDensity.compact,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
+              const Spacer(),
+              _MoneyHeroIconButton(
+                icon: Icons.auto_awesome_rounded,
+                tooltip: 'Auto-Categorize with AI',
+                onTap: _runAutoCategorizationAI,
+              ),
+              const SizedBox(width: 8),
+              _MoneyHeroIconButton(
+                icon: Icons.bolt_rounded,
+                tooltip: 'Quick Add with Natural Language',
+                onTap: () async {
+                  final created = await NaturalLanguageMoneyAddDialog.show(
+                    context,
+                  );
+                  if (created != null) _reload();
+                },
+              ),
+              const SizedBox(width: 8),
+              _MoneyHeroIconButton(
+                icon: Icons.ios_share_rounded,
+                tooltip: 'Export CSV',
+                enabled: _transactions.isNotEmpty,
+                onTap: _exportCsv,
               ),
             ],
           ),
           const SizedBox(height: 16),
-
-          // Main Net Balance Display
-          const Text(
-            'Net Cash Flow',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.white60,
-              fontWeight: FontWeight.w500,
+          // One-line live status: month + record count.
+          Text(
+            '$monthName · ${_transactions.length} records',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.white.withOpacity(0.7),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Net this month',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.white.withOpacity(0.6),
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            MoneyFormat.aed(summary.net),
-            style: TextStyle(
-              fontSize: 30,
-              fontWeight: FontWeight.w800,
-              color: summary.net >= 0
-                  ? WazyColors.cyanAccent
-                  : Colors.redAccent,
-              letterSpacing: -0.5,
+          const SizedBox(height: 4),
+          // FittedBox: long balances scale down instead of overflowing the
+          // hero on narrow screens (same fix as Home). No Flexible wrapper —
+          // the hero Column gets unbounded height inside the sliver, so a
+          // flex child here would crash the layout.
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              MoneyFormat.aed(summary.net),
+              style: theme.textTheme.displayLarge?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -1.0,
+              ),
             ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${MoneyFormat.aed(summary.income)} in · ${MoneyFormat.aed(summary.expense)} out',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.white.withOpacity(0.6),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 16),
-          const Divider(color: Colors.white12, height: 1),
-          const SizedBox(height: 14),
-
-          // Income vs Spend Sub-Row
-          Row(
+          // Action pills: navigation + the primary add action. Wrap (not
+          // Row): on narrow screens the pills would overflow — they now
+          // flow onto a second line instead, so the hero can never clip.
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: greenColor.withAlpha(40),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.call_received_rounded,
-                        size: 14,
-                        color: greenColor,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Income',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.white60,
-                            ),
-                          ),
-                          Text(
-                            MoneyFormat.aed(summary.income),
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+              _MoneyActionPill(
+                icon: Icons.account_balance_wallet_rounded,
+                label: 'Budgets',
+                onTap: () => context.push('/budgets'),
               ),
-              Container(height: 24, width: 1, color: Colors.white12),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: redColor.withAlpha(40),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.call_made_rounded,
-                        size: 14,
-                        color: redColor,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Spend',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.white60,
-                            ),
-                          ),
-                          Text(
-                            MoneyFormat.aed(summary.expense),
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+              _MoneyActionPill(
+                icon: Icons.savings_rounded,
+                label: 'Envelopes',
+                onTap: () => context.push('/envelopes'),
+              ),
+              // Compact filled card — the primary action, styled smaller
+              // than the nav pills so the row stays tight.
+              _MoneyAddCard(
+                icon: Icons.add_rounded,
+                label: 'Add Record',
+                onTap: _showAddTransactionSheet,
               ),
             ],
           ),
@@ -395,6 +334,13 @@ class _MoneyScreenState extends State<MoneyScreen> {
       ),
     );
   }
+
+  /// Horizontal inset for cards inside the content sheet (the old layout
+  /// relied on the ListView's global padding).
+  Widget _sheetPadding(Widget child) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: child,
+      );
 
   Widget _buildBillSpikeAlertsSection(ThemeData theme) {
     // Master switch: user turned bill spike alerts off in Profile.
@@ -683,10 +629,14 @@ class _MoneyScreenState extends State<MoneyScreen> {
                   children: [
                     Row(
                       children: [
-                        Text(
-                          'Cash-Flow Forecast',
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
+                        Flexible(
+                          child: Text(
+                            'Cash-Flow Forecast',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -742,50 +692,6 @@ class _MoneyScreenState extends State<MoneyScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  // ------------------------------------------------------------------
-  // Month summary
-  // ------------------------------------------------------------------
-
-  Widget _buildMonthSummary(
-    ThemeData theme,
-    ({double income, double expense, double net}) summary,
-  ) {
-    final isDark = theme.brightness == Brightness.dark;
-    final greenColor = isDark ? Colors.greenAccent : const Color(0xFF059669);
-    final redColor = isDark ? Colors.redAccent : const Color(0xFFDC2626);
-
-    return Row(
-      children: [
-        Expanded(
-          child: _SummaryCard(
-            label: 'Income',
-            value: MoneyFormat.aed(summary.income),
-            valueColor: greenColor,
-            icon: Icons.call_received_rounded,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _SummaryCard(
-            label: 'Spent',
-            value: MoneyFormat.aed(summary.expense),
-            valueColor: redColor,
-            icon: Icons.north_east_rounded,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _SummaryCard(
-            label: 'Net',
-            value: MoneyFormat.aed(summary.net),
-            valueColor: summary.net >= 0 ? greenColor : redColor,
-            icon: Icons.trending_up_rounded,
-          ),
-        ),
-      ],
     );
   }
 
@@ -887,11 +793,17 @@ class _MoneyScreenState extends State<MoneyScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.outline,
-            fontSize: 10,
+        // FittedBox: long labels ("Projected month-end", "Safe to spend /
+        // day") overflow their third of the card on narrow screens — they
+        // scale down instead of clipping/overlapping the neighbour column.
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.outline,
+              fontSize: 10,
+            ),
           ),
         ),
         const SizedBox(height: 2),
@@ -1336,27 +1248,26 @@ class _MoneyScreenState extends State<MoneyScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.account_balance_rounded,
-                          size: 20,
-                          color: isOverAllocated
-                              ? theme.colorScheme.error
-                              : theme.colorScheme.primary,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Overall Monthly Budget',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                    Icon(
+                      Icons.account_balance_rounded,
+                      size: 20,
+                      color: isOverAllocated
+                          ? theme.colorScheme.error
+                          : theme.colorScheme.primary,
                     ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Overall Monthly Budget',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
                     TextButton.icon(
                       onPressed: _showOverallBudgetSheet,
                       icon: Icon(
@@ -1873,68 +1784,6 @@ class _MoneyScreenState extends State<MoneyScreen> {
             ),
             textAlign: TextAlign.center,
           ),
-        ],
-      ),
-    );
-  }
-}
-
-// ====================================================================
-// Summary card
-// ====================================================================
-
-class _SummaryCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color valueColor;
-  final IconData icon;
-
-  const _SummaryCard({
-    required this.label,
-    required this.value,
-    required this.valueColor,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final neutralIconColor = isDark
-        ? WazyColors.textSecondary
-        : WazyColors.textSecondaryLight;
-    final neutralLabelColor = isDark
-        ? WazyColors.textMuted
-        : WazyColors.textMutedLight;
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isDark ? WazyColors.slate : WazyColors.cloud,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark
-              ? WazyColors.slateLight.withOpacity(0.3)
-              : WazyColors.fog,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 16, color: neutralIconColor),
-          const SizedBox(height: 8),
-          FittedBox(
-            child: Text(
-              value,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-                color: valueColor,
-              ),
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(label, style: TextStyle(color: neutralLabelColor, fontSize: 10)),
         ],
       ),
     );
@@ -3255,4 +3104,146 @@ class _WeekBucket {
   double spend = 0.0;
 
   _WeekBucket(this.start, this.end);
+}
+
+/// Frosted glass icon button in the Money hero header — same style as the
+/// Home/Documents hero icon buttons.
+class _MoneyHeroIconButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+  final bool enabled;
+
+  const _MoneyHeroIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+    this.enabled = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: enabled
+            ? Colors.white.withOpacity(0.14)
+            : Colors.white.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: enabled ? onTap : null,
+          child: SizedBox(
+            width: 38,
+            height: 38,
+            child: Icon(
+              icon,
+              color: enabled
+                  ? Colors.white
+                  : Colors.white.withOpacity(0.35),
+              size: 20,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Compact filled card button for the hero's primary action — a smaller
+/// sibling of the hero pills, so Budgets + Envelopes + Add Record stay
+/// inside narrow screens instead of clipping.
+class _MoneyAddCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _MoneyAddCard({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: WazyColors.cyanSecondary,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: const Color(0xFF0A0E1A)),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Color(0xFF0A0E1A),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Outlined action pill in the Money hero — mirrors the hero pills on Home
+/// (Record/Budget) and Documents (Filter/Sort).
+class _MoneyActionPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _MoneyActionPill({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const bg = Colors.white10;
+    const fg = Colors.white;
+    const side = BorderSide(color: Colors.white24);
+
+    return Material(
+      color: bg,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: side,
+      ),
+      child: InkWell(
+        customBorder: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: fg),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: fg,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
