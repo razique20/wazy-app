@@ -236,12 +236,6 @@ class _MoneyScreenState extends State<MoneyScreen> {
               ),
               const Spacer(),
               _MoneyHeroIconButton(
-                icon: Icons.receipt_long_rounded,
-                tooltip: 'All Transactions',
-                onTap: () => context.push('/records'),
-              ),
-              const SizedBox(width: 8),
-              _MoneyHeroIconButton(
                 icon: Icons.auto_awesome_rounded,
                 tooltip: 'Auto-Categorize with AI',
                 onTap: _runAutoCategorizationAI,
@@ -325,38 +319,47 @@ class _MoneyScreenState extends State<MoneyScreen> {
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 16),
-          // Action pills: navigation + the primary add action. Wrap (not
-          // Row): on narrow screens the pills would overflow — they now
-          // flow onto a second line instead, so the hero can never clip.
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            crossAxisAlignment: WrapCrossAlignment.center,
+          // 3 Navigation Pills in an equal-width row
+          Row(
             children: [
-              _MoneyActionPill(
-                icon: Icons.receipt_long_rounded,
-                label: 'Transactions',
-                onTap: () => context.push('/records'),
+              Expanded(
+                child: _MoneyActionPill(
+                  icon: Icons.receipt_long_rounded,
+                  label: 'Transactions',
+                  onTap: () => context.push('/records'),
+                ),
               ),
-              _MoneyActionPill(
-                icon: Icons.account_balance_wallet_rounded,
-                label: 'Budgets',
-                onTap: () => context.push('/budgets'),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _MoneyActionPill(
+                  icon: Icons.account_balance_wallet_rounded,
+                  label: 'Budgets',
+                  onTap: () => context.push('/budgets'),
+                ),
               ),
-              _MoneyActionPill(
-                icon: Icons.savings_rounded,
-                label: 'Envelopes',
-                onTap: () => context.push('/envelopes'),
-              ),
-              // Compact filled card — the primary action, styled smaller
-              // than the nav pills so the row stays tight.
-              _MoneyAddCard(
-                icon: Icons.add_rounded,
-                label: 'Add Record',
-                onTap: _showAddTransactionSheet,
+              const SizedBox(width: 8),
+              Expanded(
+                child: _MoneyActionPill(
+                  icon: Icons.savings_rounded,
+                  label: 'Envelopes',
+                  onTap: () => context.push('/envelopes'),
+                ),
               ),
             ],
           ),
+          const SizedBox(height: 10),
+          // Primary full-width Add Record button
+          SizedBox(
+            width: double.infinity,
+            child: _MoneyAddCard(
+              icon: Icons.add_rounded,
+              label: 'Add Record',
+              onTap: _showAddTransactionSheet,
+            ),
+          ),
+        ],
+      ),
+    );
         ],
       ),
     );
@@ -3253,18 +3256,22 @@ class _MoneyActionPill extends StatelessWidget {
         ),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
           child: Row(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 16, color: fg),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  color: fg,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
+              Icon(icon, size: 15, color: fg),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: fg,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
