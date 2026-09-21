@@ -1,8 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../models/document_collection.dart';
-import '../models/document_type.dart';
 import '../models/expiry_item.dart';
 import '../models/finance.dart';
 import '../services/alert_preferences_service.dart';
@@ -10,9 +11,11 @@ import '../services/anomaly_detection_service.dart';
 import '../services/collection_service.dart';
 import '../services/document_scanner_service.dart';
 import '../services/finance_service.dart';
+import '../services/theme_service.dart';
 import '../services/urgency_engine.dart';
 import '../theme/app_theme.dart';
 import '../widgets/widgets.dart';
+import 'money_screen.dart';
 
 /// Home tab: cross-tier dashboard.
 ///
@@ -181,33 +184,67 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final urgency = UrgencyEngine().compute(_items);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      // Navy backdrop behind the hero; the content sheet covers the rest.
+      backgroundColor: isDark ? WazyColors.obsidian : WazyColors.navyPrimaryDark,
       body: SafeArea(
+        bottom: false,
         child: _loading
             ? const Center(child: CircularProgressIndicator())
             : RefreshIndicator(
+                color: theme.colorScheme.secondary,
                 onRefresh: _loadData,
-                child: ListView(
+                child: CustomScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 140),
-                  children: [
-                    _buildHeader(theme),
-                    const SizedBox(height: 12),
-                    _buildQuickActionsRow(theme),
-                    const SizedBox(height: 16),
-                    _buildAttentionBanner(theme, urgency),
-                    const SizedBox(height: 16),
-                    _buildStatsRow(theme, urgency),
-                    const SizedBox(height: 16),
-                    _buildBudgetSummary(theme),
-                    if (_expiredItems.isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      _buildExpiredAlert(theme),
-                    ],
-                    const SizedBox(height: 24),
-                    _buildUpcomingSection(theme, urgency),
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: _buildHeroHeader(theme, urgency),
+                    ),
+                    SliverToBoxAdapter(
+                      child: Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(24),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 20),
+                            _buildCategoriesGrid(theme, urgency),
+                            // Both banners own their top margin internally and
+                            // collapse to zero height when not applicable, so
+                            // no reserved gap can ever appear between sections.
+                            _buildAttentionBanner(theme, urgency),
+                            if (_expiredItems.isNotEmpty)
+                              _buildExpiredAlert(theme),
+                            const SizedBox(height: 20),
+                            _buildUpcomingSection(theme, urgency),
+                            // Keep the last tile scrollable clear of the
+                            // floating nav pill (height + margins ≈ 80).
+                            SizedBox(
+                              height:
+                                  8 + MediaQuery.of(context).padding.bottom + 80,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // White filler: extends the sheet across the rest of the
+                    // viewport when content is short, and into overscroll
+                    // (iOS bounce) — the navy backdrop never peeks out below
+                    // the content, behind the floating nav pill. Kept empty:
+                    // a fill-remaining sliver queries the child's intrinsics
+                    // during overscroll, which a shrinkWrap grid can't do.
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      fillOverscroll: true,
+                      child: ColoredBox(color: theme.colorScheme.surface),
+                    ),
                   ],
                 ),
               ),
@@ -215,55 +252,124 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildQuickActionsRow(ThemeData theme) {
+  /// Open the scan flow after enforcing the free-tier document limit.
+  Future<void> _openScanner() async {
+    if (!await enforceDocumentLimit(context)) return;
+    if (mounted) await context.push('/scan');
+  }
+
+  /// Quick-add a money record without leaving Home: the same form sheet the
+  /// Money tab uses; FinanceService notifies and the hero totals refresh.
+  Future<void> _quickAddRecord() async {
+    final created = await showModalBottomSheet<FinanceTransaction>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => const TransactionFormSheet(),
+    );
+    if (created == null) return;
+    await FinanceService.instance.addTransaction(created);
+  }
+
+  // ------------------------------------------------------------------
+  // Categories grid (top of white content sheet, like the reference)
+  // ------------------------------------------------------------------
+
+  Widget _buildCategoriesGrid(ThemeData theme, UrgencySnapshot urgency) {
+    final pending = urgency.pendingActions.length;
+    final isDark = theme.brightness == Brightness.dark;
+    final tileBg = isDark ? WazyColors.slate.withOpacity(0.55) : WazyColors.cloud;
+    final iconColor = isDark ? WazyColors.textPrimary : WazyColors.navyPrimary;
+
+    Widget tile(IconData icon, String label, VoidCallback onTap) =>
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            decoration: BoxDecoration(
+              color: tileBg,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 22,
+                  color: iconColor,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  label,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.8),
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        );
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: ElevatedButton.icon(
-              // Free plan document limit — paywall when the quota is full.
-              onPressed: () async {
-                if (await enforceDocumentLimit(context) && context.mounted) {
-                  await context.push('/scan');
-                }
-              },
-              icon: const Icon(Icons.document_scanner_rounded, size: 18),
-              label: const Text(
-                'Add Document',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: WazyColors.navyPrimary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 2,
-              ),
+          Text(
+            'Categories',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () => context.go('/money'),
-              icon: const Icon(Icons.note_add_rounded, size: 18),
-              label: const Text(
-                'Add Fund / Record',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: WazyColors.cyanSecondary,
-                foregroundColor: const Color(0xFF0A0E1A),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 2,
+          const SizedBox(height: 12),
+          GridView.count(
+            crossAxisCount: 4,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            // Explicit zero: without it the scroll view inherits the shell's
+            // extendBody bottom inset (nav-pill height) as implicit sliver
+            // padding — a ~120px blank band under the tiles on device.
+            padding: EdgeInsets.zero,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: 1.05,
+            children: [
+              tile(Icons.description_rounded, 'Documents',
+                  () => context.go('/documents')),
+              tile(Icons.account_balance_wallet_rounded, 'Budgets',
+                  () => context.push('/budgets')),
+              tile(Icons.calendar_month_rounded, 'Renewals',
+                  () => context.push('/expiry-list')),
+              tile(Icons.savings_rounded, 'Envelopes',
+                  () => context.push('/envelopes')),
+              tile(Icons.receipt_long_rounded, 'Records',
+                  () => context.push('/records')),
+              tile(Icons.trending_up_rounded, 'Forecast',
+                  () => context.push('/cash-flow-forecast')),
+              tile(Icons.search_rounded, 'Search',
+                  () => context.push('/search')),
+              tile(Icons.document_scanner_rounded, 'Scan', () {
+                // Free plan document limit — paywall when the quota is full.
+                unawaited(_openScanner());
+              }),
+            ],
+          ),
+          if (pending > 0) ...[
+            const SizedBox(height: 8),
+            Text(
+              '$pending document${pending == 1 ? '' : 's'} need attention',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: WazyColors.danger,
+                fontWeight: FontWeight.w600,
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -273,65 +379,212 @@ class _HomeScreenState extends State<HomeScreen> {
   // Header: greeting + collection switcher
   // ------------------------------------------------------------------
 
-  Widget _buildHeader(ThemeData theme) {
+  /// Navy gradient hero: greeting + collection switcher, dark-mode quick
+  /// toggle, notification bell, then the month balance and action pills.
+  Widget _buildHeroHeader(ThemeData theme, UrgencySnapshot urgency) {
     final hour = DateTime.now().hour;
     final greeting = hour < 12
         ? 'Good morning'
         : hour < 17
         ? 'Good afternoon'
         : 'Good evening';
+    final isDark = theme.brightness == Brightness.dark;
+
+    final now = DateTime.now();
+    final summary = FinanceMath.summaryForMonth(
+      FinanceService.instance.activeTransactions,
+      now,
+    );
+    final nextRenewal = _nextRenewalLabel();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: Row(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Left: collection avatar + switcher.
-          CircleAvatar(
-            backgroundColor: theme.colorScheme.primaryContainer,
-            child: Icon(
-              _activeCollection?.icon ?? Icons.person_rounded,
-              color: theme.colorScheme.onPrimaryContainer,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: InkWell(
-              onTap: _showCollectionSwitcher,
-              borderRadius: BorderRadius.circular(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+          Row(
+            children: [
+              // Left: collection avatar + switcher.
+              InkWell(
+                onTap: _showCollectionSwitcher,
+                borderRadius: BorderRadius.circular(10),
+                child: Padding(
+                  padding: const EdgeInsets.all(2),
+                  child: Row(
                     children: [
-                      Flexible(
-                        child: Text(
-                          _activeCollection?.name ?? 'Personal',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.14),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          _activeCollection?.icon ?? Icons.person_rounded,
+                          color: Colors.white,
+                          size: 20,
                         ),
                       ),
-                      const Icon(Icons.expand_more_rounded, size: 18),
+                      const SizedBox(width: 10),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            greeting,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: Colors.white.withOpacity(0.65),
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              Text(
+                                _activeCollection?.name ?? 'Personal',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Icon(
+                                Icons.expand_more_rounded,
+                                size: 16,
+                                color: Colors.white.withOpacity(0.7),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ],
                   ),
-                  Text(
-                    _activeCollection?.subtitle ?? greeting,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.outline,
-                    ),
-                  ),
-                ],
+                ),
               ),
+              const Spacer(),
+              // Dark mode toggle.
+              _HeroIconButton(
+                icon: isDark
+                    ? Icons.light_mode_rounded
+                    : Icons.dark_mode_outlined,
+                onTap: () async {
+                  final mode = ThemeService.instance.mode;
+                  await ThemeService.instance.setMode(
+                    mode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark,
+                  );
+                },
+              ),
+              const SizedBox(width: 8),
+              _buildNotificationBell(theme),
+            ],
+          ),
+          const SizedBox(height: 20),
+          // Balance block.
+          Text(
+            'Net this month',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.white.withOpacity(0.6),
             ),
           ),
-          // Right: notifications bell (opens the alert list sheet).
-          _buildNotificationBell(theme),
+          const SizedBox(height: 4),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              // Flexible: inside a Row the FittedBox would otherwise get
+              // unbounded width and never scale down — long balances
+              // overflowed the hero on narrow screens.
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    MoneyFormat.aed(summary.net),
+                    style: theme.textTheme.displayLarge?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -1.0,
+                    ),
+                  ),
+                ),
+              ),
+              if (summary.income > 0 || summary.expense > 0) ...[
+                const SizedBox(width: 12),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'AED',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: Colors.white.withOpacity(0.85),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${MoneyFormat.aed(summary.income)} in · ${MoneyFormat.aed(summary.expense)} out'
+            '${nextRenewal == null ? '' : ' · next: $nextRenewal'}',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.white.withOpacity(0.6),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 16),
+          // Action pills.
+          Row(
+            children: [
+              _HeroActionPill(
+                icon: Icons.south_west_rounded,
+                label: 'Record',
+                outlined: true,
+                onTap: _quickAddRecord,
+              ),
+              const SizedBox(width: 10),
+              _HeroActionPill(
+                icon: Icons.north_east_rounded,
+                label: 'Budget',
+                filled: true,
+                onTap: () => context.push('/budgets'),
+              ),
+              const SizedBox(width: 10),
+              _HeroActionPill(
+                icon: Icons.more_horiz_rounded,
+                label: '',
+                outlined: true,
+                onTap: () => _showCollectionSwitcher(),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
+
+  /// "12 Mar" of the nearest upcoming renewal, or null when none tracked.
+  String? _nextRenewalLabel() {
+    final now = DateTime.now();
+    ExpiryItem? next;
+    for (final item in _items) {
+      if (!item.isActive || item.expiresAt.isBefore(now)) continue;
+      if (next == null || item.expiresAt.isBefore(next.expiresAt)) {
+        next = item;
+      }
+    }
+    if (next == null) return null;
+    return '${next.expiresAt.day} ${_monthAbbrev(next.expiresAt.month)}';
+  }
+
+  static String _monthAbbrev(int month) => const [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      ][month - 1];
 
   // ------------------------------------------------------------------
   // Notifications bell (header) + alert list sheet
@@ -362,20 +615,33 @@ class _HomeScreenState extends State<HomeScreen> {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        IconButton(
-          icon: const Icon(Icons.notifications_outlined),
-          tooltip: 'Notifications',
-          onPressed: _showNotificationsSheet,
+        Material(
+          color: Colors.white.withOpacity(0.14),
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: _showNotificationsSheet,
+            child: const SizedBox(
+              width: 38,
+              height: 38,
+              child: Icon(
+                Icons.notifications_outlined,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+          ),
         ),
         if (count > 0)
           Positioned(
-            right: 6,
-            top: 8,
+            right: -2,
+            top: -2,
             child: Container(
               padding: const EdgeInsets.all(3),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: WazyColors.danger,
                 shape: BoxShape.circle,
+                border: Border.all(color: WazyColors.navyPrimaryDark, width: 1.5),
               ),
               constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
               child: Text(
@@ -565,34 +831,28 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildAttentionBanner(ThemeData theme, UrgencySnapshot urgency) {
     final pending = urgency.pendingActions;
-    // User closed this exact alert count — stay hidden until it changes.
-    if (pending.isNotEmpty && _dismissedAttentionCount == pending.length) {
+    // Nothing urgent, or the user closed this exact alert count: render
+    // nothing. (The old green "all on track" banner was dropped — the hero
+    // header already carries the status, and it left a phantom gap.)
+    if (pending.isEmpty || _dismissedAttentionCount == pending.length) {
       return const SizedBox.shrink();
     }
     final isDark = theme.brightness == Brightness.dark;
 
-    final bannerBg = pending.isEmpty
-        ? (isDark ? const Color(0xFF064E3B) : const Color(0xFFECFDF5))
-        : (isDark ? const Color(0xFF451A1A) : const Color(0xFFFEF2F2));
-    final bannerBorder = pending.isEmpty
-        ? (isDark
-              ? const Color(0xFF059669).withOpacity(0.4)
-              : const Color(0xFFA7F3D0))
-        : (isDark
-              ? const Color(0xFFEF4444).withOpacity(0.4)
-              : const Color(0xFFFCA5A5));
-    final iconColor = pending.isEmpty
-        ? (isDark ? const Color(0xFF34D399) : const Color(0xFF059669))
-        : (isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626));
-    final textColor = pending.isEmpty
-        ? (isDark ? Colors.white : const Color(0xFF065F46))
-        : (isDark ? Colors.white : const Color(0xFF991B1B));
-    final subtitleColor = pending.isEmpty
-        ? (isDark ? const Color(0xFFA7F3D0) : const Color(0xFF047857))
-        : (isDark ? const Color(0xFFFCA5A5) : const Color(0xFFB91C1C));
+    final bannerBg = isDark ? const Color(0xFF451A1A) : const Color(0xFFFEF2F2);
+    final bannerBorder = isDark
+        ? const Color(0xFFEF4444).withOpacity(0.4)
+        : const Color(0xFFFCA5A5);
+    final iconColor = isDark
+        ? const Color(0xFFF87171)
+        : const Color(0xFFDC2626);
+    final textColor = isDark ? Colors.white : const Color(0xFF991B1B);
+    final subtitleColor = isDark
+        ? const Color(0xFFFCA5A5)
+        : const Color(0xFFB91C1C);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
       child: InkWell(
         onTap: () => context.go('/documents'),
         borderRadius: BorderRadius.circular(16),
@@ -613,9 +873,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  pending.isEmpty
-                      ? Icons.check_circle_rounded
-                      : Icons.warning_amber_rounded,
+                  Icons.warning_amber_rounded,
                   color: iconColor,
                   size: 22,
                 ),
@@ -626,9 +884,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      pending.isEmpty
-                          ? 'All documents on track'
-                          : '${pending.length} renewal${pending.length == 1 ? '' : 's'} need attention',
+                      '${pending.length} renewal${pending.length == 1 ? '' : 's'} need attention',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
@@ -637,17 +893,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      pending.isEmpty
-                          ? (_items.isEmpty
-                                ? 'Scan your first document to start tracking.'
-                                : 'Nothing expires in the next 30 days.')
-                          : pending
-                                    .take(2)
-                                    .map((a) => a.displayName)
-                                    .join(', ') +
-                                (pending.length > 2
-                                    ? ' +${pending.length - 2}'
-                                    : ''),
+                      pending
+                                .take(2)
+                                .map((a) => a.displayName)
+                                .join(', ') +
+                          (pending.length > 2
+                              ? ' +${pending.length - 2}'
+                              : ''),
                       style: TextStyle(fontSize: 13, color: subtitleColor),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -687,370 +939,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ------------------------------------------------------------------
-  // Quick stats row: documents, critical, expiring, budget health
-  // ------------------------------------------------------------------
-
-  Widget _buildStatsRow(ThemeData theme, UrgencySnapshot urgency) {
-    final transactions = FinanceService.instance.activeTransactions;
-    final budgets = FinanceService.instance.activeBudgets;
-    final spendByCategory = FinanceMath.spendByCategory(
-      transactions,
-      DateTime.now(),
-    );
-
-    // Budget health: ratio of total spend against total limits.
-    var totalLimit = 0.0;
-    var totalSpentOnBudgets = 0.0;
-    for (final b in budgets) {
-      totalLimit += b.monthlyLimit;
-      totalSpentOnBudgets += spendByCategory[b.category] ?? 0;
-    }
-    final healthRatio = totalLimit <= 0
-        ? null
-        : (totalSpentOnBudgets / totalLimit).clamp(0.0, 1.0);
-
-    final isDark = theme.brightness == Brightness.dark;
-    final greenColor = isDark ? Colors.greenAccent : const Color(0xFF059669);
-    final redColor = isDark ? Colors.redAccent : const Color(0xFFDC2626);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: _statTile(
-              theme,
-              icon: Icons.description_outlined,
-              value: '${_items.length}',
-              label: 'Documents',
-              valueColor: greenColor,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _statTile(
-              theme,
-              icon: Icons.warning_amber_rounded,
-              value: '${urgency.criticalCount}',
-              label: 'Critical',
-              valueColor: urgency.criticalCount > 0 ? redColor : greenColor,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _statTile(
-              theme,
-              icon: Icons.schedule_rounded,
-              value: '${urgency.highCount}',
-              label: '≤30 days',
-              valueColor: urgency.highCount > 0 ? redColor : greenColor,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _statTile(
-              theme,
-              icon: healthRatio != null && healthRatio >= 1.0
-                  ? Icons.trending_down_rounded
-                  : Icons.query_stats_rounded,
-              value: healthRatio == null
-                  ? '—'
-                  : '${(healthRatio * 100).toStringAsFixed(0)}%',
-              label: 'Budget',
-              valueColor: healthRatio != null && healthRatio >= 1.0
-                  ? redColor
-                  : greenColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _statTile(
-    ThemeData theme, {
-    required IconData icon,
-    required String value,
-    required String label,
-    required Color valueColor,
-  }) {
-    final isDark = theme.brightness == Brightness.dark;
-    final neutralIconColor = isDark
-        ? WazyColors.textSecondary
-        : WazyColors.textSecondaryLight;
-    final neutralLabelColor = isDark
-        ? WazyColors.textMuted
-        : WazyColors.textMutedLight;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
-      decoration: BoxDecoration(
-        color: isDark ? WazyColors.slate : WazyColors.cloud,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark
-              ? WazyColors.slateLight.withOpacity(0.3)
-              : WazyColors.fog,
-        ),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, size: 18, color: neutralIconColor),
-          const SizedBox(height: 4),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              value,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                color: valueColor,
-              ),
-            ),
-          ),
-          Text(
-            label,
-            style: TextStyle(color: neutralLabelColor, fontSize: 10),
-            maxLines: 1,
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ------------------------------------------------------------------
-  // Budget summary card (Money tier) — compact, one tap for details
-  // ------------------------------------------------------------------
-
-  Widget _buildBudgetSummary(ThemeData theme) {
-    final now = DateTime.now();
-    final transactions = FinanceService.instance.activeTransactions;
-    final summary = FinanceMath.summaryForMonth(transactions, now);
-    final outlook = FinanceMath.renewalOutlook(_items, 90);
-    final spendByCategory = FinanceMath.spendByCategory(transactions, now);
-    final budgets = FinanceService.instance.activeBudgets;
-
-    // Top spending category this month.
-    String topCategoryLabel = '';
-    double topCategoryAmount = 0;
-    for (final entry in spendByCategory.entries) {
-      if (entry.value > topCategoryAmount) {
-        topCategoryAmount = entry.value;
-        topCategoryLabel = entry.key.displayName;
-      }
-    }
-
-    // Budget health line.
-    var totalLimit = 0.0;
-    var totalSpentOnBudgets = 0.0;
-    for (final b in budgets) {
-      totalLimit += b.monthlyLimit;
-      totalSpentOnBudgets += spendByCategory[b.category] ?? 0;
-    }
-    String healthText = '';
-    Color? healthColor;
-    if (totalLimit > 0) {
-      final ratio = totalSpentOnBudgets / totalLimit;
-      if (ratio >= 1.0) {
-        healthText =
-            'Budgets exceeded — ${MoneyFormat.aed(totalSpentOnBudgets - totalLimit)} over';
-        healthColor = Colors.red;
-      } else if (ratio >= 0.8) {
-        healthText =
-            'Close to budget — ${(ratio * 100).toStringAsFixed(0)}% used';
-        healthColor = Colors.orange;
-      } else {
-        healthText =
-            'On track — ${(ratio * 100).toStringAsFixed(0)}% of budget used';
-        healthColor = Colors.green;
-      }
-    }
-
-    // Daily pace: average spend per day elapsed this month.
-    final dayOfMonth = now.day;
-    final dailyPace = dayOfMonth > 0 ? summary.expense / dayOfMonth : 0.0;
-    final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
-    final projected = dailyPace * daysInMonth;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: InkWell(
-        onTap: () => context.go('/money'),
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.calendar_month_rounded,
-                    size: 18,
-                    color: theme.colorScheme.outline,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'This month',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    size: 18,
-                    color: theme.colorScheme.outline,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _moneyColumn(
-                      theme,
-                      'Income',
-                      MoneyFormat.aed(summary.income),
-                      Colors.green,
-                    ),
-                  ),
-                  Container(width: 1, height: 32, color: theme.dividerColor),
-                  Expanded(
-                    child: _moneyColumn(
-                      theme,
-                      'Spent',
-                      MoneyFormat.aed(summary.expense),
-                      Colors.red,
-                    ),
-                  ),
-                  Container(width: 1, height: 32, color: theme.dividerColor),
-                  Expanded(
-                    child: _moneyColumn(
-                      theme,
-                      'Net',
-                      MoneyFormat.aed(summary.net),
-                      summary.net >= 0 ? Colors.teal : Colors.deepOrange,
-                    ),
-                  ),
-                ],
-              ),
-              if (topCategoryLabel.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.pie_chart_rounded,
-                      size: 13,
-                      color: theme.colorScheme.outline,
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        'Top spend: $topCategoryLabel · ${MoneyFormat.aed(topCategoryAmount)}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.outline,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-              if (summary.expense > 0) ...[
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.price_change_rounded,
-                      size: 13,
-                      color: theme.colorScheme.outline,
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        'Pace: ${MoneyFormat.aed(dailyPace)}/day · projected ${MoneyFormat.aed(projected)}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.outline,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-              if (healthText.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(
-                      healthColor == Colors.red
-                          ? Icons.error_outline_rounded
-                          : Icons.check_circle_outline_rounded,
-                      size: 13,
-                      color: healthColor,
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        healthText,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: healthColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-              if (outlook > 0) ...[
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.event_repeat_rounded,
-                        size: 14,
-                        color: theme.colorScheme.primary,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          '${MoneyFormat.aed(outlook)} in renewals due within 90 days',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ------------------------------------------------------------------
   // Expired documents alert
   // ------------------------------------------------------------------
 
@@ -1059,7 +947,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final worst = expired.first;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: InkWell(
         onTap: () => context.push('/document/${worst.id}'),
         borderRadius: BorderRadius.circular(14),
@@ -1116,36 +1004,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _moneyColumn(
-    ThemeData theme,
-    String label,
-    String value,
-    Color color,
-  ) {
-    return Column(
-      children: [
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            value,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.outline,
-            fontSize: 11,
-          ),
-        ),
-      ],
     );
   }
 
@@ -1302,6 +1160,103 @@ class _UpcomingTile extends StatelessWidget {
                       : WazyColors.safe,
                 ),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Frosted glass icon button used in the hero header (dark-mode toggle).
+class _HeroIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _HeroIconButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white.withOpacity(0.14),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: SizedBox(
+          width: 38,
+          height: 38,
+          child: Icon(icon, color: Colors.white, size: 20),
+        ),
+      ),
+    );
+  }
+}
+
+/// Outlined / filled action pill inside the hero header (Request / Transfer
+/// style from the reference).
+class _HeroActionPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool filled;
+  final bool outlined;
+  final VoidCallback onTap;
+
+  const _HeroActionPill({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.filled = false,
+    this.outlined = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    assert(!(filled && outlined));
+    final Color bg;
+    final Color fg;
+    final BorderSide side;
+    if (filled) {
+      bg = WazyColors.cyanSecondary;
+      fg = const Color(0xFF0A0E1A);
+      side = BorderSide.none;
+    } else {
+      bg = Colors.white.withOpacity(0.10);
+      fg = Colors.white;
+      side = BorderSide(color: Colors.white.withOpacity(0.25));
+    }
+
+    return Material(
+      color: bg,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: side,
+      ),
+      child: InkWell(
+        customBorder: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        onTap: onTap,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: label.isEmpty ? 14 : 18,
+            vertical: 10,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: fg),
+              if (label.isNotEmpty) ...[
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: fg,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
             ],
           ),
         ),

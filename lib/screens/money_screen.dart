@@ -1450,7 +1450,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
             final spent = spendByCategory[budget.category] ?? 0;
             return Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: _BudgetRow(
+              child: BudgetRow(
                 budget: budget,
                 spent: spent,
                 onEdit: () => _showBudgetSheet(existing: budget),
@@ -1549,7 +1549,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
           ..._envelopes.map(
             (envelope) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: _EnvelopeCard(
+              child: EnvelopeCard(
                 envelope: envelope,
                 onAdd: () => _adjustEnvelope(envelope, 100),
                 onWithdraw: () => _adjustEnvelope(envelope, -100),
@@ -1607,7 +1607,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
                 for (var i = 0; i < recent.length; i++) ...[
                   if (i > 0)
                     Divider(height: 1, indent: 56, color: theme.dividerColor),
-                  _TransactionTile(transaction: recent[i]),
+                  TransactionTile(transaction: recent[i]),
                 ],
               ],
             ),
@@ -1628,7 +1628,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => const _TransactionFormSheet(),
+      builder: (_) => const TransactionFormSheet(),
     );
     if (created == null) return;
     await FinanceService.instance.addTransaction(created);
@@ -1710,7 +1710,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
-        child: _OverallBudgetFormSheet(currentLimit: current),
+        child: OverallBudgetFormSheet(currentLimit: current),
       ),
     );
     if (result == null) return;
@@ -1738,7 +1738,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
-        child: _BudgetFormSheet(
+        child: CategoryBudgetFormSheet(
           existing: existing,
           maxAllowedLimit: maxAllowed,
         ),
@@ -1755,7 +1755,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => const _EnvelopeFormSheet(),
+      builder: (_) => const EnvelopeFormSheet(),
     );
     if (result == null) return;
     await FinanceService.instance.addEnvelope(result.$1, result.$2, result.$3);
@@ -1945,13 +1945,13 @@ class _SummaryCard extends StatelessWidget {
 // Budget row
 // ====================================================================
 
-class _BudgetRow extends StatelessWidget {
+class BudgetRow extends StatelessWidget {
   final CategoryBudget budget;
   final double spent;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
-  const _BudgetRow({
+  const BudgetRow({
     required this.budget,
     required this.spent,
     required this.onEdit,
@@ -2042,13 +2042,13 @@ class _BudgetRow extends StatelessWidget {
 // Envelope card
 // ====================================================================
 
-class _EnvelopeCard extends StatelessWidget {
+class EnvelopeCard extends StatelessWidget {
   final SavingsEnvelope envelope;
   final VoidCallback onAdd;
   final VoidCallback onWithdraw;
   final VoidCallback onDelete;
 
-  const _EnvelopeCard({
+  const EnvelopeCard({
     required this.envelope,
     required this.onAdd,
     required this.onWithdraw,
@@ -2145,10 +2145,10 @@ class _EnvelopeCard extends StatelessWidget {
 // Transaction tile
 // ====================================================================
 
-class _TransactionTile extends StatelessWidget {
+class TransactionTile extends StatelessWidget {
   final FinanceTransaction transaction;
 
-  const _TransactionTile({required this.transaction});
+  const TransactionTile({required this.transaction});
 
   @override
   Widget build(BuildContext context) {
@@ -2212,14 +2212,14 @@ class _TransactionTile extends StatelessWidget {
 // Transaction form sheet
 // ====================================================================
 
-class _TransactionFormSheet extends StatefulWidget {
-  const _TransactionFormSheet();
+class TransactionFormSheet extends StatefulWidget {
+  const TransactionFormSheet();
 
   @override
-  State<_TransactionFormSheet> createState() => _TransactionFormSheetState();
+  State<TransactionFormSheet> createState() => _TransactionFormSheetState();
 }
 
-class _TransactionFormSheetState extends State<_TransactionFormSheet> {
+class _TransactionFormSheetState extends State<TransactionFormSheet> {
   FinanceKind _kind = FinanceKind.expense;
   FinanceCategory _category = FinanceCategory.other;
   bool _repeatMonthly = false;
@@ -2865,17 +2865,18 @@ class _RecurringFormSheetState extends State<_RecurringFormSheet> {
 // Overall Budget form sheet
 // ====================================================================
 
-class _OverallBudgetFormSheet extends StatefulWidget {
+class OverallBudgetFormSheet extends StatefulWidget {
   final double? currentLimit;
 
-  const _OverallBudgetFormSheet({this.currentLimit});
+  const OverallBudgetFormSheet({this.currentLimit});
 
   @override
-  State<_OverallBudgetFormSheet> createState() =>
+  State<OverallBudgetFormSheet> createState() =>
       _OverallBudgetFormSheetState();
 }
 
-class _OverallBudgetFormSheetState extends State<_OverallBudgetFormSheet> {
+class _OverallBudgetFormSheetState
+    extends State<OverallBudgetFormSheet> {
   late final TextEditingController _limitController;
 
   @override
@@ -2968,17 +2969,18 @@ class _OverallBudgetFormSheetState extends State<_OverallBudgetFormSheet> {
 // Budget form sheet
 // ====================================================================
 
-class _BudgetFormSheet extends StatefulWidget {
+class CategoryBudgetFormSheet extends StatefulWidget {
   final CategoryBudget? existing;
   final double? maxAllowedLimit;
 
-  const _BudgetFormSheet({this.existing, this.maxAllowedLimit});
+  const CategoryBudgetFormSheet({this.existing, this.maxAllowedLimit});
 
   @override
-  State<_BudgetFormSheet> createState() => _BudgetFormSheetState();
+  State<CategoryBudgetFormSheet> createState() =>
+      _BudgetFormSheetState();
 }
 
-class _BudgetFormSheetState extends State<_BudgetFormSheet> {
+class _BudgetFormSheetState extends State<CategoryBudgetFormSheet> {
   late FinanceCategory _category;
   late final TextEditingController _limitController;
   String? _errorText;
@@ -3156,14 +3158,14 @@ class _BudgetFormSheetState extends State<_BudgetFormSheet> {
 // Envelope form sheet
 // ====================================================================
 
-class _EnvelopeFormSheet extends StatefulWidget {
-  const _EnvelopeFormSheet();
+class EnvelopeFormSheet extends StatefulWidget {
+  const EnvelopeFormSheet();
 
   @override
-  State<_EnvelopeFormSheet> createState() => _EnvelopeFormSheetState();
+  State<EnvelopeFormSheet> createState() => _EnvelopeFormSheetState();
 }
 
-class _EnvelopeFormSheetState extends State<_EnvelopeFormSheet> {
+class _EnvelopeFormSheetState extends State<EnvelopeFormSheet> {
   final _nameController = TextEditingController();
   final _targetController = TextEditingController();
   final _monthlyController = TextEditingController();

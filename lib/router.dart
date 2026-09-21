@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -21,6 +19,9 @@ import 'screens/expiry_list_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/money_screen.dart';
+import 'screens/budgets_screen.dart';
+import 'screens/envelopes_screen.dart';
+import 'screens/records_screen.dart';
 import 'screens/cash_flow_forecast_screen.dart';
 import 'screens/global_search_screen.dart';
 import 'services/auth_service.dart';
@@ -110,6 +111,22 @@ final router = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const CashFlowForecastScreen(),
     ),
+    // Focused pages behind the Home categories grid (Money sub-features).
+    GoRoute(
+      path: '/budgets',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const BudgetsScreen(),
+    ),
+    GoRoute(
+      path: '/envelopes',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const EnvelopesScreen(),
+    ),
+    GoRoute(
+      path: '/records',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const RecordsScreen(),
+    ),
     // 4-tab bottom-nav shell:
     //   Home      — cross-tier dashboard (documents + money summary)
     //   Money     — Tier 2: budgets, envelopes, transactions
@@ -165,6 +182,10 @@ final router = GoRouter(
 );
 
 /// Bottom navigation shell with the four main tabs.
+///
+/// Floating dark pill design: icon-only destinations with a filled circular
+/// indicator for the active tab, and a distinct search action in the middle
+/// that opens the global search on the root navigator.
 ///
 /// Destinations carry live context:
 /// * Documents — red badge when any tracked document needs action (≤30 days).
@@ -230,72 +251,80 @@ class _AppShellState extends State<_AppShell> {
   @override
   Widget build(BuildContext context) {
     final pendingDocs = _items.where((i) => i.daysRemaining <= 30).length;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       body: widget.navigationShell,
       extendBody: true,
-      bottomNavigationBar: ClipRRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? WazyColors.cyan.withOpacity(0.08)
-                      : WazyColors.fog.withOpacity(0.5),
-                  width: 0.5,
-                ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            // Near-black like the reference bar — must stay clearly distinct
+            // from the navy hero backdrop on the Home tab.
+            color: isDark ? const Color(0xFF1E293B) : const Color(0xFF0B1020),
+            borderRadius: BorderRadius.circular(30),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.22),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
               ),
-            ),
-            child: NavigationBar(
-              selectedIndex: widget.navigationShell.currentIndex,
-              onDestinationSelected: (index) => widget.navigationShell.goBranch(
-                index,
-                initialLocation: index == widget.navigationShell.currentIndex,
-              ),
-              destinations: [
-                const NavigationDestination(
-                  icon: Icon(Icons.home_outlined),
-                  selectedIcon: Icon(Icons.home_rounded),
-                  label: 'Home',
+            ],
+          ),
+          // Fixed height: the Center inside each item would otherwise
+          // expand into the loose height constraints of the nav slot.
+          child: SizedBox(
+            height: 56,
+            child: Row(
+              children: [
+                _NavPillItem(
+                  icon: widget.navigationShell.currentIndex == 0
+                      ? Icons.home_rounded
+                      : Icons.home_outlined,
+                  active: widget.navigationShell.currentIndex == 0,
+                  tooltip: 'Home',
+                  onTap: () => _goBranch(0),
                 ),
-                NavigationDestination(
-                  icon: _BadgeIcon(
-                    icon: Icons.account_balance_wallet_outlined,
-                    showDot: _budgetStatus != null,
-                    color: _budgetStatus?.status == BudgetAlertLevel.exceeded
-                        ? WazyColors.danger
-                        : WazyColors.warning,
-                  ),
-                  selectedIcon: _BadgeIcon(
-                    icon: Icons.account_balance_wallet_rounded,
-                    showDot: _budgetStatus != null,
-                    color: _budgetStatus?.status == BudgetAlertLevel.exceeded
-                        ? WazyColors.danger
-                        : WazyColors.warning,
-                  ),
-                  label: 'Money',
+                _NavPillItem(
+                  icon: widget.navigationShell.currentIndex == 1
+                      ? Icons.account_balance_wallet_rounded
+                      : Icons.account_balance_wallet_outlined,
+                  active: widget.navigationShell.currentIndex == 1,
+                  tooltip: 'Money',
+                  showDot: _budgetStatus != null,
+                  dotColor:
+                      _budgetStatus?.status == BudgetAlertLevel.exceeded
+                          ? WazyColors.danger
+                          : WazyColors.warning,
+                  onTap: () => _goBranch(1),
                 ),
-                NavigationDestination(
-                  icon: _BadgeIcon(
-                    icon: Icons.description_outlined,
-                    showDot: pendingDocs > 0,
-                    color: WazyColors.danger,
-                    tooltip: '$pendingDocs need attention',
-                  ),
-                  selectedIcon: _BadgeIcon(
-                    icon: Icons.description_rounded,
-                    showDot: pendingDocs > 0,
-                    color: WazyColors.danger,
-                    tooltip: '$pendingDocs need attention',
-                  ),
-                  label: 'Documents',
+                _NavPillItem(
+                  icon: Icons.search_rounded,
+                  active: false,
+                  tooltip: 'Search',
+                  isSearchAction: true,
+                  onTap: () => context.push('/search'),
                 ),
-                const NavigationDestination(
-                  icon: Icon(Icons.person_outline_rounded),
-                  selectedIcon: Icon(Icons.person_rounded),
-                  label: 'Profile',
+                _NavPillItem(
+                  icon: widget.navigationShell.currentIndex == 2
+                      ? Icons.description_rounded
+                      : Icons.description_outlined,
+                  active: widget.navigationShell.currentIndex == 2,
+                  tooltip: 'Documents',
+                  showDot: pendingDocs > 0,
+                  dotColor: WazyColors.danger,
+                  onTap: () => _goBranch(2),
+                ),
+                _NavPillItem(
+                  icon: widget.navigationShell.currentIndex == 3
+                      ? Icons.person_rounded
+                      : Icons.person_outline_rounded,
+                  active: widget.navigationShell.currentIndex == 3,
+                  tooltip: 'Profile',
+                  onTap: () => _goBranch(3),
                 ),
               ],
             ),
@@ -304,32 +333,96 @@ class _AppShellState extends State<_AppShell> {
       ),
     );
   }
+
+  void _goBranch(int index) => widget.navigationShell.goBranch(
+        index,
+        initialLocation: index == widget.navigationShell.currentIndex,
+      );
 }
 
-/// Icon with a small status dot in the top-right corner.
-class _BadgeIcon extends StatelessWidget {
+/// One icon-only destination inside the floating nav pill. The active tab
+/// gets a filled circular backdrop; status dots mirror the shell badges.
+class _NavPillItem extends StatelessWidget {
   final IconData icon;
+  final bool active;
+  final String tooltip;
+  final VoidCallback onTap;
   final bool showDot;
-  final Color color;
-  final String? tooltip;
+  final Color? dotColor;
 
-  const _BadgeIcon({
+  /// The middle search action renders slightly recessed instead of active.
+  final bool isSearchAction;
+
+  const _NavPillItem({
     required this.icon,
-    required this.showDot,
-    required this.color,
-    this.tooltip,
+    required this.active,
+    required this.tooltip,
+    required this.onTap,
+    this.showDot = false,
+    this.dotColor,
+    this.isSearchAction = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final iconWidget = Icon(icon);
-    if (!showDot) return iconWidget;
-
-    return Badge(
-      isLabelVisible: true,
-      backgroundColor: color,
-      smallSize: 8,
-      child: iconWidget,
+    return Expanded(
+      child: Tooltip(
+        message: tooltip,
+        waitDuration: const Duration(milliseconds: 600),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 9),
+            child: Center(
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: active
+                          ? Colors.white.withOpacity(0.16)
+                          : isSearchAction
+                              ? Colors.white.withOpacity(0.08)
+                              : Colors.transparent,
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 22,
+                      color: active
+                          ? Colors.white
+                          : Colors.white.withOpacity(
+                              isSearchAction ? 0.85 : 0.55,
+                            ),
+                    ),
+                  ),
+                  if (showDot)
+                    Positioned(
+                      right: 4,
+                      top: 3,
+                      child: Container(
+                        width: 9,
+                        height: 9,
+                        decoration: BoxDecoration(
+                          color: dotColor ?? WazyColors.danger,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.9),
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
+

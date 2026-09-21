@@ -26,8 +26,9 @@ import '../widgets/widgets.dart';
 /// 3. My Collections (document workspaces)
 /// 4. Preferences (theme, alert switches, AI summary key)
 /// 5. Reminder Schedule (when renewal alerts fire)
-/// 6. Sign out
 ///
+/// Sign out lives in the app bar's top-right corner — the floating bottom
+/// nav pill covers the end of the scroll content, so it can't live there.
 /// Every control saves immediately — there is no Save button.
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -410,6 +411,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/home'),
         ),
+        // Sign out lives up here, out of the floating nav pill's reach at
+        // the bottom of the scroll content.
+        actions: [
+          if (SupabaseService.hasCredentials && AuthService.instance.isSignedIn)
+            IconButton(
+              tooltip: 'Sign out',
+              icon: const Icon(Icons.logout_rounded),
+              color: theme.colorScheme.error,
+              onPressed: _signOut,
+            ),
+        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -440,13 +452,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   // 5. Reminder schedule — when renewal alerts fire.
                   _buildReminderTimingSection(context, theme),
-
-                  const SizedBox(height: 24),
-
-                  // 6. Account — sign out (sign-in lives on the profile card).
-                  if (SupabaseService.hasCredentials &&
-                      AuthService.instance.isSignedIn)
-                    _buildSignOutButton(theme),
 
                   const SizedBox(height: 24),
                 ],
@@ -1205,26 +1210,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  // ------------------------------------------------------------------
-  // 6. Sign out
-  // ------------------------------------------------------------------
-
-  Widget _buildSignOutButton(ThemeData theme) {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: _signOut,
-        icon: const Icon(Icons.logout_rounded, size: 18),
-        label: const Text('Sign out'),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: theme.colorScheme.error,
-          side: BorderSide(color: theme.colorScheme.error.withAlpha(100)),
-          padding: const EdgeInsets.symmetric(vertical: 14),
-        ),
       ),
     );
   }
