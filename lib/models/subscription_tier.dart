@@ -82,6 +82,9 @@ class TierLimits {
   /// Company/team data export (multi-collection bulk reports).
   final bool teamExport;
 
+  /// Monthly quota for Groq AI Executive Summaries.
+  final int groqAiSummaryMonthlyQuota;
+
   const TierLimits({
     required this.maxDocuments,
     required this.maxCompanyCollections,
@@ -92,6 +95,7 @@ class TierLimits {
     required this.documentAssignment,
     required this.renewalAuditHistory,
     required this.teamExport,
+    required this.groqAiSummaryMonthlyQuota,
   });
 
   static const free = TierLimits(
@@ -104,6 +108,7 @@ class TierLimits {
     documentAssignment: false,
     renewalAuditHistory: false,
     teamExport: false,
+    groqAiSummaryMonthlyQuota: 3,
   );
 
   static const plus = TierLimits(
@@ -116,6 +121,7 @@ class TierLimits {
     documentAssignment: false,
     renewalAuditHistory: false,
     teamExport: false,
+    groqAiSummaryMonthlyQuota: 30,
   );
 
   static const business = TierLimits(
@@ -128,6 +134,7 @@ class TierLimits {
     documentAssignment: true,
     renewalAuditHistory: true,
     teamExport: true,
+    groqAiSummaryMonthlyQuota: 100,
   );
 }
 
@@ -214,7 +221,8 @@ enum EntitlementFeature {
   aiMonthlySummary('aiMonthlySummary', 'AI monthly executive summary'),
   documentAssignment('documentAssignment', 'Document assignment'),
   renewalAuditHistory('renewalAuditHistory', 'Renewal audit history'),
-  teamExport('teamExport', 'Team data export');
+  teamExport('teamExport', 'Team data export'),
+  groqAiSummary('groqAiSummary', 'Groq AI Executive Summary');
 
   const EntitlementFeature(this.id, this.label);
 
