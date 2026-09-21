@@ -236,6 +236,12 @@ class _MoneyScreenState extends State<MoneyScreen> {
               ),
               const Spacer(),
               _MoneyHeroIconButton(
+                icon: Icons.receipt_long_rounded,
+                tooltip: 'All Transactions',
+                onTap: () => context.push('/records'),
+              ),
+              const SizedBox(width: 8),
+              _MoneyHeroIconButton(
                 icon: Icons.auto_awesome_rounded,
                 tooltip: 'Auto-Categorize with AI',
                 onTap: _runAutoCategorizationAI,
@@ -261,14 +267,30 @@ class _MoneyScreenState extends State<MoneyScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          // One-line live status: month + record count.
-          Text(
-            '$monthName · ${_transactions.length} records',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: Colors.white.withOpacity(0.7),
+          // One-line live status: month + record count (tappable to view transactions).
+          InkWell(
+            onTap: () => context.push('/records'),
+            borderRadius: BorderRadius.circular(6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '$monthName · ${_transactions.length} records',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: Colors.white.withOpacity(0.85),
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 10,
+                  color: Colors.white.withOpacity(0.7),
+                ),
+              ],
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 4),
           Text(
@@ -311,6 +333,11 @@ class _MoneyScreenState extends State<MoneyScreen> {
             runSpacing: 10,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
+              _MoneyActionPill(
+                icon: Icons.receipt_long_rounded,
+                label: 'Transactions',
+                onTap: () => context.push('/records'),
+              ),
               _MoneyActionPill(
                 icon: Icons.account_balance_wallet_rounded,
                 label: 'Budgets',
