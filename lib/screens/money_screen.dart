@@ -2322,9 +2322,9 @@ class _TransactionFormSheetState extends State<TransactionFormSheet> {
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
-              decoration: const InputDecoration(
-                labelText: 'Amount (AED)',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: 'Amount (${DocumentCollectionService.instance.activeCurrency})',
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 12),
@@ -2581,7 +2581,7 @@ class _RecurringFormSheetState extends State<_RecurringFormSheet> {
         category: _category,
         title: title,
         amount: amount,
-        currency: existing?.currency ?? 'AED',
+        currency: existing?.currency ?? DocumentCollectionService.instance.activeCurrency,
         frequency: _frequency,
         dayOfMonth: _dayOfMonth,
         startDate: existing?.startDate ?? DateTime(now.year, now.month, 1),
@@ -2654,9 +2654,9 @@ class _RecurringFormSheetState extends State<_RecurringFormSheet> {
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
-                decoration: const InputDecoration(
-                  labelText: 'Amount (AED)',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: 'Amount (${DocumentCollectionService.instance.activeCurrency})',
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
@@ -2826,10 +2826,10 @@ class _OverallBudgetFormSheetState
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
-              decoration: const InputDecoration(
-                labelText: 'Total Monthly Budget (AED)',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.account_balance_rounded),
+              decoration: InputDecoration(
+                labelText: 'Total Monthly Budget (${DocumentCollectionService.instance.activeCurrency})',
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.account_balance_rounded),
               ),
             ),
             const SizedBox(height: 20),
@@ -3026,7 +3026,7 @@ class _BudgetFormSheetState extends State<CategoryBudgetFormSheet> {
                 decimal: true,
               ),
               decoration: InputDecoration(
-                labelText: 'Monthly limit (AED)',
+                labelText: 'Monthly limit (${DocumentCollectionService.instance.activeCurrency})',
                 border: const OutlineInputBorder(),
                 errorText: _errorText,
               ),
@@ -3108,9 +3108,9 @@ class _EnvelopeFormSheetState extends State<EnvelopeFormSheet> {
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
-                decoration: const InputDecoration(
-                  labelText: 'Target amount (AED)',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: 'Target amount (${DocumentCollectionService.instance.activeCurrency})',
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
@@ -3219,12 +3219,15 @@ class _MoneyAddCard extends StatelessWidget {
             children: [
               Icon(icon, size: 16, color: const Color(0xFF0A0E1A)),
               const SizedBox(width: 6),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Color(0xFF0A0E1A),
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12.5,
+              Flexible(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFF0A0E1A),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12.5,
+                  ),
                 ),
               ),
             ],

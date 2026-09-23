@@ -23,6 +23,9 @@ enum GccCountry {
     this.phoneCode,
   );
 
+  /// Flag emoji for display.
+  String get flag => flagEmoji;
+
   /// Resolve country from standard ISO 2-letter country code (case-insensitive).
   /// Defaults to UAE for unknown or missing codes.
   static GccCountry fromCode(String? code) {

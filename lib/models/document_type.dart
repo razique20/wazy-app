@@ -352,9 +352,9 @@ class DocumentTypeMeta {
       case DocumentType.labourDocuments:
         return 'Labour card expired → Work permit invalid. Employee cannot work.';
       case DocumentType.vehicleRegistration:
-        return 'Registration expired → Fine AED 500+. Vehicle may be impounded.';
+        return 'Registration expired → Fine 500+. Vehicle may be impounded.';
       case DocumentType.drivingLicence:
-        return 'Driving licence expired → Driving is illegal. Fine AED 500 + 12 black points.';
+        return 'Driving licence expired → Driving is illegal. Fine 500 + 12 black points.';
       case DocumentType.permits:
         return 'Permit expired → Business activity not authorized.';
       case DocumentType.certificates:

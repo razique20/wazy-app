@@ -6,10 +6,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/finance.dart';
 
 import 'anomaly_detection_service.dart';
+import 'auth_service.dart';
+import 'collection_service.dart';
 import 'document_scanner_service.dart';
 import 'entitlement_service.dart';
 import 'finance_service.dart';
 import 'groq_api_service.dart';
+import 'supabase_service.dart';
 
 /// What kind of step this is — drives the icon and the button shown on the
 /// plan screen (create an envelope, set a category budget, or just advice).
@@ -24,8 +27,8 @@ enum AiBudgetPlanActionType {
   tip,
 }
 
-/// One concrete step of an AI budget plan (e.g. "Save AED 1,200/month into
-/// the 'MacBook' envelope by trimming Shopping to AED 800").
+/// One concrete step of an AI budget plan (e.g. "Save 1,200/month into
+/// the 'MacBook' envelope by trimming Shopping to 800").
 class AiBudgetPlanAction {
   /// What kind of step this is.
   final AiBudgetPlanActionType type;
@@ -54,6 +57,27 @@ class AiBudgetPlanAction {
     this.monthlyAmountAed,
     this.suggestedEnvelopeName,
   });
+
+  Map<String, dynamic> toJson() => {
+        'title': title,
+        'detail': detail,
+        'type': type.name,
+        'category': category?.name,
+        'monthlyAmountAed': monthlyAmountAed,
+        'suggestedEnvelopeName': suggestedEnvelopeName,
+      };
+
+  factory AiBudgetPlanAction.fromJson(Map<String, dynamic> json) => AiBudgetPlanAction(
+        title: json['title'] as String? ?? '',
+        detail: json['detail'] as String? ?? '',
+        type: AiBudgetPlanActionType.values.firstWhere(
+          (e) => e.name == json['type'],
+          orElse: () => AiBudgetPlanActionType.tip,
+        ),
+        category: FinanceCategoryX.fromName(json['category'] as String?),
+        monthlyAmountAed: (json['monthlyAmountAed'] as num?)?.toDouble(),
+        suggestedEnvelopeName: json['suggestedEnvelopeName'] as String?,
+      );
 }
 
 /// A complete AI-generated plan for reaching the user's stated goal.
@@ -74,7 +98,9 @@ class AiBudgetPlan {
   final double monthlySavingTargetAed;
 
   /// Concrete, actionable steps ordered by impact.
-  final List<AiBudgetPlanAction> actions;      const AiBudgetPlan({
+  final List<AiBudgetPlanAction> actions;
+
+  const AiBudgetPlan({
     required this.title,
     required this.summary,
     required this.feasible,
@@ -82,6 +108,27 @@ class AiBudgetPlan {
     required this.monthlySavingTargetAed,
     required this.actions,
   });
+
+  Map<String, dynamic> toJson() => {
+        'title': title,
+        'summary': summary,
+        'feasible': feasible,
+        'monthsToGoal': monthsToGoal,
+        'monthlySavingTargetAed': monthlySavingTargetAed,
+        'actions': actions.map((a) => a.toJson()).toList(),
+      };
+
+  factory AiBudgetPlan.fromJson(Map<String, dynamic> json) => AiBudgetPlan(
+        title: json['title'] as String? ?? 'Budget Plan',
+        summary: json['summary'] as String? ?? '',
+        feasible: json['feasible'] as bool? ?? true,
+        monthsToGoal: (json['monthsToGoal'] as num?)?.toInt(),
+        monthlySavingTargetAed: (json['monthlySavingTargetAed'] as num?)?.toDouble() ?? 0,
+        actions: (json['actions'] as List<dynamic>?)
+                ?.map((a) => AiBudgetPlanAction.fromJson(a as Map<String, dynamic>))
+                .toList() ??
+            const [],
+      );
 }
 
 /// A ready-made set of category budget caps (Comfortable / Balanced /
@@ -127,26 +174,65 @@ class AiBudgetPlanService {
   AiBudgetPlan? _lastPlan;
   bool _lastUsedGroq = false;
   bool _lastQuotaExceeded = false;
+  DateTime? _lastGeneratedAt;
 
   AiBudgetPlan? get lastPlan => _lastPlan;
   bool get lastUsedGroq => _lastUsedGroq;
   bool get lastQuotaExceeded => _lastQuotaExceeded;
+  DateTime? get lastGeneratedAt => _lastGeneratedAt;
 
   /// Injectable override for unit tests.
   @visibleForTesting
   Future<String> Function(String system, String user)? groqCallOverride;
 
-  /// Current month usage key, e.g. `groqAiBudgetPlan.usage.2026-09`.
+  String _monthString([DateTime? now]) {
+    final ref = now ?? DateTime.now();
+    return '${ref.year}-${ref.month.toString().padLeft(2, '0')}';
+  }
+
+  /// Current month usage key scoped to the individual signed-in user,
+  /// e.g. `groqAiBudgetPlan.usage.<userId>.2026-09`.
   String _currentMonthKey([DateTime? now]) {
     final ref = now ?? DateTime.now();
-    return '$_usagePrefix.${ref.year}-${ref.month.toString().padLeft(2, '0')}';
+    final userId = AuthService.instance.currentUserId ?? 'local-user';
+    return '$_usagePrefix.$userId.${_monthString(ref)}';
   }
 
   /// Number of AI budget plans generated this calendar month.
   Future<int> getUsedQuotaThisMonth([DateTime? now]) async {
+    final ref = now ?? DateTime.now();
+    final monthStr = _monthString(ref);
+    final userId = AuthService.instance.currentUserId;
+
+    // 1. Attempt Supabase fetch if client is available & user signed in
+    final client = SupabaseService.clientOrNull;
+    if (client != null && userId != null && userId.isNotEmpty) {
+      try {
+        final row = await client
+            .from('ai_quota_usage')
+            .select('used_count')
+            .eq('user_id', userId)
+            .eq('feature_name', 'groq_ai_budget_plan')
+            .eq('usage_month', monthStr)
+            .maybeSingle();
+
+        if (row != null && row['used_count'] != null) {
+          final count = (row['used_count'] as num).toInt();
+          try {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setInt(_currentMonthKey(ref), count);
+          } catch (_) {}
+          return count;
+        }
+      } catch (e) {
+        debugPrint('Supabase getUsedQuotaThisMonth (AI budget plan) failed: $e');
+      }
+    }
+
+    // 2. Local SharedPreferences fallback
     try {
       final prefs = await SharedPreferences.getInstance();
-      return prefs.getInt(_currentMonthKey(now)) ?? 0;
+      return prefs.getInt(_currentMonthKey(ref)) ?? 0;
     } catch (_) {
       return 0;
     }
@@ -173,11 +259,33 @@ class AiBudgetPlanService {
 
   /// Increment monthly usage counter after a successful Groq generation.
   Future<int> _incrementUsageCounter([DateTime? now]) async {
+    final ref = now ?? DateTime.now();
+    final monthStr = _monthString(ref);
+    final userId = AuthService.instance.currentUserId;
+
+    // Increment locally
     final prefs = await SharedPreferences.getInstance();
-    final key = _currentMonthKey(now);
+    final key = _currentMonthKey(ref);
     final current = prefs.getInt(key) ?? 0;
     final updated = current + 1;
     await prefs.setInt(key, updated);
+
+    // Sync to Supabase database
+    final client = SupabaseService.clientOrNull;
+    if (client != null && userId != null && userId.isNotEmpty) {
+      try {
+        await client.from('ai_quota_usage').upsert({
+          'user_id': userId,
+          'feature_name': 'groq_ai_budget_plan',
+          'usage_month': monthStr,
+          'used_count': updated,
+          'updated_at': DateTime.now().toIso8601String(),
+        }, onConflict: 'user_id,feature_name,usage_month');
+      } catch (e) {
+        debugPrint('Supabase _incrementUsageCounter sync failed: $e');
+      }
+    }
+
     return updated;
   }
 
@@ -186,10 +294,74 @@ class AiBudgetPlanService {
   Future<void> resetUsageCounter([DateTime? now]) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_currentMonthKey(now));
+    await clearAllQuotaUsage();
+  }
+
+  /// Reset current month usage counter to 0 (called when tier changes).
+  Future<void> resetCurrentMonthUsage([DateTime? now]) async {
+    final ref = now ?? DateTime.now();
+    final monthStr = _monthString(ref);
+    final userId = AuthService.instance.currentUserId;
+
+    final client = SupabaseService.clientOrNull;
+    if (client != null && userId != null && userId.isNotEmpty) {
+      try {
+        await client.from('ai_quota_usage').upsert({
+          'user_id': userId,
+          'feature_name': 'groq_ai_budget_plan',
+          'usage_month': monthStr,
+          'used_count': 0,
+          'updated_at': DateTime.now().toIso8601String(),
+        }, onConflict: 'user_id,feature_name,usage_month');
+      } catch (_) {}
+    }
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_currentMonthKey(ref));
+    } catch (_) {}
+  }
+
+  /// Clear all AI budget plan quota usage counters for all users from SharedPreferences and Supabase.
+  Future<void> clearAllQuotaUsage() async {
+    _lastPlan = null;
+    _lastUsedGroq = false;
+    _lastQuotaExceeded = false;
+    _lastGeneratedAt = null;
+
+    final userId = AuthService.instance.currentUserId;
+    final client = SupabaseService.clientOrNull;
+    if (client != null && userId != null && userId.isNotEmpty) {
+      try {
+        await client
+            .from('ai_quota_usage')
+            .delete()
+            .eq('user_id', userId)
+            .eq('feature_name', 'groq_ai_budget_plan');
+      } catch (_) {}
+    }
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final keys = prefs.getKeys().where((k) => k.startsWith(_usagePrefix) || k.contains('groqAiBudgetPlan')).toList();
+      for (final key in keys) {
+        await prefs.remove(key);
+      }
+    } catch (_) {}
+  }
+
+  String _cachedPlanKey() {
+    final userId = AuthService.instance.currentUserId ?? 'local-user';
+    return 'groqAiBudgetPlan.lastPlan.$userId';
+  }
+
+  String _cachedTimestampKey() {
+    final userId = AuthService.instance.currentUserId ?? 'local-user';
+    return 'groqAiBudgetPlan.lastGeneratedAt.$userId';
   }
 
   /// Generates an AI budget plan toward [goalDescription] for [targetAmount]
-  /// AED within [targetMonths] (optional).
+  /// in the active collection's currency within [targetMonths] (optional).
   ///
   /// Returns the parsed plan plus flags describing how it was produced.
   Future<({AiBudgetPlan plan, bool usedGroq, bool quotaExceeded})>
@@ -203,10 +375,44 @@ class AiBudgetPlanService {
     final ref = now ?? DateTime.now();
 
     // Cached plan shown again unless the user explicitly regenerates.
-    if (!forceRegenerate && _lastPlan != null) {
+    if (!forceRegenerate) {
+      if (_lastPlan != null) {
+        return (
+          plan: _lastPlan!,
+          usedGroq: _lastUsedGroq,
+          quotaExceeded: false,
+        );
+      }
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final stored = prefs.getString(_cachedPlanKey());
+        final timeStr = prefs.getString(_cachedTimestampKey());
+        if (stored != null && stored.trim().isNotEmpty) {
+          final map = jsonDecode(stored) as Map<String, dynamic>;
+          _lastPlan = AiBudgetPlan.fromJson(map);
+          _lastUsedGroq = true;
+          if (timeStr != null) {
+            _lastGeneratedAt = DateTime.tryParse(timeStr);
+          }
+          return (
+            plan: _lastPlan!,
+            usedGroq: true,
+            quotaExceeded: false,
+          );
+        }
+      } catch (_) {}
+
+      // Return empty plan when forceRegenerate is false and no cache exists.
       return (
-        plan: _lastPlan!,
-        usedGroq: _lastUsedGroq,
+        plan: const AiBudgetPlan(
+          title: '',
+          summary: '',
+          feasible: true,
+          monthsToGoal: null,
+          monthlySavingTargetAed: 0,
+          actions: [],
+        ),
+        usedGroq: false,
         quotaExceeded: false,
       );
     }
@@ -235,7 +441,7 @@ class AiBudgetPlanService {
       now: ref,
     );
 
-    const systemPrompt =
+    final systemPrompt =
         'You are Wazy\'s AI Budget Planner for a GCC user. '
         'Create a realistic, concrete plan to reach the user\'s stated goal '
         'using ONLY the financial facts provided — never invent numbers. '
@@ -257,7 +463,7 @@ class AiBudgetPlanService {
         'an envelope. Write for a normal person: simple everyday words, use '
         'the user\'s own numbers, no jargon like "discretionary spend". '
         'Give 3-5 actions. Keep the summary under 60 words. '
-        'All money values in AED.';
+        'All money values in ${_cur()}.';
 
     try {
       final raw = groqCallOverride != null
@@ -275,6 +481,12 @@ class AiBudgetPlanService {
         _lastPlan = plan;
         _lastUsedGroq = true;
         _lastQuotaExceeded = false;
+        _lastGeneratedAt = DateTime.now();
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(_cachedPlanKey(), jsonEncode(plan.toJson()));
+          await prefs.setString(_cachedTimestampKey(), _lastGeneratedAt!.toIso8601String());
+        } catch (_) {}
         return (plan: plan, usedGroq: true, quotaExceeded: false);
       }
       debugPrint('AI Budget Plan: Groq returned unparseable JSON.');
@@ -457,7 +669,7 @@ class AiBudgetPlanService {
         label: 'Goal-first',
         emoji: '🎯',
         description: monthlySavingTarget > 0
-            ? 'Cuts your biggest flexible budgets until you free up AED ${_fmt(monthlySavingTarget)}/month for the goal.'
+            ? 'Cuts your biggest flexible budgets until you free up ${_cur()} ${_fmt(monthlySavingTarget)}/month for the goal.'
             : 'Cuts your biggest flexible budgets by 30% to free up cash faster.',
         caps: goalFirstCaps(),
       ),
@@ -531,16 +743,16 @@ class AiBudgetPlanService {
     // ── The goal ──
     sb.writeln('USER GOAL:');
     sb.writeln('- Goal: $goalDescription');
-    sb.writeln('- Target amount: AED ${_fmt(targetAmount)}');
+    sb.writeln('- Target amount: ${_cur()} ${_fmt(targetAmount)}');
     sb.writeln(
         '- Target deadline: ${targetMonths != null ? '$targetMonths months' : 'no fixed deadline'}');
     sb.writeln();
 
     // ── Income & spending ──
     sb.writeln('FINANCIAL SNAPSHOT (3-month average):');
-    sb.writeln('- Average monthly income: AED ${_fmt(fin.income)}');
-    sb.writeln('- Average monthly expenses: AED ${_fmt(fin.expense)}');
-    sb.writeln('- Average monthly spare (income - expenses): AED ${_fmt(fin.monthlySpare)}');
+    sb.writeln('- Average monthly income: ${_cur()} ${_fmt(fin.income)}');
+    sb.writeln('- Average monthly expenses: ${_cur()} ${_fmt(fin.expense)}');
+    sb.writeln('- Average monthly spare (income - expenses): ${_cur()} ${_fmt(fin.monthlySpare)}');
 
     // Category breakdown, biggest first. The 90-day sum is normalised to a
     // monthly pace so it compares directly against budget limits.
@@ -558,8 +770,8 @@ class AiBudgetPlanService {
       sb.writeln(
           '- Spending habit by category (last 90 days, shown as approx per month):');
       for (final e in ranked.take(8)) {
-        sb.writeln('  * ${e.key.displayName}: ~AED ${_fmt(e.value / 3)}/month '
-            '(total AED ${_fmt(e.value)} over 90 days)');
+        sb.writeln('  * ${e.key.displayName}: ~${_cur()} ${_fmt(e.value / 3)}/month '
+            '(total ${_cur()} ${_fmt(e.value)} over 90 days)');
       }
     }
 
@@ -568,7 +780,7 @@ class AiBudgetPlanService {
       sb.writeln('- Category budgets (monthly limits):');
       for (final b in budgets.take(6)) {
         sb.writeln(
-            '  * ${b.category.displayName}: AED ${_fmt(b.monthlyLimit)}/month');
+            '  * ${b.category.displayName}: ${_cur()} ${_fmt(b.monthlyLimit)}/month');
       }
     }
 
@@ -587,8 +799,8 @@ class AiBudgetPlanService {
       sb.writeln('- Recurring commitments (normalised to monthly equivalent):');
       for (final r in recurring.take(8)) {
         final perMonth = r.amount / r.frequency.approxDaysPerCycle * 30.44;
-        sb.writeln('  * ${r.title} (${r.kind.name}): AED ${_fmt(r.amount)} '
-            '${r.frequency.label.toLowerCase()}, ~AED ${_fmt(perMonth)}/month');
+        sb.writeln('  * ${r.title} (${r.kind.name}): ${_cur()} ${_fmt(r.amount)} '
+            '${r.frequency.label.toLowerCase()}, ~${_cur()} ${_fmt(perMonth)}/month');
       }
     }
 
@@ -596,7 +808,7 @@ class AiBudgetPlanService {
     // ── reserve cash in the months a big fee actually lands.        ──
     final renewal90 = FinanceMath.renewalOutlook(docs, 90);
     if (renewal90 > 0) {
-      sb.writeln('- Upcoming document renewal fees (next 90 days, total AED ${_fmt(renewal90)}):');
+      sb.writeln('- Upcoming document renewal fees (next 90 days, total ${_cur()} ${_fmt(renewal90)}):');
       final cutoff = now.add(const Duration(days: 90));
       final upcoming = docs
           .where((d) =>
@@ -609,7 +821,7 @@ class AiBudgetPlanService {
         ..sort((a, b) => a.expiresAt.compareTo(b.expiresAt));
       for (final d in upcoming.take(6)) {
         final daysLeft = d.expiresAt.difference(now).inDays;
-        sb.writeln('  * ${d.displayName}: AED ${_fmt(d.renewalFee!)} '
+        sb.writeln('  * ${d.displayName}: ${_cur()} ${_fmt(d.renewalFee!)} '
             'in ~$daysLeft days');
       }
     }
@@ -620,9 +832,9 @@ class AiBudgetPlanService {
         .detectRecentAnomalies(txs, recentDays: 30);
     for (final a in spikes.take(3)) {
       sb.writeln('- Recent bill spike: ${a.transaction.title} '
-          '(${a.transaction.category.displayName}) AED ${_fmt(a.transaction.amount)} '
+          '(${a.transaction.category.displayName}) ${_cur()} ${_fmt(a.transaction.amount)} '
           'is ${a.percentIncrease.toStringAsFixed(0)}% above the usual '
-          'AED ${_fmt(a.historicalAverage)} — worth reviewing.');
+          '${_cur()} ${_fmt(a.historicalAverage)} — worth reviewing.');
     }
 
     sb.writeln();
@@ -734,13 +946,13 @@ class AiBudgetPlanService {
     final summaryBuf = StringBuffer();
     if (monthlySpare > 0) {
       summaryBuf
-          .write('With about AED ${_fmt(monthlySpare)} spare each month, ');
+          .write('With about ${_cur()} ${_fmt(monthlySpare)} spare each month, ');
       if (targetMonths != null) {
         summaryBuf.write(
-            'you need to set aside AED ${_fmt(targetAmount / targetMonths)} per month to reach $goalLabel in $targetMonths months. ');
+            'you need to set aside ${_cur()} ${_fmt(targetAmount / targetMonths)} per month to reach $goalLabel in $targetMonths months. ');
       } else if (monthsAtPace != null) {
         summaryBuf.write(
-            'you could reach $goalLabel in about $monthsAtPace months by saving AED ${_fmt(monthlySpare)} per month. ');
+            'you could reach $goalLabel in about $monthsAtPace months by saving ${_cur()} ${_fmt(monthlySpare)} per month. ');
       }
       summaryBuf.write(feasible
           ? 'Your goal looks achievable at the current pace.'
@@ -753,7 +965,7 @@ class AiBudgetPlanService {
     final actions = <AiBudgetPlanAction>[
       AiBudgetPlanAction(
         type: AiBudgetPlanActionType.envelope,
-        title: 'Save AED ${(targetMonths != null ? targetAmount / targetMonths : monthlySpare).toStringAsFixed(0)} per month',
+        title: 'Save ${_cur()} ${(targetMonths != null ? targetAmount / targetMonths : monthlySpare).toStringAsFixed(0)} per month',
         detail: 'Set up a dedicated envelope for "$goalLabel" and contribute '
             'the same amount every month — small and steady wins.',
         suggestedEnvelopeName: goalLabel.length <= 24
@@ -780,6 +992,8 @@ class AiBudgetPlanService {
       actions: actions,
     );
   }
+
+  static String _cur() => DocumentCollectionService.instance.activeCurrency;
 
   static String _fmt(double v) {
     final rounded = (v * 100).round() / 100;

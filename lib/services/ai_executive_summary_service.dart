@@ -8,11 +8,14 @@ import '../models/expiry_item.dart';
 import '../models/finance.dart';
 import '../models/subscription_tier.dart';
 
+import 'collection_service.dart';
+import 'auth_service.dart';
 import 'document_scanner_service.dart';
 import 'entitlement_service.dart';
 import 'finance_service.dart';
 import 'groq_api_service.dart';
 import 'monthly_summary_service.dart';
+import 'supabase_service.dart';
 
 /// One insight item on the AI Executive Summary page combining documents + finances.
 class AiSummaryCombinedInsight {
@@ -53,17 +56,54 @@ class AiExecutiveSummaryService {
   @visibleForTesting
   Future<String> Function(String system, String user)? groqCallOverride;
 
-  /// Current month usage key, e.g. `groqAiSummary.usage.2026-09`.
+  String _monthString([DateTime? now]) {
+    final ref = now ?? DateTime.now();
+    return '${ref.year}-${ref.month.toString().padLeft(2, '0')}';
+  }
+
+  /// Current month usage key scoped to the individual signed-in user,
+  /// e.g. `groqAiSummary.usage.<userId>.2026-09`.
   String _currentMonthKey([DateTime? now]) {
     final ref = now ?? DateTime.now();
-    return '$_usagePrefix.${ref.year}-${ref.month.toString().padLeft(2, '0')}';
+    final userId = AuthService.instance.currentUserId ?? 'local-user';
+    return '$_usagePrefix.$userId.${_monthString(ref)}';
   }
 
   /// Get number of Groq AI summaries generated this calendar month.
   Future<int> getUsedQuotaThisMonth([DateTime? now]) async {
+    final ref = now ?? DateTime.now();
+    final monthStr = _monthString(ref);
+    final userId = AuthService.instance.currentUserId;
+
+    // 1. Attempt Supabase fetch if client is available & user signed in
+    final client = SupabaseService.clientOrNull;
+    if (client != null && userId != null && userId.isNotEmpty) {
+      try {
+        final row = await client
+            .from('ai_quota_usage')
+            .select('used_count')
+            .eq('user_id', userId)
+            .eq('feature_name', 'groq_ai_summary')
+            .eq('usage_month', monthStr)
+            .maybeSingle();
+
+        if (row != null && row['used_count'] != null) {
+          final count = (row['used_count'] as num).toInt();
+          try {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setInt(_currentMonthKey(ref), count);
+          } catch (_) {}
+          return count;
+        }
+      } catch (e) {
+        debugPrint('Supabase getUsedQuotaThisMonth (AI summary) failed: $e');
+      }
+    }
+
+    // 2. Local SharedPreferences fallback
     try {
       final prefs = await SharedPreferences.getInstance();
-      return prefs.getInt(_currentMonthKey(now)) ?? 0;
+      return prefs.getInt(_currentMonthKey(ref)) ?? 0;
     } catch (_) {
       return 0;
     }
@@ -90,11 +130,33 @@ class AiExecutiveSummaryService {
 
   /// Increment monthly usage counter after a successful Groq API generation.
   Future<int> _incrementUsageCounter([DateTime? now]) async {
+    final ref = now ?? DateTime.now();
+    final monthStr = _monthString(ref);
+    final userId = AuthService.instance.currentUserId;
+
+    // Increment locally
     final prefs = await SharedPreferences.getInstance();
-    final key = _currentMonthKey(now);
+    final key = _currentMonthKey(ref);
     final current = prefs.getInt(key) ?? 0;
     final updated = current + 1;
     await prefs.setInt(key, updated);
+
+    // Sync to Supabase database
+    final client = SupabaseService.clientOrNull;
+    if (client != null && userId != null && userId.isNotEmpty) {
+      try {
+        await client.from('ai_quota_usage').upsert({
+          'user_id': userId,
+          'feature_name': 'groq_ai_summary',
+          'usage_month': monthStr,
+          'used_count': updated,
+          'updated_at': DateTime.now().toIso8601String(),
+        }, onConflict: 'user_id,feature_name,usage_month');
+      } catch (e) {
+        debugPrint('Supabase _incrementUsageCounter sync failed: $e');
+      }
+    }
+
     return updated;
   }
 
@@ -103,6 +165,70 @@ class AiExecutiveSummaryService {
   Future<void> resetUsageCounter([DateTime? now]) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_currentMonthKey(now));
+    await clearAllQuotaUsage();
+  }
+
+  /// Reset current month usage counter to 0 (called when tier changes).
+  Future<void> resetCurrentMonthUsage([DateTime? now]) async {
+    final ref = now ?? DateTime.now();
+    final monthStr = _monthString(ref);
+    final userId = AuthService.instance.currentUserId;
+
+    final client = SupabaseService.clientOrNull;
+    if (client != null && userId != null && userId.isNotEmpty) {
+      try {
+        await client.from('ai_quota_usage').upsert({
+          'user_id': userId,
+          'feature_name': 'groq_ai_summary',
+          'usage_month': monthStr,
+          'used_count': 0,
+          'updated_at': DateTime.now().toIso8601String(),
+        }, onConflict: 'user_id,feature_name,usage_month');
+      } catch (_) {}
+    }
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_currentMonthKey(ref));
+    } catch (_) {}
+  }
+
+  /// Clear all Groq AI summary quota usage counters for all users from SharedPreferences and Supabase.
+  Future<void> clearAllQuotaUsage() async {
+    _lastNarrative = null;
+    _lastInsights = const [];
+    _lastUsedGroq = false;
+    _lastGeneratedAt = null;
+
+    final userId = AuthService.instance.currentUserId;
+    final client = SupabaseService.clientOrNull;
+    if (client != null && userId != null && userId.isNotEmpty) {
+      try {
+        await client
+            .from('ai_quota_usage')
+            .delete()
+            .eq('user_id', userId)
+            .eq('feature_name', 'groq_ai_summary');
+      } catch (_) {}
+    }
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final keys = prefs.getKeys().where((k) => k.startsWith(_usagePrefix) || k.contains('groqAiSummary')).toList();
+      for (final key in keys) {
+        await prefs.remove(key);
+      }
+    } catch (_) {}
+  }
+
+  String _cachedNarrativeKey() {
+    final userId = AuthService.instance.currentUserId ?? 'local-user';
+    return 'groqAiSummary.lastNarrative.$userId';
+  }
+
+  String _cachedTimestampKey() {
+    final userId = AuthService.instance.currentUserId ?? 'local-user';
+    return 'groqAiSummary.lastGeneratedAt.$userId';
   }
 
   /// Generates the combined AI Executive Summary.
@@ -123,11 +249,40 @@ class AiExecutiveSummaryService {
     final insights = _buildCombinedInsights(docItems, finData);
 
     // If cached narrative exists and forceRegenerate is false, return cached.
-    if (!forceRegenerate && _lastNarrative != null) {
+    if (!forceRegenerate) {
+      if (_lastNarrative != null) {
+        return (
+          narrative: _lastNarrative!,
+          insights: _lastInsights,
+          usedGroq: _lastUsedGroq,
+          quotaExceeded: false,
+        );
+      }
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final stored = prefs.getString(_cachedNarrativeKey());
+        final timeStr = prefs.getString(_cachedTimestampKey());
+        if (stored != null && stored.trim().isNotEmpty) {
+          _lastNarrative = stored.trim();
+          _lastInsights = insights;
+          _lastUsedGroq = true;
+          if (timeStr != null) {
+            _lastGeneratedAt = DateTime.tryParse(timeStr);
+          }
+          return (
+            narrative: _lastNarrative!,
+            insights: _lastInsights,
+            usedGroq: true,
+            quotaExceeded: false,
+          );
+        }
+      } catch (_) {}
+
+      // No cached narrative stored yet and forceRegenerate is false.
       return (
-        narrative: _lastNarrative!,
-        insights: _lastInsights,
-        usedGroq: _lastUsedGroq,
+        narrative: '',
+        insights: insights,
+        usedGroq: false,
         quotaExceeded: false,
       );
     }
@@ -170,6 +325,14 @@ class AiExecutiveSummaryService {
         _lastInsights = insights;
         _lastUsedGroq = true;
         _lastGeneratedAt = DateTime.now();
+
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(_cachedNarrativeKey(), _lastNarrative!);
+          if (_lastGeneratedAt != null) {
+            await prefs.setString(_cachedTimestampKey(), _lastGeneratedAt!.toIso8601String());
+          }
+        } catch (_) {}
 
         return (
           narrative: text.trim(),
@@ -214,7 +377,7 @@ class AiExecutiveSummaryService {
       ..writeln('- Total tracked documents: ${docs.length}')
       ..writeln('- Expired documents: $expiredCount')
       ..writeln('- Documents expiring within 30 days: $urgentCount')
-      ..writeln('- Total estimated renewal fees due (next 90 days): AED ${_fmt(totalRenewalFees)}');
+      ..writeln('- Total estimated renewal fees due (next 90 days): ${_cur()} ${_fmt(totalRenewalFees)}');
 
     if (urgentCount > 0) {
       final names = docs
@@ -227,20 +390,20 @@ class AiExecutiveSummaryService {
 
     sb.writeln();
     sb.writeln('FINANCIAL & PAYMENT SUMMARY (${fin.monthName} ${fin.year}):');
-    sb.writeln('- Income: AED ${_fmt(fin.income)}');
-    sb.writeln('- Expenses: AED ${_fmt(fin.expense)}');
-    sb.writeln('- Net Position: AED ${_fmt(fin.net)}');
+    sb.writeln('- Income: ${_cur()} ${_fmt(fin.income)}');
+    sb.writeln('- Expenses: ${_cur()} ${_fmt(fin.expense)}');
+    sb.writeln('- Net Position: ${_cur()} ${_fmt(fin.net)}');
 
     if (fin.expenseChangePct != null) {
       sb.writeln('- Expense change vs last month: ${fin.expenseChangePct!.toStringAsFixed(1)}%');
     }
 
     for (final move in fin.topMoves.take(2)) {
-      sb.writeln('- Category move: ${move.category.displayName} AED ${_fmt(move.current)} (prev ${_fmt(move.previous)})');
+      sb.writeln('- Category move: ${move.category.displayName} ${_cur()} ${_fmt(move.current)} (prev ${_fmt(move.previous)})');
     }
 
     for (final o in fin.budgetOverruns.take(2)) {
-      sb.writeln('- Budget overrun: ${o.budget.category.displayName} spent AED ${_fmt(o.spent)} of ${_fmt(o.budget.monthlyLimit)}');
+      sb.writeln('- Budget overrun: ${o.budget.category.displayName} spent ${_cur()} ${_fmt(o.spent)} of ${_fmt(o.budget.monthlyLimit)}');
     }
 
     return sb.toString();
@@ -282,7 +445,7 @@ class AiExecutiveSummaryService {
         kind: fin.expenseChangePct! >= 0 ? MonthlyInsightKind.spendingMove : MonthlyInsightKind.positive,
         categoryLabel: 'Monthly Spending',
         sentence: 'Overall spending $dir by $pct% in ${fin.monthName} vs last month.',
-        metricLabel: 'AED ${_fmt(fin.expense)}',
+        metricLabel: '${_cur()} ${_fmt(fin.expense)}',
       ));
     }
 
@@ -290,8 +453,8 @@ class AiExecutiveSummaryService {
       list.add(AiSummaryCombinedInsight(
         kind: MonthlyInsightKind.budgetAlert,
         categoryLabel: 'Budget Overrun',
-        sentence: '${o.budget.category.displayName} budget exceeded (AED ${_fmt(o.spent)} spent of ${_fmt(o.budget.monthlyLimit)} limit).',
-        metricLabel: 'AED ${_fmt(o.spent - o.budget.monthlyLimit)} over',
+        sentence: '${o.budget.category.displayName} budget exceeded (${_cur()} ${_fmt(o.spent)} spent of ${_fmt(o.budget.monthlyLimit)} limit).',
+        metricLabel: '${_cur()} ${_fmt(o.spent - o.budget.monthlyLimit)} over',
       ));
     }
 
@@ -299,9 +462,9 @@ class AiExecutiveSummaryService {
       kind: fin.net >= 0 ? MonthlyInsightKind.positive : MonthlyInsightKind.budgetAlert,
       categoryLabel: 'Net Position',
       sentence: fin.net >= 0
-          ? 'Net financial balance is positive at AED ${_fmt(fin.net)} this month.'
-          : 'Expenses exceeded income by AED ${_fmt(fin.expense - fin.income)} this month.',
-      metricLabel: 'AED ${_fmt(fin.net)}',
+          ? 'Net financial balance is positive at ${_cur()} ${_fmt(fin.net)} this month.'
+          : 'Expenses exceeded income by ${_cur()} ${_fmt(fin.expense - fin.income)} this month.',
+      metricLabel: '${_cur()} ${_fmt(fin.net)}',
     ));
 
     return list;
@@ -316,10 +479,12 @@ class AiExecutiveSummaryService {
 
     final finSentence = fin.isEmpty
         ? 'No financial records entered for ${fin.monthName} yet.'
-        : 'Total monthly spend is AED ${_fmt(fin.expense)} against AED ${_fmt(fin.income)} income, resulting in a net of AED ${_fmt(fin.net)}.';
+        : 'Total monthly spend is ${_cur()} ${_fmt(fin.expense)} against ${_cur()} ${_fmt(fin.income)} income, resulting in a net of ${_cur()} ${_fmt(fin.net)}.';
 
     return '$docSentence $finSentence';
   }
+
+  static String _cur() => DocumentCollectionService.instance.activeCurrency;
 
   static String _fmt(double v) {
     final rounded = (v * 100).round() / 100;

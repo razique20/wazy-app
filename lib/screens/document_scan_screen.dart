@@ -976,7 +976,7 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
                     prefixIcon: Icon(Icons.public_rounded),
                   ),
                   child: Text(
-                    '${_activeCountry.flagEmoji} ${_activeCountry.displayName}',
+                    '${_activeCountry.code} — ${_activeCountry.displayName}',
                     style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
                   ),
                 ),

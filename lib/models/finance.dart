@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../services/collection_service.dart';
 import 'expiry_item.dart';
 
 /// Kind of money movement.
@@ -596,8 +597,11 @@ class SavingsEnvelope {
 class MoneyFormat {
   MoneyFormat._();
 
-  /// "AED 12,345.50" — manual thousands separator, no locale init needed.
-  static String aed(double value, {String symbol = 'AED '}) {
+  /// Format money with dynamic GCC currency symbol based on the active collection.
+  static String format(double value, {String? symbol}) {
+    final cur = (symbol == null || symbol == 'AED ')
+        ? '${DocumentCollectionService.instance.activeCurrency} '
+        : symbol;
     final negative = value < 0;
     final fixed = value.abs().toStringAsFixed(2);
     final parts = fixed.split('.');
@@ -608,8 +612,11 @@ class MoneyFormat {
       buffered.write(intPart[i]);
       if (remaining > 1 && remaining % 3 == 1) buffered.write(',');
     }
-    return '${negative ? '-' : ''}$symbol${buffered.toString()}.${parts[1]}';
+    return '${negative ? '-' : ''}$cur${buffered.toString()}.${parts[1]}';
   }
+
+  /// Alias for format to maintain backwards compatibility across the app.
+  static String aed(double value, {String? symbol}) => format(value, symbol: symbol);
 }
 
 /// Pure computation helpers for the finance module — unit-tested in

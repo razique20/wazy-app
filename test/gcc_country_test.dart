@@ -53,7 +53,7 @@ void main() {
       final collection = DocumentCollection.fromJson(json);
       expect(collection.countryCode, 'KW');
       expect(collection.country, GccCountry.kuwait);
-      expect(collection.subtitle, contains('🇰🇼 Kuwait'));
+      expect(collection.subtitle, contains('Kuwait'));
 
       final serialized = collection.toJson();
       expect(serialized['country_code'], 'KW');

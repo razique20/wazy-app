@@ -8,6 +8,7 @@ import '../models/document_type.dart';
 import '../models/expiry_item.dart';
 import '../models/finance.dart';
 import '../services/document_scanner_service.dart';
+import '../services/collection_service.dart';
 import '../services/urgency_engine.dart';
 import '../theme/app_theme.dart';
 import '../widgets/indicators/department_logo.dart';
@@ -561,7 +562,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
               icon: Icons.payments_rounded,
               label: 'Upcoming fees',
               value: _totalUpcomingFees > 0
-                  ? MoneyFormat.aed(_totalUpcomingFees, symbol: 'AED ')
+                  ? MoneyFormat.aed(_totalUpcomingFees)
                   : '—',
               iconColor: isDark
                   ? WazyColors.textPrimary
@@ -1486,7 +1487,7 @@ class _DocumentCard extends StatelessWidget {
                               _detail(
                                 theme,
                                 Icons.payments_outlined,
-                                'Renewal fee AED ${item.renewalFee!.toStringAsFixed(0)}',
+                                'Renewal fee ${DocumentCollectionService.instance.activeCurrency} ${item.renewalFee!.toStringAsFixed(0)}',
                               ),
                             _detail(
                               theme,

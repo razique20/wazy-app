@@ -347,7 +347,7 @@ void showAboutSheet(BuildContext context) {
             const SizedBox(height: 8),
             Center(
               child: Text(
-                'Made for the GCC 🇦🇪 🇸🇦 🇰🇼 🇶🇦 🇧🇭 🇴🇲 · © 2026 Wazy',
+                'Made for the GCC · © 2026 Wazy',
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),

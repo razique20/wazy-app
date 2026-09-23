@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
+import 'collection_service.dart';
+
 /// Status of a voice recognition session.
 enum VoiceStatus {
   /// Recognizer is idle, no session active.
@@ -249,11 +251,12 @@ class VoiceInputService {
       return value == null ? m.group(0)! : '$value';
     });
 
-    // 3. Spelled currency → AED (before digit-conversion so "forty dirhams"
-    //    becomes "40 dirhams" then "40 AED").
+    // 3. Spelled currency → active currency (before digit-conversion so "forty dirhams/riyals"
+    //    becomes "40 dirhams" then "40 SAR/AED").
+    final cur = DocumentCollectionService.instance.activeCurrency;
     text = text.replaceAll(
-      RegExp(r'\b(dirhams|dirham|dhs|dhms|dhm)\b', caseSensitive: false),
-      'AED',
+      RegExp(r'\b(dirhams|dirham|dhs|dhms|dhm|riyals|riyal|dinars|dinar|rupees|rupee)\b', caseSensitive: false),
+      cur,
     );
 
     // 4. Collapse whitespace and tidy punctuation spacing.

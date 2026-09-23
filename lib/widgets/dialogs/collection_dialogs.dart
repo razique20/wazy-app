@@ -91,6 +91,7 @@ class _CreateCollectionDialogState extends State<_CreateCollectionDialog> {
               const SizedBox(height: 16),
               DropdownButtonFormField<GccCountry>(
                 value: _selectedCountry,
+                isExpanded: true,
                 decoration: const InputDecoration(
                   labelText: 'GCC Country',
                   border: OutlineInputBorder(),
@@ -99,7 +100,32 @@ class _CreateCollectionDialogState extends State<_CreateCollectionDialog> {
                 items: GccCountry.values.map((country) {
                   return DropdownMenuItem<GccCountry>(
                     value: country,
-                    child: Text('${country.flagEmoji} ${country.displayName} (${country.currency})'),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            country.code,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: theme.colorScheme.onPrimaryContainer,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${country.displayName} (${country.currency})',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   );
                 }).toList(),
                 onChanged: (val) {

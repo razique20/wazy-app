@@ -7,6 +7,7 @@ import '../services/entitlement_service.dart';
 import '../services/finance_service.dart';
 import '../services/groq_api_service.dart';
 import '../theme/app_theme.dart';
+import '../services/collection_service.dart';
 import '../widgets/dialogs/upgrade_dialog.dart';
 
 /// AI Budget Planner page: the user states a goal (buy something, save an
@@ -21,6 +22,7 @@ class AiBudgetPlanScreen extends StatefulWidget {
 }
 
 class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
+  String get _cur => DocumentCollectionService.instance.activeCurrency;
   final _goalController = TextEditingController();
   final _amountController = TextEditingController();
   int? _targetMonths;
@@ -45,7 +47,24 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
   @override
   void initState() {
     super.initState();
-    _refreshQuota();
+    _loadInitialPlan();
+  }
+
+  Future<void> _loadInitialPlan() async {
+    await _refreshQuota();
+    final service = AiBudgetPlanService.instance;
+    final result = await service.generatePlan(
+      goalDescription: '',
+      targetAmount: 0,
+      forceRegenerate: false,
+    );
+    if (!mounted) return;
+    if (result.plan.title.isNotEmpty && result.plan.actions.isNotEmpty) {
+      setState(() {
+        _plan = result.plan;
+        _usedGroq = result.usedGroq;
+      });
+    }
   }
 
   @override
@@ -73,19 +92,65 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
   Future<void> _generate() async {
     if (!_inputValid || _generating) return;
 
+    final service = AiBudgetPlanService.instance;
+    final remaining = await service.getRemainingQuotaThisMonth();
+
+    if (remaining <= 0) {
+      if (!mounted) return;
+      final upgrade = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: WazyColors.warning),
+              SizedBox(width: 8),
+              Text('Monthly Quota Reached'),
+            ],
+          ),
+          content: Text(
+            'You have used all $_usedQuota / $_quotaLimit monthly AI Budget Plans for your plan.\n\nUpgrade your plan to unlock higher monthly AI quota limit.',
+            style: const TextStyle(fontSize: 13.5, height: 1.4),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.pop(ctx, true),
+              icon: const Icon(Icons.bolt_rounded, size: 16),
+              label: const Text('Upgrade Plan'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: WazyColors.caution,
+                foregroundColor: Colors.black,
+              ),
+            ),
+          ],
+        ),
+      );
+      if (upgrade == true && mounted) {
+        await showUpgradeDialog(context, EntitlementFeature.aiBudgetPlanning);
+      }
+      return;
+    }
+
+    final confirmed = await _confirmQuotaUsage(remaining);
+    if (!confirmed) return;
+
     final goal = _goalController.text.trim();
     final amount = double.parse(_amountController.text.trim());
 
     setState(() => _generating = true);
 
-    final result = await AiBudgetPlanService.instance.generatePlan(
+    final result = await service.generatePlan(
       goalDescription: goal,
       targetAmount: amount,
       targetMonths: _showMonths ? _targetMonths : null,
       forceRegenerate: true,
     );
 
-    final used = await AiBudgetPlanService.instance.getUsedQuotaThisMonth();
+    final used = await service.getUsedQuotaThisMonth();
 
     if (!mounted) return;
     setState(() {
@@ -105,6 +170,43 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
     }
   }
 
+  Future<bool> _confirmQuotaUsage(int remaining) async {
+    final goalName = _goalController.text.trim();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.auto_awesome_rounded, color: WazyColors.cyanSecondary),
+            SizedBox(width: 8),
+            Text('Confirm AI Quota Usage'),
+          ],
+        ),
+        content: Text(
+          'Building a new AI plan${goalName.isNotEmpty ? ' for "$goalName"' : ''} will use 1 credit from your monthly quota ($remaining credit${remaining == 1 ? '' : 's'} remaining this month).\n\nDo you want to proceed?',
+          style: const TextStyle(fontSize: 13.5, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(ctx, true),
+            icon: const Icon(Icons.bolt_rounded, size: 16),
+            label: const Text('Confirm & Use 1 Credit'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: WazyColors.navyPrimary,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
+  }
+
   Future<void> _createEnvelopeFromAction(
     AiBudgetPlanAction action,
     int index,
@@ -121,7 +223,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
         title: const Text('Create savings envelope'),
         content: Text(
           'Create an envelope "$name"'
-          '${monthly > 0 ? ' with AED ${monthly.toStringAsFixed(0)}/month contributions' : ''}? '
+          '${monthly > 0 ? ' with $_cur ${monthly.toStringAsFixed(0)}/month contributions' : ''}? '
           'You can adjust it anytime in the Envelopes tab.',
         ),
         actions: [
@@ -177,7 +279,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text('Set ${category.displayName} budget'),
         content: Text(
-          'Cap ${category.displayName} at AED ${limit.toStringAsFixed(0)} '
+          'Cap ${category.displayName} at $_cur ${limit.toStringAsFixed(0)} '
           'per month? Wazy will track it in the Budgets tab and warn you '
           'when you get close.',
         ),
@@ -206,7 +308,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          '${category.displayName} budget set to AED ${limit.toStringAsFixed(0)}/month.',
+          '${category.displayName} budget set to $_cur ${limit.toStringAsFixed(0)}/month.',
         ),
         backgroundColor: WazyColors.emerald,
         behavior: SnackBarBehavior.floating,
@@ -229,17 +331,17 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
     final amt = action.monthlyAmountAed!;
     final (String label, Color color) = switch (action.type) {
       AiBudgetPlanActionType.envelope => (
-        'AED ${amt.toStringAsFixed(0)}/mo',
+        '$_cur ${amt.toStringAsFixed(0)}/mo',
         WazyColors.emerald,
       ),
       AiBudgetPlanActionType.budget => (
-        'cap AED ${amt.toStringAsFixed(0)}/mo',
+        'cap $_cur ${amt.toStringAsFixed(0)}/mo',
         WazyColors.navyPrimary,
       ),
       AiBudgetPlanActionType.tip => amt >= 0
-          ? ('frees AED ${amt.toStringAsFixed(0)}/mo', WazyColors.emerald)
+          ? ('frees $_cur ${amt.toStringAsFixed(0)}/mo', WazyColors.emerald)
           : (
-            'needs AED ${amt.abs().toStringAsFixed(0)}/mo',
+            'needs $_cur ${amt.abs().toStringAsFixed(0)}/mo',
             Colors.orangeAccent,
           ),
     };
@@ -280,7 +382,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
             label: applied
                 ? 'Budget set ✓'
                 : 'Set ${category.displayName} budget to '
-                    'AED ${action.monthlyAmountAed!.toStringAsFixed(0)}/mo',
+                    '$_cur ${action.monthlyAmountAed!.toStringAsFixed(0)}/mo',
             icon: applied
                 ? Icons.check_circle_outline_rounded
                 : Icons.tune_rounded,
@@ -574,7 +676,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
                   const TextInputType.numberWithOptions(decimal: true),
               textInputAction: TextInputAction.done,
               decoration: InputDecoration(
-                labelText: 'Target amount (AED)',
+                labelText: 'Target amount ($_cur)',
                 hintText: 'e.g. 10000',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -628,22 +730,18 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: (_inputValid &&
-                        _usedQuota < _quotaLimit &&
-                        !_generating)
-                    ? _generate
-                    : null,
+                onPressed: (_inputValid && !_generating) ? _generate : null,
                 icon: _generating
                     ? const SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
                     : const Icon(Icons.auto_awesome_rounded, size: 18),
                 label: Text(
-                  _usedQuota >= _quotaLimit
-                      ? 'Monthly AI quota reached'
-                      : 'Generate AI Plan',
+                  _plan != null && _plan!.title.isNotEmpty
+                      ? 'Generate New AI Plan (Uses 1 Credit)'
+                      : 'Generate AI Budget Plan (Uses 1 Credit)',
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: WazyColors.navyPrimary,
@@ -669,6 +767,11 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
 
   Widget _buildPlanCard(ThemeData theme, bool isDark) {
     final plan = _plan!;
+    final lastAt = AiBudgetPlanService.instance.lastGeneratedAt;
+    final timeStr = lastAt != null
+        ? '${lastAt.day}/${lastAt.month}/${lastAt.year} ${lastAt.hour.toString().padLeft(2, '0')}:${lastAt.minute.toString().padLeft(2, '0')}'
+        : null;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -694,6 +797,51 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
         children: [
           Row(
             children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.history_rounded, size: 12, color: Colors.white70),
+                    const SizedBox(width: 4),
+                    Text(
+                      timeStr != null ? 'Previous Plan • $timeStr' : 'Previous Response',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              if (_usedGroq)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: WazyColors.emerald.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    'Groq AI',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: WazyColors.emerald,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
               Icon(
                 plan.feasible
                     ? Icons.check_circle_rounded
@@ -712,23 +860,6 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
                   ),
                 ),
               ),
-              if (_usedGroq)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: WazyColors.emerald.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Text(
-                    'Groq AI',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: WazyColors.emerald,
-                    ),
-                  ),
-                ),
             ],
           ),
           const SizedBox(height: 10),
@@ -751,7 +882,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
               ),
               if (plan.monthlySavingTargetAed > 0)
                 _planChip(
-                  'Save AED ${plan.monthlySavingTargetAed.toStringAsFixed(0)}/mo',
+                  'Save $_cur ${plan.monthlySavingTargetAed.toStringAsFixed(0)}/mo',
                   WazyColors.cyanSecondary,
                 ),
               if (plan.monthsToGoal != null)
@@ -1010,10 +1141,10 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
                   spacing: 8,
                   runSpacing: 4,
                   children: [
-                    _miniChip(theme, 'Freed: AED ${freed.toStringAsFixed(0)}/mo'),
+                    _miniChip(theme, 'Freed: $_cur ${freed.toStringAsFixed(0)}/mo'),
                     if (required > 0)
                       _miniChip(
-                          theme, 'Need: AED ${required.toStringAsFixed(0)}/mo'),
+                          theme, 'Need: $_cur ${required.toStringAsFixed(0)}/mo'),
                     if (monthsToGoal != null)
                       _miniChip(theme, 'Goal in ~$monthsToGoal months'),
                   ],
@@ -1135,7 +1266,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
                         ?.copyWith(fontWeight: FontWeight.w600),
                   ),
                   Text(
-                    'Now ~AED ${entry.value.toStringAsFixed(0)}/mo',
+                    'Now ~$_cur ${entry.value.toStringAsFixed(0)}/mo',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.outline,
                     ),
@@ -1144,7 +1275,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
               ),
             ),
             Text(
-              'AED ${value.toStringAsFixed(0)}',
+              '$_cur ${value.toStringAsFixed(0)}',
               style: theme.textTheme.labelMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: trimmed > 0.5 ? WazyColors.emerald : null,
@@ -1157,7 +1288,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
           min: 0,
           max: maxCap,
           divisions: (maxCap / 25).round().clamp(4, 40),
-          label: 'AED ${value.round()}',
+          label: '$_cur ${value.round()}',
           onChanged: (v) {
             setState(() {
               _adjustCaps![entry.key] = v;

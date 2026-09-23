@@ -68,7 +68,7 @@ class DocumentCollection {
 
   /// Short subtitle shown under the collection name.
   String get subtitle =>
-      '${country.flagEmoji} ${country.displayName} • ${isPersonal ? "Personal" : "Company"}';
+      '${country.displayName} (${country.currency}) • ${isPersonal ? "Personal" : "Company"}';
 
   @override
   bool operator ==(Object other) =>

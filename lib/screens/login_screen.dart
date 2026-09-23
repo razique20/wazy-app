@@ -85,6 +85,12 @@ class _LoginScreenState extends State<LoginScreen> {
       // ids against this list), then custom doc types (rows decode into
       // ExpiryItems via the registry), then documents and finance.
       await DocumentCollectionService.instance.reset();
+      // On signup the DB trigger creates the personal collection with default
+      // country 'AE'. Patch it to the country the user actually selected.
+      if (_isSignUp) {
+        await DocumentCollectionService.instance
+            .updatePersonalCountry(_selectedCountry.code);
+      }
       await CustomDocumentTypeService.instance.reset();
       await DocumentScannerService.instance.refresh();
       await FinanceService.instance.refresh();
@@ -230,42 +236,58 @@ class _LoginScreenState extends State<LoginScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Wazy',
+                      Row(
+                        children: [
+                          const Text(
+                            'Wazy',
+                            style: TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.8,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: WazyColors.cyanAccent.withOpacity(0.18),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: WazyColors.cyanAccent.withOpacity(0.35),
+                              ),
+                            ),
+                            child: const Text(
+                              'GCC Edition',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: WazyColors.cyanAccent,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Financial & document intelligence for GCC businesses.',
                         style: TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.8,
-                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white.withOpacity(0.92),
                         ),
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Financial & document intelligence\nfor GCC businesses.',
+                        'Track document expiries, manage cash flow, and stay compliant across UAE, KSA, Kuwait, Qatar, Bahrain & Oman.',
                         style: TextStyle(
-                          fontSize: 13.5,
+                          fontSize: 12.5,
                           height: 1.45,
-                          color: Colors.white.withOpacity(0.72),
+                          color: Colors.white.withOpacity(0.7),
                         ),
-                      ),
-                      const SizedBox(height: 18),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: const [
-                          _HeroPill(
-                            icon: Icons.auto_awesome_rounded,
-                            label: 'AI extraction',
-                          ),
-                          _HeroPill(
-                            icon: Icons.query_stats_rounded,
-                            label: 'Budgets & forecasts',
-                          ),
-                          _HeroPill(
-                            icon: Icons.event_repeat_rounded,
-                            label: 'Renewal alerts',
-                          ),
-                        ],
                       ),
                     ],
                   ),
@@ -592,7 +614,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 18),
                       Text(
-                        '${AppVersionBadge.version} · Made for the GCC 🇦🇪 🇸🇦 🇰🇼 🇶🇦 🇧🇭 🇴🇲',
+                        '${AppVersionBadge.version} · Made for the GCC',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 11.5,

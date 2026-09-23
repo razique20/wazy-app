@@ -167,7 +167,7 @@ class TierInfo {
     SubscriptionTier.free: TierInfo(
       tier: SubscriptionTier.free,
       name: 'Free',
-      priceLabel: 'AED 0',
+      priceLabel: 'Free',
       tagline: 'Track what matters — free forever',
       benefits: [
         '1 personal collection',
@@ -179,7 +179,7 @@ class TierInfo {
     SubscriptionTier.plus: TierInfo(
       tier: SubscriptionTier.plus,
       name: 'Plus',
-      priceLabel: '~AED 7 / month  (or AED 50 / year)',
+      priceLabel: '~\$1.99 / month  (or \$14.99 / year)',
       tagline: 'For power users who never miss a renewal',
       benefits: [
         'Unlimited documents',
@@ -194,7 +194,7 @@ class TierInfo {
     SubscriptionTier.business: TierInfo(
       tier: SubscriptionTier.business,
       name: 'Business',
-      priceLabel: '~AED 35 / month',
+      priceLabel: '~\$9.99 / month',
       tagline: 'Multiple workspaces for PROs & SMEs',
       benefits: [
         'Everything in Plus',

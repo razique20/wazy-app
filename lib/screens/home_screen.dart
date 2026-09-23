@@ -521,7 +521,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      'AED',
+                      DocumentCollectionService.instance.activeCurrency,
                       style: theme.textTheme.labelMedium?.copyWith(
                         color: Colors.white.withOpacity(0.85),
                       ),

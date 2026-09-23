@@ -47,12 +47,15 @@ class _NaturalLanguageAddDialogState extends State<NaturalLanguageAddDialog> {
   StreamSubscription<VoiceStatus>? _voiceStatusSub;
   StreamSubscription<VoiceUpdate>? _voiceTranscriptSub;
 
-  final List<String> _samplePrompts = [
-    'Add my trade licence, expires 12 March 2027 cost 1500 AED',
-    'Dubai Ejari contract expires in 60 days fee 2500 AED',
-    'Visa renewal for John Doe expires 2026-11-15',
-    'Vehicle Mulkiya expires next month cost 800 AED Abu Dhabi',
-  ];
+  List<String> get _samplePrompts {
+    final c = DocumentCollectionService.instance.activeCurrency;
+    return [
+      'Add my trade licence, expires 12 March 2027 cost 1500 $c',
+      'Dubai Ejari contract expires in 60 days fee 2500 $c',
+      'Visa renewal for John Doe expires 2026-11-15',
+      'Vehicle Mulkiya expires next month cost 800 $c Abu Dhabi',
+    ];
+  }
 
   @override
   void initState() {
@@ -274,7 +277,7 @@ class _NaturalLanguageAddDialogState extends State<NaturalLanguageAddDialog> {
             maxLines: 2,
             textCapitalization: TextCapitalization.sentences,
             decoration: InputDecoration(
-              hintText: 'e.g. Add my trade licence, expires 12 March 2027 cost 1500 AED',
+              hintText: 'e.g. Add my trade licence, expires 12 March 2027 cost 1500 ${DocumentCollectionService.instance.activeCurrency}',
               border: const OutlineInputBorder(),
               suffixIcon: _inputController.text.isNotEmpty
                   ? IconButton(
@@ -316,7 +319,7 @@ class _NaturalLanguageAddDialogState extends State<NaturalLanguageAddDialog> {
                   Expanded(
                     child: Text(
                       _voicePartial.isEmpty
-                          ? 'Listening… say e.g. "Add my trade licence, expires 12 March 2027 cost 1500 AED"'
+                          ? 'Listening… say e.g. "Add my trade licence, expires 12 March 2027 cost 1500 ${DocumentCollectionService.instance.activeCurrency}"'
                           : _voicePartial,
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontStyle: _voicePartial.isEmpty
@@ -427,7 +430,7 @@ class _NaturalLanguageAddDialogState extends State<NaturalLanguageAddDialog> {
                         Icon(Icons.payments_outlined, size: 16, color: theme.colorScheme.primary),
                         const SizedBox(width: 6),
                         Text(
-                          'Estimated Fee: ${_parsed!.renewalFee!.toStringAsFixed(0)} AED',
+                          'Estimated Fee: ${_parsed!.renewalFee!.toStringAsFixed(0)} ${DocumentCollectionService.instance.activeCurrency}',
                           style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
                         ),
                       ],

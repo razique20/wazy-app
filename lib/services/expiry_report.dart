@@ -3,6 +3,7 @@ import 'package:pdf/widgets.dart' as pw;
 
 import '../models/document_type.dart';
 import '../models/expiry_item.dart';
+import 'collection_service.dart';
 
 /// Which lifecycle states the expiry list shows.
 enum ExpiryStatusFilter {
@@ -230,14 +231,14 @@ class DocumentScannerSearch {
 class ExpiryReport {
   ExpiryReport._();
 
-  static const List<String> header = [
+  static List<String> get header => [
     'Document',
     'Type',
     'Expiry date',
     'Days remaining',
     'Status',
     'Assigned to',
-    'Renewal fee (AED)',
+    'Renewal fee (${DocumentCollectionService.instance.activeCurrency})',
     'Notes',
   ];
 

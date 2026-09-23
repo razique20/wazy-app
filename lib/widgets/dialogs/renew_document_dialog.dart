@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../models/expiry_item.dart';
+import '../../services/collection_service.dart';
 import '../../services/document_scanner_service.dart';
 
 /// What the user confirmed in [showRenewDocumentDialog].
@@ -150,9 +151,9 @@ class _RenewDialogState extends State<_RenewDialog> {
             TextField(
               controller: _feeController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Renewal fee / cost (AED)',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: 'Renewal fee / cost (${DocumentCollectionService.instance.activeCurrency})',
+                border: const OutlineInputBorder(),
                 isDense: true,
               ),
             ),

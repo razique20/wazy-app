@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../models/finance.dart';
+import 'collection_service.dart';
 import 'finance_service.dart';
 import 'gemini_api_service.dart';
 
@@ -256,7 +257,7 @@ class MonthlySummaryNarrator {
             : MonthlyInsightKind.positive,
         sentence:
             'In ${data.monthName}, spending $dir by $pct% vs $prevName$driver.',
-        amountLabel: 'AED ${_fmt(data.expense)}',
+        amountLabel: '${_cur()} ${_fmt(data.expense)}',
         detailLabel:
             '$pct% vs ${_fmt(data.prevExpense!)} in $prevName',
       ));
@@ -268,13 +269,13 @@ class MonthlySummaryNarrator {
       final pct = move.changePct.toStringAsFixed(0);
       final sentence = move.previous > 0
           ? '${move.category.displayName} ${up ? 'up' : 'down'} $pct% vs $prevName '
-              '(AED ${_fmt(move.current)} vs ${_fmt(move.previous)}).'
+              '(${_cur()} ${_fmt(move.current)} vs ${_fmt(move.previous)}).'
           : '${move.category.displayName} is a new spend area this month '
-              '(AED ${_fmt(move.current)}).';
+              '(${_cur()} ${_fmt(move.current)}).';
       insights.add(MonthlySummaryInsight(
         kind: up ? MonthlyInsightKind.spendingMove : MonthlyInsightKind.positive,
         sentence: sentence,
-        amountLabel: 'AED ${_fmt(move.current)}',
+        amountLabel: '${_cur()} ${_fmt(move.current)}',
         detailLabel: move.previous > 0 ? '$pct% vs ${_fmt(move.previous)}' : 'New',
       ));
     }
@@ -285,8 +286,8 @@ class MonthlySummaryNarrator {
       insights.add(MonthlySummaryInsight(
         kind: MonthlyInsightKind.spendingMove,
         sentence:
-            'Largest single expense: "${topTx.title}" at AED ${_fmt(topTx.amount)}.',
-        amountLabel: 'AED ${_fmt(topTx.amount)}',
+            'Largest single expense: "${topTx.title}" at ${_cur()} ${_fmt(topTx.amount)}.',
+        amountLabel: '${_cur()} ${_fmt(topTx.amount)}',
         detailLabel: topTx.category.displayName,
       ));
     }
@@ -300,8 +301,8 @@ class MonthlySummaryNarrator {
         kind: MonthlyInsightKind.budgetAlert,
         sentence:
             '${o.budget.category.displayName} budget exceeded by $overPct% '
-            '(AED ${_fmt(o.spent)} of ${_fmt(o.budget.monthlyLimit)}).',
-        amountLabel: 'AED ${_fmt(o.spent - o.budget.monthlyLimit)} over',
+            '(${_cur()} ${_fmt(o.spent)} of ${_fmt(o.budget.monthlyLimit)}).',
+        amountLabel: '${_cur()} ${_fmt(o.spent - o.budget.monthlyLimit)} over',
         detailLabel: 'Limit ${_fmt(o.budget.monthlyLimit)}',
       ));
     }
@@ -317,9 +318,9 @@ class MonthlySummaryNarrator {
       insights.add(MonthlySummaryInsight(
         kind: MonthlyInsightKind.savings,
         sentence:
-            'You are on track to save AED ${_fmt(p.projectedSaving)} in your '
+            'You are on track to save ${_cur()} ${_fmt(p.projectedSaving)} in your '
             '${p.envelope.name} envelope$eta at the current pace.',
-        amountLabel: 'AED ${_fmt(p.projectedSaving)}',
+        amountLabel: '${_cur()} ${_fmt(p.projectedSaving)}',
         detailLabel: months == null ? null : '$months months left',
       ));
     }
@@ -328,11 +329,11 @@ class MonthlySummaryNarrator {
     insights.add(MonthlySummaryInsight(
       kind: data.net >= 0 ? MonthlyInsightKind.positive : MonthlyInsightKind.budgetAlert,
       sentence: data.net >= 0
-          ? 'Net position is positive: income AED ${_fmt(data.income)} '
-              'against AED ${_fmt(data.expense)} spent.'
-          : 'You spent AED ${_fmt(data.expense - data.income)} more than you '
+          ? 'Net position is positive: income ${_cur()} ${_fmt(data.income)} '
+              'against ${_cur()} ${_fmt(data.expense)} spent.'
+          : 'You spent ${_cur()} ${_fmt(data.expense - data.income)} more than you '
               'earned this month.',
-      amountLabel: 'AED ${_fmt(data.net)}',
+      amountLabel: '${_cur()} ${_fmt(data.net)}',
       detailLabel: 'Net',
     ));
 
@@ -356,7 +357,7 @@ class MonthlySummaryNarrator {
       }
       buf.write('. ');
     } else {
-      buf.write('you spent AED ${_fmt(data.expense)}. ');
+      buf.write('you spent ${_cur()} ${_fmt(data.expense)}. ');
     }
     // The savings line is the wow-factor sentence from the feature spec.
     final savings = insights
@@ -387,23 +388,23 @@ class MonthlySummaryNarrator {
       ..writeln('Currency is local GCC currency.')
       ..writeln()
       ..writeln('DATA:')
-      ..writeln('- Income: AED ${_fmt(data.income)}')
-      ..writeln('- Expenses: AED ${_fmt(data.expense)}')
-      ..writeln('- Net: AED ${_fmt(data.net)}');
+      ..writeln('- Income: ${_cur()} ${_fmt(data.income)}')
+      ..writeln('- Expenses: ${_cur()} ${_fmt(data.expense)}')
+      ..writeln('- Net: ${_cur()} ${_fmt(data.net)}');
     if (data.prevExpense != null) {
-      sb.writeln('- $prevName expenses: AED ${_fmt(data.prevExpense!)}');
+      sb.writeln('- $prevName expenses: ${_cur()} ${_fmt(data.prevExpense!)}');
       if (data.expenseChangePct != null) {
         sb.writeln('- Expense change vs $prevName: '
             '${data.expenseChangePct!.toStringAsFixed(1)}%');
       }
     }
     for (final move in data.topMoves) {
-      sb.writeln('- ${move.category.displayName}: AED ${_fmt(move.current)} '
+      sb.writeln('- ${move.category.displayName}: ${_cur()} ${_fmt(move.current)} '
           '(prev ${_fmt(move.previous)})');
     }
     final topTx = data.topTransaction;
     if (topTx != null) {
-      sb.writeln('- Largest expense: "${topTx.title}" AED ${_fmt(topTx.amount)}');
+      sb.writeln('- Largest expense: "${topTx.title}" ${_cur()} ${_fmt(topTx.amount)}');
     }
     for (final o in data.budgetOverruns) {
       sb.writeln('- Budget overrun: ${o.budget.category.displayName} '
@@ -418,6 +419,8 @@ class MonthlySummaryNarrator {
     }
     return sb.toString();
   }
+
+  static String _cur() => DocumentCollectionService.instance.activeCurrency;
 
   static String _fmt(double v) {
     final rounded = (v * 100).round() / 100;

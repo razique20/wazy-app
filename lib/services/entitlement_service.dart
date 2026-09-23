@@ -6,6 +6,8 @@ import 'auth_service.dart';
 import 'collection_service.dart';
 import 'document_scanner_service.dart';
 import 'supabase_service.dart';
+import 'ai_executive_summary_service.dart';
+import 'ai_budget_plan_service.dart';
 
 /// Track 1 monetization gatekeeper.
 ///
@@ -131,7 +133,9 @@ class EntitlementService extends ChangeNotifier {
 
     if (_tier != resolved) {
       _tier = resolved;
-      // Tier changed (e.g. admin granted an upgrade) — release the gates.
+      // Tier changed (upgrade or downgrade) — reset current month AI usage to zero
+      await AiExecutiveSummaryService.instance.resetCurrentMonthUsage();
+      await AiBudgetPlanService.instance.resetCurrentMonthUsage();
       notifyListeners();
     }
     _initialized = true;

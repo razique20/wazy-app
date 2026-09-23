@@ -12,6 +12,7 @@ import '../models/renewal_record.dart';
 import '../models/subscription_tier.dart';
 import '../services/finance_service.dart';
 import '../services/document_scanner_service.dart';
+import '../services/collection_service.dart';
 import '../services/entitlement_service.dart';
 import '../services/notification_service.dart';
 import '../widgets/dialogs/renew_document_dialog.dart';
@@ -824,13 +825,13 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
             _InfoTile(
               icon: Icons.location_on_outlined,
               label: 'Location',
-              value: item.location ?? 'UAE',
+              value: item.location ?? DocumentCollectionService.instance.activeCountry.name,
             ),
             _InfoTile(
               icon: Icons.attach_money,
               label: 'Renewal fee',
               value: item.renewalFee != null
-                  ? 'AED ${item.renewalFee!.toStringAsFixed(0)}'
+                  ? '${DocumentCollectionService.instance.activeCurrency} ${item.renewalFee!.toStringAsFixed(0)}'
                   : 'Estimated',
             ),
             _InfoTile(
@@ -1422,7 +1423,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              'AED ${rec.fee!.toStringAsFixed(0)}',
+                              '${DocumentCollectionService.instance.activeCurrency} ${rec.fee!.toStringAsFixed(0)}',
                               style: const TextStyle(
                                 color: Colors.green,
                                 fontWeight: FontWeight.bold,

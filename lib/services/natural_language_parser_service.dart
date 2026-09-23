@@ -6,6 +6,8 @@ import '../models/finance.dart';
 import '../screens/document_scan_screen.dart';
 import 'smart_category_engine.dart';
 import 'uae_authority_catalog.dart';
+import 'gcc_authority_catalog.dart';
+import 'collection_service.dart';
 
 /// Parsed natural language output item for financial transactions.
 class ParsedMoneyItem {
@@ -641,7 +643,7 @@ class NaturalLanguageParserService {
       kind: kind,
       category: category,
       amount: amount,
-      currency: 'AED',
+      currency: DocumentCollectionService.instance.activeCurrency,
       occurredAt: occurredAt,
       isRecurring: isRecurring,
       frequency: frequency,
@@ -652,8 +654,8 @@ class NaturalLanguageParserService {
   }
 
   (double, String)? _extractMoneyAmount(String text) {
-    // 1. Check 'k' multiplier e.g. 1.5k AED, 12k AED, 1.5k
-    final kRegex = RegExp(r'\b(\d+(?:\.\d{1,2})?)\s*k\s*(?:aed|dirhams|dhs|dh)?\b', caseSensitive: false);
+    // 1. Check 'k' multiplier e.g. 1.5k AED, 12k SAR, 1.5k
+    final kRegex = RegExp(r'\b(\d+(?:\.\d{1,2})?)\s*k\s*(?:aed|sar|kwd|qar|bhd|omr|dirhams|riyal|dinar|dhs|dh|sr|kd|qr|bd|or)?\b', caseSensitive: false);
     final kMatch = kRegex.firstMatch(text);
     if (kMatch != null) {
       final numVal = double.tryParse(kMatch.group(1)!);
@@ -662,9 +664,9 @@ class NaturalLanguageParserService {
       }
     }
 
-    // 2. Numbers with optional commas e.g. "12,000" or "1,500.50" with AED or currency
+    // 2. Numbers with optional commas e.g. "12,000" or "1,500.50" with currency
     final commaAedRegex = RegExp(
-      r'\b(?:aed|dirhams|dhs|dhm|dhms)\s*(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)\b|\b(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)\s*(?:aed|dirhams|dhs|dhm|dhms)\b',
+      r'\b(?:aed|sar|kwd|qar|bhd|omr|dirhams|riyal|dinar|dhs|dhm|dhms|sr|kd|qr|bd|or)\s*(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)\b|\b(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)\s*(?:aed|sar|kwd|qar|bhd|omr|dirhams|riyal|dinar|dhs|dhm|dhms|sr|kd|qr|bd|or)\b',
       caseSensitive: false,
     );
     final commaAedMatch = commaAedRegex.firstMatch(text);

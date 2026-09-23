@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/document_collection.dart';
+import '../models/gcc_country.dart';
 import 'auth_service.dart';
 import 'supabase_service.dart';
 
@@ -52,6 +53,19 @@ class DocumentCollectionService extends ChangeNotifier {
     }
     return _activeId;
   }
+
+  /// Active GCC country based on active collection.
+  GccCountry get activeCountry {
+    final activeId = activeCollectionId;
+    final active = _collections.firstWhere(
+      (c) => c.id == activeId,
+      orElse: () => const DocumentCollection.personal(),
+    );
+    return active.country;
+  }
+
+  /// Active currency string (e.g. 'AED', 'SAR', 'KWD', 'QAR', 'BHD', 'OMR').
+  String get activeCurrency => activeCountry.currency;
 
   /// The active collection (defaults to Personal).
   Future<DocumentCollection> getActiveCollection() async {
@@ -224,6 +238,33 @@ class DocumentCollectionService extends ChangeNotifier {
     await init();
   }
 
+  /// Update the personal collection's country code. Called after signup when
+  /// the DB trigger created the row with the default 'AE' but the user chose
+  /// a different GCC country.
+  Future<void> updatePersonalCountry(String countryCode) async {
+    await _ensureInitialized();
+    final code = countryCode.toUpperCase();
+    final idx = _collections.indexWhere((c) => c.isPersonal);
+    if (idx == -1) return;
+    final old = _collections[idx];
+    if (old.countryCode == code) return; // already correct
+
+    final client = _client;
+    if (client != null) {
+      await client
+          .from('collections')
+          .update({'country_code': code})
+          .eq('id', old.id);
+    }
+    _collections[idx] = DocumentCollection(
+      id: old.id,
+      name: old.name,
+      countryCode: code,
+      isPersonal: true,
+    );
+    notifyListeners();
+  }
+
   // ------------------------------------------------------------------
   // Helpers
   // ------------------------------------------------------------------
@@ -238,6 +279,11 @@ class DocumentCollectionService extends ChangeNotifier {
   Future<void> _ensurePersonal(String userId) async {
     if (_collections.any((c) => c.isPersonal)) return;
 
+    // Read the country the user chose during signup (falls back to 'AE'
+    // for users who signed up before GCC support was added).
+    final prefs = await SharedPreferences.getInstance();
+    final userCountry = prefs.getString('userCountry') ?? 'AE';
+
     final client = _client;
     if (client != null) {
       try {
@@ -246,7 +292,7 @@ class DocumentCollectionService extends ChangeNotifier {
             .insert({
               'owner_id': userId,
               'name': 'Personal',
-              'country_code': 'AE',
+              'country_code': userCountry,
               'is_personal': true,
             })
             .select()
@@ -257,7 +303,15 @@ class DocumentCollectionService extends ChangeNotifier {
         // Fall through to the local default below.
       }
     }
-    _collections = [const DocumentCollection.personal(), ..._collections];
+    _collections = [
+      DocumentCollection(
+        id: DocumentCollection.personalId,
+        name: 'Personal',
+        countryCode: userCountry,
+        isPersonal: true,
+      ),
+      ..._collections,
+    ];
   }
 
   /// Restore the persisted active selection, validating it still exists.

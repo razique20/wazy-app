@@ -44,12 +44,15 @@ class _NaturalLanguageMoneyAddDialogState
   StreamSubscription<VoiceStatus>? _voiceStatusSub;
   StreamSubscription<VoiceUpdate>? _voiceTranscriptSub;
 
-  final List<String> _samplePrompts = [
-    'Paid 450 AED for DEWA electricity yesterday',
-    'Received 12,000 AED client payment from Acme',
-    'Spent 85 AED on Uber transport today',
-    'Office rent 15,000 AED recurring monthly on 1st',
-  ];
+  List<String> get _samplePrompts {
+    final c = DocumentCollectionService.instance.activeCurrency;
+    return [
+      'Paid 450 $c for DEWA electricity yesterday',
+      'Received 12,000 $c client payment from Acme',
+      'Spent 85 $c on Uber transport today',
+      'Office rent 15,000 $c recurring monthly on 1st',
+    ];
+  }
 
   @override
   void initState() {
@@ -286,7 +289,7 @@ class _NaturalLanguageMoneyAddDialogState
             textCapitalization: TextCapitalization.sentences,
             decoration: InputDecoration(
               hintText:
-                  'e.g. Paid 450 AED for DEWA electricity yesterday',
+                  'e.g. Paid 450 ${DocumentCollectionService.instance.activeCurrency} for DEWA electricity yesterday',
               border: const OutlineInputBorder(),
               suffixIcon: _inputController.text.isNotEmpty
                   ? IconButton(
@@ -328,7 +331,7 @@ class _NaturalLanguageMoneyAddDialogState
                   Expanded(
                     child: Text(
                       _voicePartial.isEmpty
-                          ? 'Listening… say e.g. "Paid 450 AED for DEWA yesterday"'
+                          ? 'Listening… say e.g. "Paid 450 ${DocumentCollectionService.instance.activeCurrency} for DEWA yesterday"'
                           : _voicePartial,
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontStyle: _voicePartial.isEmpty

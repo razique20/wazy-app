@@ -628,7 +628,7 @@ class FinanceService extends ChangeNotifier {
       category: FinanceCategoryX.fromName(row['category'] as String?),
       title: row['title'] as String? ?? 'Transaction',
       amount: (row['amount'] as num?)?.toDouble() ?? 0,
-      currency: row['currency'] as String? ?? 'AED',
+      currency: row['currency'] as String? ?? DocumentCollectionService.instance.activeCurrency,
       occurredAt:
           DateTime.tryParse(row['occurred_at'] as String? ?? '') ??
               DateTime.now(),
@@ -718,7 +718,7 @@ class FinanceService extends ChangeNotifier {
       category: FinanceCategoryX.fromName(row['category'] as String?),
       title: row['title'] as String? ?? 'Recurring',
       amount: (row['amount'] as num?)?.toDouble() ?? 0,
-      currency: row['currency'] as String? ?? 'AED',
+      currency: row['currency'] as String? ?? DocumentCollectionService.instance.activeCurrency,
       frequency: RecurrenceFrequencyX.fromName(row['frequency'] as String?),
       dayOfMonth: (row['day_of_month'] as num?)?.toInt() ?? 1,
       startDate: DateTime.tryParse(row['start_date'] as String? ?? '') ??

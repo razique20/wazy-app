@@ -36,13 +36,58 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
   }
 
   Future<void> _loadSummary({bool forceRegenerate = false}) async {
+    final service = AiExecutiveSummaryService.instance;
+
     if (forceRegenerate) {
+      final remaining = await service.getRemainingQuotaThisMonth();
+      if (remaining <= 0) {
+        if (!mounted) return;
+        final upgrade = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: WazyColors.warning),
+                SizedBox(width: 8),
+                Text('Monthly Quota Reached'),
+              ],
+            ),
+            content: Text(
+              'You have used all $_usedQuota / $_quotaLimit monthly AI Executive Summaries for your plan.\n\nUpgrade your plan to unlock higher monthly AI quota limit.',
+              style: const TextStyle(fontSize: 13.5, height: 1.4),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => Navigator.pop(ctx, true),
+                icon: const Icon(Icons.bolt_rounded, size: 16),
+                label: const Text('Upgrade Plan'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: WazyColors.caution,
+                  foregroundColor: Colors.black,
+                ),
+              ),
+            ],
+          ),
+        );
+        if (upgrade == true && mounted) {
+          await showUpgradeDialog(context, EntitlementFeature.groqAiSummary);
+        }
+        return;
+      }
+
+      final confirmed = await _confirmQuotaUsage(remaining);
+      if (!confirmed) return;
+
       setState(() => _regenerating = true);
     } else {
       setState(() => _loading = true);
     }
 
-    final service = AiExecutiveSummaryService.instance;
     final result = await service.generateSummary(forceRegenerate: forceRegenerate);
     final used = await service.getUsedQuotaThisMonth();
     final limit = service.getMonthlyQuotaLimit();
@@ -63,6 +108,42 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
     if (forceRegenerate && result.quotaExceeded) {
       await showUpgradeDialog(context, EntitlementFeature.groqAiSummary);
     }
+  }
+
+  Future<bool> _confirmQuotaUsage(int remaining) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.auto_awesome_rounded, color: WazyColors.cyanSecondary),
+            SizedBox(width: 8),
+            Text('Confirm AI Quota Usage'),
+          ],
+        ),
+        content: Text(
+          'Generating a fresh AI summary will use 1 credit from your monthly quota ($remaining credit${remaining == 1 ? '' : 's'} remaining this month).\n\nDo you want to proceed?',
+          style: const TextStyle(fontSize: 13.5, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(ctx, true),
+            icon: const Icon(Icons.bolt_rounded, size: 16),
+            label: const Text('Confirm & Use 1 Credit'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: WazyColors.navyPrimary,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
   }
 
   Future<void> _showKeySettingsDialog() async {
@@ -337,6 +418,80 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
   }
 
   Widget _buildNarrativeCard(ThemeData theme, bool isDark) {
+    final lastAt = AiExecutiveSummaryService.instance.lastGeneratedAt;
+    final timeStr = lastAt != null
+        ? '${lastAt.day}/${lastAt.month}/${lastAt.year} ${lastAt.hour.toString().padLeft(2, '0')}:${lastAt.minute.toString().padLeft(2, '0')}'
+        : null;
+
+    if (_narrative.isEmpty) {
+      return Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: WazyColors.cyanSecondary.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.auto_awesome_rounded,
+                  size: 28,
+                  color: WazyColors.cyanSecondary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'No Previous Summary Found',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Generate your first executive summary combining document compliance and financial records.',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _regenerating
+                      ? null
+                      : () => _loadSummary(forceRegenerate: true),
+                  icon: _regenerating
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Icon(Icons.bolt_rounded, size: 18),
+                  label: const Text('Generate AI Executive Summary (1 Credit)'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: WazyColors.navyPrimary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -356,11 +511,24 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
                   size: 20,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  'Executive Narrative',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Previous AI Executive Summary',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (timeStr != null)
+                      Text(
+                        'Last generated: $timeStr',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontSize: 10.5,
+                        ),
+                      ),
+                  ],
                 ),
                 const Spacer(),
                 if (_usedGroq)
@@ -371,7 +539,7 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: const Text(
-                      'Groq AI Polished',
+                      'Groq AI',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
@@ -379,19 +547,6 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
                       ),
                     ),
                   ),
-                IconButton(
-                  icon: _regenerating
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.refresh_rounded, size: 20),
-                  tooltip: 'Regenerate summary',
-                  onPressed: _regenerating
-                      ? null
-                      : () => _loadSummary(forceRegenerate: true),
-                ),
               ],
             ),
             const Divider(height: 20),
@@ -420,6 +575,31 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
                 ],
               ),
             ],
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _regenerating
+                    ? null
+                    : () => _loadSummary(forceRegenerate: true),
+                icon: _regenerating
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh_rounded, size: 16),
+                label: const Text('Generate Fresh AI Summary (Uses 1 Credit)'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: WazyColors.navyPrimary,
+                  side: BorderSide(color: WazyColors.navyPrimary.withOpacity(0.5)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
