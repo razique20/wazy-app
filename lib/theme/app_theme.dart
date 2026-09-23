@@ -193,6 +193,19 @@ class WazyGlass extends StatelessWidget {
 class WazyTheme {
   WazyTheme._();
 
+  // google_fonts hardcodes `fontFamilyFallback: ['Space Grotesk']` on every
+  // style it returns, which blocks the engine's automatic fallback to the
+  // platform emoji font — emoji then render as tofu ("?") on iOS. Append the
+  // platform emoji fonts explicitly so emoji always resolve.
+  static const List<String> _emojiFallback = [
+    'Apple Color Emoji', // iOS, macOS
+    'Segoe UI Emoji', // Windows
+    'Noto Color Emoji', // Android, Linux
+  ];
+
+  static TextStyle _withEmojiFallback(TextStyle style) =>
+      style.copyWith(fontFamilyFallback: _emojiFallback);
+
   // ── Typography ──────────────────────────────────────────────────────────
 
   static TextTheme _textTheme(Brightness brightness) {
@@ -269,7 +282,7 @@ class WazyTheme {
         fontSize: 10,
         fontWeight: FontWeight.w500,
       ),
-    );
+    ).apply(fontFamilyFallback: _emojiFallback);
   }
 
   // ── Dark Theme ──────────────────────────────────────────────────────────
@@ -319,21 +332,21 @@ class WazyTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.spaceGrotesk(
+        titleTextStyle: _withEmojiFallback(GoogleFonts.spaceGrotesk(
           fontSize: 17.5,
           fontWeight: FontWeight.w600,
           color: WazyColors.textPrimary,
           letterSpacing: -0.3,
-        ),
+        )),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: WazyColors.obsidian.withOpacity(0.85),
         indicatorColor: WazyColors.cyanSecondary.withOpacity(0.15),
         labelTextStyle: WidgetStatePropertyAll(
-          GoogleFonts.spaceGrotesk(
+          _withEmojiFallback(GoogleFonts.spaceGrotesk(
             fontSize: 11,
             fontWeight: FontWeight.w500,
-          ),
+          )),
         ),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
@@ -378,10 +391,10 @@ class WazyTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: GoogleFonts.spaceGrotesk(
+          textStyle: _withEmojiFallback(GoogleFonts.spaceGrotesk(
             fontWeight: FontWeight.w600,
             fontSize: 13,
-          ),
+          )),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -391,19 +404,19 @@ class WazyTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: GoogleFonts.spaceGrotesk(
+          textStyle: _withEmojiFallback(GoogleFonts.spaceGrotesk(
             fontWeight: FontWeight.w600,
             fontSize: 13,
-          ),
+          )),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: WazyColors.cyanSecondary,
-          textStyle: GoogleFonts.spaceGrotesk(
+          textStyle: _withEmojiFallback(GoogleFonts.spaceGrotesk(
             fontWeight: FontWeight.w500,
             fontSize: 13,
-          ),
+          )),
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
@@ -429,10 +442,11 @@ class WazyTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: WazyColors.slate,
-        contentTextStyle: GoogleFonts.spaceGrotesk(
+        contentTextStyle:
+            _withEmojiFallback(GoogleFonts.spaceGrotesk(
           color: WazyColors.textPrimary,
           fontSize: 13,
-        ),
+        )),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -441,8 +455,10 @@ class WazyTheme {
       chipTheme: ChipThemeData(
         backgroundColor: WazyColors.slate,
         selectedColor: WazyColors.cyanSecondary.withOpacity(0.2),
-        labelStyle: GoogleFonts.spaceGrotesk(fontSize: 11.5, color: WazyColors.textPrimary),
-        secondaryLabelStyle: GoogleFonts.spaceGrotesk(fontSize: 11.5, color: WazyColors.cyanSecondary),
+        labelStyle: _withEmojiFallback(
+            GoogleFonts.spaceGrotesk(fontSize: 11.5, color: WazyColors.textPrimary)),
+        secondaryLabelStyle: _withEmojiFallback(GoogleFonts.spaceGrotesk(
+            fontSize: 11.5, color: WazyColors.cyanSecondary)),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
@@ -508,21 +524,21 @@ class WazyTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.spaceGrotesk(
+        titleTextStyle: _withEmojiFallback(GoogleFonts.spaceGrotesk(
           fontSize: 17.5,
           fontWeight: FontWeight.w600,
           color: WazyColors.textPrimaryLight,
           letterSpacing: -0.3,
-        ),
+        )),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: Colors.white.withOpacity(0.92),
         indicatorColor: scheme.primary.withOpacity(0.1),
         labelTextStyle: WidgetStatePropertyAll(
-          GoogleFonts.spaceGrotesk(
+          _withEmojiFallback(GoogleFonts.spaceGrotesk(
             fontSize: 11,
             fontWeight: FontWeight.w500,
-          ),
+          )),
         ),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
@@ -567,10 +583,10 @@ class WazyTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: GoogleFonts.spaceGrotesk(
+          textStyle: _withEmojiFallback(GoogleFonts.spaceGrotesk(
             fontWeight: FontWeight.w600,
             fontSize: 13,
-          ),
+          )),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -580,19 +596,19 @@ class WazyTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: GoogleFonts.spaceGrotesk(
+          textStyle: _withEmojiFallback(GoogleFonts.spaceGrotesk(
             fontWeight: FontWeight.w600,
             fontSize: 13,
-          ),
+          )),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: scheme.primary,
-          textStyle: GoogleFonts.spaceGrotesk(
+          textStyle: _withEmojiFallback(GoogleFonts.spaceGrotesk(
             fontWeight: FontWeight.w500,
             fontSize: 13,
-          ),
+          )),
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
@@ -618,10 +634,11 @@ class WazyTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: WazyColors.charcoal,
-        contentTextStyle: GoogleFonts.spaceGrotesk(
+        contentTextStyle:
+            _withEmojiFallback(GoogleFonts.spaceGrotesk(
           color: WazyColors.textPrimary,
           fontSize: 13,
-        ),
+        )),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -630,8 +647,10 @@ class WazyTheme {
       chipTheme: ChipThemeData(
         backgroundColor: WazyColors.cloud,
         selectedColor: scheme.primary.withOpacity(0.12),
-        labelStyle: GoogleFonts.spaceGrotesk(fontSize: 11.5, color: WazyColors.textPrimaryLight),
-        secondaryLabelStyle: GoogleFonts.spaceGrotesk(fontSize: 11.5, color: scheme.primary),
+        labelStyle: _withEmojiFallback(GoogleFonts.spaceGrotesk(
+            fontSize: 11.5, color: WazyColors.textPrimaryLight)),
+        secondaryLabelStyle: _withEmojiFallback(GoogleFonts.spaceGrotesk(
+            fontSize: 11.5, color: scheme.primary)),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),

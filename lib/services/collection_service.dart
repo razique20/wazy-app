@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/document_collection.dart';
@@ -15,7 +16,12 @@ import 'supabase_service.dart';
 /// Supabase isn't configured the service keeps an in-memory list starting
 /// with the built-in personal collection, so the app remains fully usable
 /// offline.
-class DocumentCollectionService {
+///
+/// A [ChangeNotifier]: fires whenever the collection list or the active
+/// selection changes, so screens that mirror the selection (e.g. the
+/// Settings tab's "My Collections" section) can stay in sync with switches
+/// made elsewhere (e.g. the Home page's collection switcher).
+class DocumentCollectionService extends ChangeNotifier {
   DocumentCollectionService._();
 
   static final DocumentCollectionService instance =
@@ -71,6 +77,7 @@ class DocumentCollectionService {
       _activeId = DocumentCollection.personalId;
       _initialized = true;
       await _restoreActiveSelection();
+      notifyListeners();
       return;
     }
 
@@ -90,6 +97,7 @@ class DocumentCollectionService {
     await _ensurePersonal(userId);
     _initialized = true;
     await _restoreActiveSelection();
+    notifyListeners();
   }
 
   /// Make [id] the active collection and persist the choice.
@@ -101,9 +109,11 @@ class DocumentCollectionService {
       if (personal != null) targetId = personal.id;
     }
     if (!_collections.any((c) => c.id == targetId)) return;
+    final changed = _activeId != targetId;
     _activeId = targetId;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_activeIdKey, targetId);
+    if (changed) notifyListeners();
   }
 
   /// Create a new company collection named [name] and return it.
@@ -130,6 +140,7 @@ class DocumentCollectionService {
           .single();
       final collection = _collectionRowToCollection(inserted);
       _collections = [..._collections, collection];
+      notifyListeners();
       return collection;
     }
 
@@ -139,6 +150,7 @@ class DocumentCollectionService {
       name: trimmed,
     );
     _collections = [..._collections, collection];
+    notifyListeners();
     return collection;
   }
 
@@ -162,6 +174,7 @@ class DocumentCollectionService {
       name: trimmed,
       isPersonal: old.isPersonal,
     );
+    notifyListeners();
   }
 
   /// Delete a company collection and all documents inside it (the DB foreign
@@ -181,6 +194,7 @@ class DocumentCollectionService {
     if (_activeId == id) {
       await setActive(DocumentCollection.personalId);
     }
+    notifyListeners();
   }
 
   /// Force a re-fetch from Supabase (e.g. after auth state changes).

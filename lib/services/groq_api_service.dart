@@ -27,7 +27,11 @@ class GroqApiService {
   static String get _defaultApiKey => 'gsk_$_k1$_k2';
 
   /// Primary fast Groq model.
-  static const String defaultModel = 'groq/compound-mini';
+  ///
+  /// `groq/compound` and `groq/compound-mini` were decommissioned by Groq on
+  /// 2026-09-21; GPT-OSS 120B is the current production workhorse with built-in
+  /// reasoning. See https://console.groq.com/docs/models.
+  static const String defaultModel = 'openai/gpt-oss-120b';
 
   String? _customApiKey;
   bool _loaded = false;
@@ -69,10 +73,15 @@ class GroqApiService {
   }
 
   /// Generates AI summary content via Groq API.
+  ///
+  /// [maxTokens] and [temperature] are optional so the AI Budget Planner can
+  /// request a larger JSON response without touching the summary defaults.
   Future<String> generateSummary({
     required String systemPrompt,
     required String userPrompt,
     String model = defaultModel,
+    int? maxTokens,
+    double? temperature,
   }) async {
     await load();
     final key = apiKey;
@@ -87,8 +96,11 @@ class GroqApiService {
         {'role': 'system', 'content': systemPrompt},
         {'role': 'user', 'content': userPrompt},
       ],
-      'temperature': 0.3,
-      'max_tokens': 450,
+      'temperature': temperature ?? 0.3,
+      'max_tokens': maxTokens ?? 450,
+      // GPT-OSS models reason before answering and max_tokens covers both;
+      // minimal effort keeps the full budget for the visible content.
+      'reasoning_effort': 'low',
     });
 
     try {

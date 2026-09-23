@@ -61,6 +61,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     _loadCollections();
     _loadSettings();
+    // The active collection can be switched elsewhere (e.g. the Home page's
+    // switcher); mirror those changes in the My Collections section.
+    DocumentCollectionService.instance.addListener(_onCollectionsChanged);
+  }
+
+  @override
+  void dispose() {
+    DocumentCollectionService.instance.removeListener(_onCollectionsChanged);
+    super.dispose();
+  }
+
+  void _onCollectionsChanged() {
+    if (!mounted) return;
+    // Schedule outside the notification in case the service notifies while
+    // the widget tree is building.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadCollections();
+    });
   }
 
   Future<void> _loadCollections() async {
@@ -388,6 +406,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _switchTo(DocumentCollection collection) async {
     await DocumentCollectionService.instance.setActive(collection.id);
     await DocumentScannerService.instance.refresh();
+    // Same as the Home switcher: re-scope finance data so the Money tab
+    // follows the newly active collection.
+    await FinanceService.instance.refresh();
     await _loadCollections();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

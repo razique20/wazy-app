@@ -85,6 +85,9 @@ class TierLimits {
   /// Monthly quota for Groq AI Executive Summaries.
   final int groqAiSummaryMonthlyQuota;
 
+  /// Monthly quota for Groq AI Budget Planner generations.
+  final int aiBudgetPlanMonthlyQuota;
+
   const TierLimits({
     required this.maxDocuments,
     required this.maxCompanyCollections,
@@ -96,6 +99,7 @@ class TierLimits {
     required this.renewalAuditHistory,
     required this.teamExport,
     required this.groqAiSummaryMonthlyQuota,
+    required this.aiBudgetPlanMonthlyQuota,
   });
 
   static const free = TierLimits(
@@ -109,6 +113,7 @@ class TierLimits {
     renewalAuditHistory: false,
     teamExport: false,
     groqAiSummaryMonthlyQuota: 3,
+    aiBudgetPlanMonthlyQuota: 2,
   );
 
   static const plus = TierLimits(
@@ -122,6 +127,7 @@ class TierLimits {
     renewalAuditHistory: false,
     teamExport: false,
     groqAiSummaryMonthlyQuota: 30,
+    aiBudgetPlanMonthlyQuota: 20,
   );
 
   static const business = TierLimits(
@@ -135,6 +141,7 @@ class TierLimits {
     renewalAuditHistory: true,
     teamExport: true,
     groqAiSummaryMonthlyQuota: 100,
+    aiBudgetPlanMonthlyQuota: 60,
   );
 }
 
@@ -181,6 +188,7 @@ class TierInfo {
         'PDF / CSV report export',
         'Custom alert days per document',
         'AI monthly executive summary',
+        'AI budget planning & goal simulator',
       ],
     ),
     SubscriptionTier.business: TierInfo(
@@ -222,7 +230,8 @@ enum EntitlementFeature {
   documentAssignment('documentAssignment', 'Document assignment'),
   renewalAuditHistory('renewalAuditHistory', 'Renewal audit history'),
   teamExport('teamExport', 'Team data export'),
-  groqAiSummary('groqAiSummary', 'Groq AI Executive Summary');
+  groqAiSummary('groqAiSummary', 'Groq AI Executive Summary'),
+  aiBudgetPlanning('aiBudgetPlanning', 'AI Budget Planning');
 
   const EntitlementFeature(this.id, this.label);
 

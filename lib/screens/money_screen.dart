@@ -21,6 +21,7 @@ import '../services/smart_category_engine.dart';
 import '../theme/app_theme.dart';
 import '../widgets/indicators/empty_state_illustration.dart';
 import '../widgets/dialogs/natural_language_money_add_dialog.dart';
+import '../widgets/dialogs/ai_budget_plan_sheet.dart';
 import '../widgets/dialogs/upgrade_dialog.dart';
 import '../widgets/cards/monthly_summary_card.dart';
 import 'package:uuid/uuid.dart';
@@ -348,14 +349,26 @@ class _MoneyScreenState extends State<MoneyScreen> {
             ],
           ),
           const SizedBox(height: 10),
-          // Primary full-width Add Record button
-          SizedBox(
-            width: double.infinity,
-            child: _MoneyAddCard(
-              icon: Icons.add_rounded,
-              label: 'Add Record',
-              onTap: _showAddTransactionSheet,
-            ),
+          // AI Budget Planner + Add Record side by side (quota is enforced
+          // in-service).
+          Row(
+            children: [
+              Expanded(
+                child: _MoneyAddCard(
+                  icon: Icons.auto_awesome_rounded,
+                  label: 'AI Budget Plan',
+                  onTap: () => showAiBudgetPlanSheet(context),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _MoneyAddCard(
+                  icon: Icons.add_rounded,
+                  label: 'Add Record',
+                  onTap: _showAddTransactionSheet,
+                ),
+              ),
+            ],
           ),
         ],
       ),

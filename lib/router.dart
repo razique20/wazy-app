@@ -25,6 +25,7 @@ import 'screens/records_screen.dart';
 import 'screens/cash_flow_forecast_screen.dart';
 import 'screens/global_search_screen.dart';
 import 'screens/ai_summary_screen.dart';
+import 'screens/ai_budget_plan_screen.dart';
 import 'services/auth_service.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -132,6 +133,11 @@ final router = GoRouter(
       path: '/ai-summary',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const AiSummaryScreen(),
+    ),
+    GoRoute(
+      path: '/ai-budget-plan',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const AiBudgetPlanScreen(),
     ),
     // 4-tab bottom-nav shell:
     //   Home      — cross-tier dashboard (documents + money summary)

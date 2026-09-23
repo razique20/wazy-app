@@ -354,6 +354,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   () => context.push('/cash-flow-forecast')),
               tile(Icons.auto_awesome_rounded, 'AI Summary',
                   () => context.push('/ai-summary')),
+              tile(Icons.flag_rounded, 'AI Planner',
+                  () => context.push('/ai-budget-plan')),
               tile(Icons.document_scanner_rounded, 'Scan', () {
                 // Free plan document limit — paywall when the quota is full.
                 unawaited(_openScanner());
