@@ -14,6 +14,7 @@ import '../services/gemini_api_service.dart';
 import '../services/notification_service.dart';
 import '../services/entitlement_service.dart';
 import '../services/supabase_service.dart';
+import '../services/support_service.dart';
 import '../services/theme_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/widgets.dart';
@@ -469,6 +470,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             _buildAlertsSection(context, theme),
                             const SizedBox(height: 16),
                             _buildAiSection(context, theme),
+                            const SizedBox(height: 16),
+                            _buildSupportSection(context, theme),
                             // Keep the last card scrollable clear of the
                             // floating nav pill (height + margins ≈ 80).
                             SizedBox(
@@ -1116,6 +1119,438 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // ------------------------------------------------------------------
+  // 7. Help & Support — submit requests, track status.
+  // ------------------------------------------------------------------
+
+  Widget _buildSupportSection(BuildContext context, ThemeData theme) {
+    return _SettingsGroup(
+      title: 'Help & Support',
+      children: [
+        _SettingsTile(
+          icon: Icons.add_comment_rounded,
+          iconColor: Colors.teal,
+          title: 'Submit a Request',
+          subtitle: 'Request a tracking option, report a bug, or get help',
+          trailing: const Icon(
+            Icons.chevron_right_rounded,
+            size: 20,
+            color: Colors.grey,
+          ),
+          onTap: () => _showSubmitSupportSheet(context),
+        ),
+        _SettingsTile(
+          icon: Icons.history_rounded,
+          iconColor: Colors.blueGrey,
+          title: 'My Requests',
+          subtitle: 'View status of your previous submissions',
+          trailing: const Icon(
+            Icons.chevron_right_rounded,
+            size: 20,
+            color: Colors.grey,
+          ),
+          onTap: () => _showRequestHistorySheet(context),
+        ),
+      ],
+    );
+  }
+
+  /// Opens a bottom sheet for submitting a new support / tracking request.
+  Future<void> _showSubmitSupportSheet(BuildContext context) async {
+    final theme = Theme.of(context);
+    final titleCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+    String selectedType = 'tracking_option_request';
+
+    final submitted = await showModalBottomSheet<bool>(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      backgroundColor: theme.colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          return SafeArea(
+            child: Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Drag handle
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.outline.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.teal.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.support_agent_rounded,
+                            color: Colors.teal,
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Submit a Request',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(ctx, false),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Request type
+                    Text(
+                      'Request Type',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: theme.colorScheme.outline.withOpacity(0.3),
+                        ),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: selectedType,
+                          isExpanded: true,
+                          borderRadius: BorderRadius.circular(12),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'tracking_option_request',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.track_changes_rounded, size: 18, color: Colors.teal),
+                                  SizedBox(width: 10),
+                                  Text('Tracking Option Request'),
+                                ],
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: 'feature_request',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.lightbulb_outline_rounded, size: 18, color: Colors.amber),
+                                  SizedBox(width: 10),
+                                  Text('Feature Request'),
+                                ],
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: 'bug_report',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.bug_report_outlined, size: 18, color: Colors.redAccent),
+                                  SizedBox(width: 10),
+                                  Text('Bug Report'),
+                                ],
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: 'support_request',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.help_outline_rounded, size: 18, color: Colors.blue),
+                                  SizedBox(width: 10),
+                                  Text('General Support'),
+                                ],
+                              ),
+                            ),
+                          ],
+                          onChanged: (v) {
+                            if (v != null) setSheetState(() => selectedType = v);
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Title
+                    Text(
+                      'Title',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: titleCtrl,
+                      textCapitalization: TextCapitalization.sentences,
+                      decoration: InputDecoration(
+                        hintText: 'e.g. Add vehicle registration tracking',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        prefixIcon: const Icon(Icons.title_rounded),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Description
+                    Text(
+                      'Description',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: descCtrl,
+                      maxLines: 4,
+                      textCapitalization: TextCapitalization.sentences,
+                      decoration: InputDecoration(
+                        hintText:
+                            'Describe what you need in detail…',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        alignLabelWithHint: true,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Submit
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: FilledButton.icon(
+                        onPressed: () async {
+                          final title = titleCtrl.text.trim();
+                          final desc = descCtrl.text.trim();
+                          if (title.isEmpty) {
+                            ScaffoldMessenger.of(ctx).showSnackBar(
+                              const SnackBar(
+                                content: Text('Please enter a title'),
+                              ),
+                            );
+                            return;
+                          }
+                          if (desc.isEmpty) {
+                            ScaffoldMessenger.of(ctx).showSnackBar(
+                              const SnackBar(
+                                content: Text('Please add a description'),
+                              ),
+                            );
+                            return;
+                          }
+
+                          final result =
+                              await SupportService.instance.submitRequest(
+                            title: title,
+                            description: desc,
+                            requestType: selectedType,
+                          );
+
+                          if (ctx.mounted) {
+                            ScaffoldMessenger.of(ctx).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  result.message ?? 'Request submitted',
+                                ),
+                              ),
+                            );
+                            Navigator.pop(ctx, result.success);
+                          }
+                        },
+                        icon: const Icon(Icons.send_rounded),
+                        label: const Text('Submit Request'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: WazyColors.navyPrimary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+
+    // Refresh is not needed because support requests are independent of
+    // the profile state, but good UX if user checks My Requests next.
+    if (submitted == true && mounted) {
+      setState(() {});
+    }
+  }
+
+  /// Opens a bottom sheet listing all the user's past support requests
+  /// with their current status.
+  Future<void> _showRequestHistorySheet(BuildContext context) async {
+    final theme = Theme.of(context);
+
+    showModalBottomSheet(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      backgroundColor: theme.colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: SizedBox(
+            height: MediaQuery.of(ctx).size.height * 0.65,
+            child: Column(
+              children: [
+                // Drag handle
+                const SizedBox(height: 8),
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.outline.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.blueGrey.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.history_rounded,
+                          color: Colors.blueGrey,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'My Requests',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: FutureBuilder<List<SupportRequestItem>>(
+                    future: SupportService.instance.fetchUserRequests(),
+                    builder: (ctx, snap) {
+                      if (snap.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                          child: CircularProgressIndicator(),
+                        );
+                      }
+                      final items = snap.data ?? [];
+                      if (items.isEmpty) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(32),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.inbox_rounded,
+                                  size: 56,
+                                  color: theme.colorScheme.outline
+                                      .withOpacity(0.4),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'No requests yet',
+                                  style:
+                                      theme.textTheme.titleMedium?.copyWith(
+                                    color: theme.colorScheme.outline,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Submit a request and it will appear here',
+                                  style:
+                                      theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.outline,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+                      return ListView.separated(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        itemCount: items.length,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: 10),
+                        itemBuilder: (ctx, i) {
+                          final item = items[i];
+                          return _SupportRequestCard(
+                            item: item,
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ------------------------------------------------------------------
   // Shared building blocks
   // ------------------------------------------------------------------
 
@@ -1560,5 +1995,203 @@ class _HeroIconButton extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// A card that shows one support request — type, title, description snippet,
+/// submitted date, and a colour-coded status badge.
+class _SupportRequestCard extends StatelessWidget {
+  final SupportRequestItem item;
+
+  const _SupportRequestCard({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final (Color statusColor, IconData statusIcon) = switch (item.status) {
+      'in_progress' => (Colors.orange, Icons.autorenew_rounded),
+      'resolved' => (WazyColors.safe, Icons.check_circle_outline_rounded),
+      _ => (Colors.blueGrey, Icons.schedule_rounded), // 'open'
+    };
+
+    final statusLabel = switch (item.status) {
+      'in_progress' => 'In Progress',
+      'resolved' => 'Resolved',
+      _ => 'Open',
+    };
+
+    final typeIcon = switch (item.requestType) {
+      'tracking_option_request' => Icons.track_changes_rounded,
+      'feature_request' => Icons.lightbulb_outline_rounded,
+      'bug_report' => Icons.bug_report_outlined,
+      _ => Icons.help_outline_rounded,
+    };
+
+    final typeColor = switch (item.requestType) {
+      'tracking_option_request' => Colors.teal,
+      'feature_request' => Colors.amber.shade700,
+      'bug_report' => Colors.redAccent,
+      _ => Colors.blue,
+    };
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark
+            ? WazyColors.slate.withOpacity(0.55)
+            : WazyColors.cloud,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withOpacity(0.06)
+              : Colors.black.withOpacity(0.05),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Top row: type pill + status badge
+          Row(
+            children: [
+              // Type pill
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: typeColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(typeIcon, size: 14, color: typeColor),
+                    const SizedBox(width: 4),
+                    Text(
+                      item.typeLabel,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: typeColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              // Status badge
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(statusIcon, size: 14, color: statusColor),
+                    const SizedBox(width: 4),
+                    Text(
+                      statusLabel,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: statusColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // Title
+          Text(
+            item.title,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+
+          if (item.description.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              item.description,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.outline,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+
+          // Admin notes (if any)
+          if (item.adminNotes != null &&
+              item.adminNotes!.trim().isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: WazyColors.cyanSecondary.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: WazyColors.cyanSecondary.withOpacity(0.2),
+                ),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.admin_panel_settings_rounded,
+                    size: 16,
+                    color: WazyColors.cyanSecondary,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      item.adminNotes!,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: WazyColors.cyanSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 8),
+          // Date
+          Text(
+            _formatRequestDate(item.createdAt),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.outline.withOpacity(0.6),
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _formatRequestDate(DateTime date) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    final local = date.toLocal();
+    final hour = local.hour % 12 == 0 ? 12 : local.hour % 12;
+    final amPm = local.hour >= 12 ? 'PM' : 'AM';
+    final min = local.minute.toString().padLeft(2, '0');
+    return '${local.day} ${months[local.month - 1]} ${local.year} · $hour:$min $amPm';
   }
 }
