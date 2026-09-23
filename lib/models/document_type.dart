@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
+import '../services/gcc_authority_catalog.dart';
+import 'gcc_country.dart';
+
 enum DocumentType {
   tradeLicence,
   ejari,
@@ -20,6 +23,14 @@ enum DocumentType {
 }
 
 extension DocumentTypeExtension on DocumentType {
+  String localizedDisplayName([GccCountry country = GccCountry.uae]) {
+    return GccAuthorityCatalog.getLocalizedDisplayName(this, country);
+  }
+
+  String? localizedPickerAlias([GccCountry country = GccCountry.uae]) {
+    return GccAuthorityCatalog.getLocalizedPickerAlias(this, country);
+  }
+
   String get displayName {
     switch (this) {
       case DocumentType.tradeLicence:
@@ -264,6 +275,15 @@ class DocumentTypeMeta {
     this.typicalRenewalDays = 365,
     this.isCustom = false,
   });
+
+  /// Get localized display name for a specific GCC country.
+  String localizedDisplayName([GccCountry country = GccCountry.uae]) {
+    final builtin = builtinEnum;
+    if (builtin != null) {
+      return builtin.localizedDisplayName(country);
+    }
+    return displayName;
+  }
 
   /// Built-in type backing this meta, or null for custom types.
   DocumentType? get builtinEnum {

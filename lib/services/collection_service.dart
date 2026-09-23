@@ -116,14 +116,18 @@ class DocumentCollectionService extends ChangeNotifier {
     if (changed) notifyListeners();
   }
 
-  /// Create a new company collection named [name] and return it.
+  /// Create a new company collection named [name] in [countryCode] and return it.
   /// Personal collections cannot be created — there is exactly one.
-  Future<DocumentCollection> createCollection(String name) async {
+  Future<DocumentCollection> createCollection(
+    String name, {
+    String countryCode = 'AE',
+  }) async {
     await _ensureInitialized();
     final trimmed = name.trim();
     if (trimmed.isEmpty) {
       throw ArgumentError('Collection name cannot be empty');
     }
+    final code = countryCode.toUpperCase();
 
     final client = _client;
     final userId = AuthService.instance.currentUserId;
@@ -134,6 +138,7 @@ class DocumentCollectionService extends ChangeNotifier {
           .insert({
             'owner_id': userId,
             'name': trimmed,
+            'country_code': code,
             'is_personal': false,
           })
           .select()
@@ -148,14 +153,19 @@ class DocumentCollectionService extends ChangeNotifier {
     final collection = DocumentCollection(
       id: 'local-${DateTime.now().microsecondsSinceEpoch}',
       name: trimmed,
+      countryCode: code,
     );
     _collections = [..._collections, collection];
     notifyListeners();
     return collection;
   }
 
-  /// Rename a company collection. The personal collection keeps its name.
-  Future<void> renameCollection(String id, String name) async {
+  /// Rename a company collection or update its country. The personal collection keeps its name.
+  Future<void> renameCollection(
+    String id,
+    String name, {
+    String? countryCode,
+  }) async {
     await _ensureInitialized();
     final trimmed = name.trim();
     if (trimmed.isEmpty) return;
@@ -164,14 +174,23 @@ class DocumentCollectionService extends ChangeNotifier {
     if (index == -1) return;
     if (_collections[index].isPersonal) return;
 
+    final old = _collections[index];
+    final newCountry = countryCode?.toUpperCase() ?? old.countryCode;
+
     final client = _client;
     if (client != null) {
-      await client.from('collections').update({'name': trimmed}).eq('id', id);
+      await client
+          .from('collections')
+          .update({
+            'name': trimmed,
+            'country_code': newCountry,
+          })
+          .eq('id', id);
     }
-    final old = _collections[index];
     _collections[index] = DocumentCollection(
       id: old.id,
       name: trimmed,
+      countryCode: newCountry,
       isPersonal: old.isPersonal,
     );
     notifyListeners();
@@ -227,6 +246,7 @@ class DocumentCollectionService extends ChangeNotifier {
             .insert({
               'owner_id': userId,
               'name': 'Personal',
+              'country_code': 'AE',
               'is_personal': true,
             })
             .select()
@@ -259,6 +279,7 @@ class DocumentCollectionService extends ChangeNotifier {
     return DocumentCollection(
       id: row['id'] as String,
       name: row['name'] as String? ?? 'Collection',
+      countryCode: (row['country_code'] ?? row['countryCode']) as String? ?? 'AE',
       isPersonal: row['is_personal'] as bool? ?? false,
     );
   }

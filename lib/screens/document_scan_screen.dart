@@ -10,9 +10,11 @@ import 'package:uuid/uuid.dart';
 import '../models/document_collection.dart';
 import '../models/document_type.dart';
 import '../models/expiry_item.dart';
+import '../models/gcc_country.dart';
 import '../services/collection_service.dart';
 import '../services/custom_document_type_service.dart';
 import '../services/document_scanner_service.dart';
+import '../services/gcc_authority_catalog.dart';
 import '../services/uae_authority_catalog.dart';
 import '../services/uae_document_ocr_service.dart';
 import '../widgets/dialogs/companion_suggestion_sheet.dart';
@@ -65,6 +67,16 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
   bool _isScanningOcr = false;
   UaeOcrResult? _ocrResult;
 
+  GccCountry get _activeCountry {
+    final collections = DocumentCollectionService.instance.collections;
+    final activeId = DocumentCollectionService.instance.activeCollectionId;
+    final active = collections.firstWhere(
+      (c) => c.id == activeId,
+      orElse: () => const DocumentCollection.personal(),
+    );
+    return active.country;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -78,12 +90,18 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
     } else if (widget.documentId != null) {
       _loadDocumentToEdit(widget.documentId!);
     } else {
-      _selectedAuthority =
-          UaeAuthorityCatalog.instance.suggestedAuthorityFor(
+      final country = _activeCountry;
+      _selectedAuthority = country == GccCountry.uae
+          ? (UaeAuthorityCatalog.instance.suggestedAuthorityFor(
                 _docType,
                 UaeEmirate.dubai,
               ) ??
-              _otherAuthority;
+              _otherAuthority)
+          : (GccAuthorityCatalog.instance.suggestedAuthorityFor(
+                _docType,
+                country,
+              ) ??
+              _otherAuthority);
       _isCustomAuthority = _selectedAuthority == _otherAuthority;
       _locationController.text =
           _isCustomAuthority ? '' : _selectedAuthority;
@@ -102,10 +120,16 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
     _docType = item.docType;
     _expiresAt = item.expiresAt;
 
-    final options = UaeAuthorityCatalog.instance.authorityOptionsFor(
-      _docType,
-      _selectedEmirate,
-    );
+    final country = _activeCountry;
+    final options = country == GccCountry.uae
+        ? UaeAuthorityCatalog.instance.authorityOptionsFor(
+            _docType,
+            _selectedEmirate,
+          )
+        : GccAuthorityCatalog.instance.authorityOptionsFor(
+            _docType,
+            country,
+          );
     String authorityCandidate = _otherAuthority;
     if (item.renewalAuthorities != null && item.renewalAuthorities!.isNotEmpty) {
       authorityCandidate = item.renewalAuthorities!.first;
@@ -143,13 +167,19 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
     }
   }
 
-  /// Re-pick the authority for the current type+emirate pair, preserving a
+  /// Re-pick the authority for the current type+country pair, preserving a
   /// custom entry only when it is still one of the offered options.
   void _syncAuthorityToSelection() {
-    final options = UaeAuthorityCatalog.instance.authorityOptionsFor(
-      _docType,
-      _selectedEmirate,
-    );
+    final country = _activeCountry;
+    final options = country == GccCountry.uae
+        ? UaeAuthorityCatalog.instance.authorityOptionsFor(
+            _docType,
+            _selectedEmirate,
+          )
+        : GccAuthorityCatalog.instance.authorityOptionsFor(
+            _docType,
+            country,
+          );
     if (_selectedAuthority != _otherAuthority &&
         !_isCustomAuthority &&
         !options.contains(_selectedAuthority)) {
@@ -858,10 +888,13 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
                       : null,
                 ),
                 items: DocumentTypeRegistry.instance.typesForPicker.map((t) {
-                  final alias = t.builtinEnum?.pickerAlias;
-                  final label = alias == null
-                      ? t.displayName
-                      : '${t.displayName} ($alias)';
+                  final alias = t.builtinEnum != null
+                      ? t.builtinEnum!.localizedPickerAlias(_activeCountry)
+                      : null;
+                  final displayName = t.localizedDisplayName(_activeCountry);
+                  final label = alias == null || alias == displayName
+                      ? displayName
+                      : '$displayName ($alias)';
                   return DropdownMenuItem(
                     value: t,
                     child: Row(
@@ -896,51 +929,60 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Emirate Dropdown
-              DropdownButtonFormField<UaeEmirate>(
-                value: _selectedEmirate,
-                decoration: InputDecoration(
-                  labelText: 'Emirate / Jurisdiction',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.map_rounded),
-                  suffixIcon: _ocrResult?.emirate != null
-                      ? const Tooltip(
-                          message: 'Auto-filled from OCR scan',
-                          child: Icon(Icons.bolt, color: Colors.amber, size: 20),
-                        )
-                      : null,
+              // Emirate / Country Jurisdiction Dropdown
+              if (_activeCountry == GccCountry.uae)
+                DropdownButtonFormField<UaeEmirate>(
+                  value: _selectedEmirate,
+                  decoration: InputDecoration(
+                    labelText: 'Emirate / Jurisdiction',
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.map_rounded),
+                    suffixIcon: _ocrResult?.emirate != null
+                        ? const Tooltip(
+                            message: 'Auto-filled from OCR scan',
+                            child: Icon(Icons.bolt, color: Colors.amber, size: 20),
+                          )
+                        : null,
+                  ),
+                  items: UaeEmirate.values.map((e) {
+                    return DropdownMenuItem(
+                      value: e,
+                      child: Text(e.displayName),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() {
+                        _selectedEmirate = val;
+                        _selectedAuthority =
+                            UaeAuthorityCatalog.instance.suggestedAuthorityFor(
+                                  _docType,
+                                  val,
+                                ) ??
+                                _otherAuthority;
+                        _isCustomAuthority =
+                            _selectedAuthority == _otherAuthority;
+                        _locationController.text =
+                            _isCustomAuthority ? '' : _selectedAuthority;
+                      });
+                    }
+                  },
+                )
+              else
+                InputDecorator(
+                  decoration: const InputDecoration(
+                    labelText: 'Country & Jurisdiction',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.public_rounded),
+                  ),
+                  child: Text(
+                    '${_activeCountry.flagEmoji} ${_activeCountry.displayName}',
+                    style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+                  ),
                 ),
-                items: UaeEmirate.values.map((e) {
-                  return DropdownMenuItem(
-                    value: e,
-                    child: Text(e.displayName),
-                  );
-                }).toList(),
-                onChanged: (val) {
-                  if (val != null) {
-                    setState(() {
-                      _selectedEmirate = val;
-                      // Suggest the authority for this type+emirate pair;
-                      // fall back to Other / Custom when unmapped.
-                      _selectedAuthority =
-                          UaeAuthorityCatalog.instance.suggestedAuthorityFor(
-                                _docType,
-                                val,
-                              ) ??
-                              _otherAuthority;
-                      _isCustomAuthority =
-                          _selectedAuthority == _otherAuthority;
-                      _locationController.text =
-                          _isCustomAuthority ? '' : _selectedAuthority;
-                    });
-                  }
-                },
-              ),
               const SizedBox(height: 16),
 
-              // Authority Dropdown — options ordered by relevance for the
-              // selected document type: suggestion first, then the emirate's
-              // list, then federal bodies, then Other / Custom.
+              // Authority Dropdown
               DropdownButtonFormField<String>(
                 value: _selectedAuthority,
                 isExpanded: true,
@@ -948,17 +990,17 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
                   labelText: 'Issuing Authority',
                   border: const OutlineInputBorder(),
                   prefixIcon: const Icon(Icons.account_balance_outlined),
-                  helperText: UaeAuthorityCatalog.instance.suggestedAuthorityFor(
-                            _docType,
-                            _selectedEmirate,
-                          ) ==
+                  helperText: (_activeCountry == GccCountry.uae
+                              ? UaeAuthorityCatalog.instance.suggestedAuthorityFor(_docType, _selectedEmirate)
+                              : GccAuthorityCatalog.instance.suggestedAuthorityFor(_docType, _activeCountry)) ==
                           null
                       ? 'Default: Other / Custom Authority'
                       : null,
                 ),
                 items: [
-                  ...UaeAuthorityCatalog.instance
-                      .authorityOptionsFor(_docType, _selectedEmirate)
+                  ...(_activeCountry == GccCountry.uae
+                          ? UaeAuthorityCatalog.instance.authorityOptionsFor(_docType, _selectedEmirate)
+                          : GccAuthorityCatalog.instance.authorityOptionsFor(_docType, _activeCountry))
                       .map((auth) {
                     return DropdownMenuItem(
                       value: auth,
@@ -1063,11 +1105,11 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
               TextFormField(
                 controller: _feeController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Estimated Renewal Fee (AED)',
+                decoration: InputDecoration(
+                  labelText: 'Estimated Renewal Fee (${_activeCountry.currency})',
                   hintText: 'e.g. 1500',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.payments_outlined),
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.payments_outlined),
                 ),
               ),
               const SizedBox(height: 16),

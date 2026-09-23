@@ -347,19 +347,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
-    final name = await showCreateCollectionDialog(context);
-    if (name == null || !mounted) return;
+    final res = await showCreateCollectionDialog(context);
+    if (res == null || !mounted) return;
 
     try {
       final created = await DocumentCollectionService.instance.createCollection(
-        name,
+        res.name,
+        countryCode: res.countryCode,
       );
       await DocumentCollectionService.instance.setActive(created.id);
       await _loadCollections();
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Collection "$name" created')));
+        ).showSnackBar(SnackBar(content: Text('Collection "${res.name}" created')));
       }
     } catch (e) {
       if (mounted) _showError('Could not create collection: $e');

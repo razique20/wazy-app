@@ -26,6 +26,7 @@ create table if not exists public.collections (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users(id) on delete cascade,
   name text not null,
+  country_code text not null default 'AE',
   is_personal boolean not null default false,
   created_at timestamptz not null default now()
 );

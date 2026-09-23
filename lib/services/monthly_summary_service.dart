@@ -379,12 +379,12 @@ class MonthlySummaryNarrator {
   String buildLlmPrompt(MonthlySummaryData data) {
     final prevName = prevMonthName(data);
     final sb = StringBuffer()
-      ..writeln('You are a concise CFO assistant for a UAE small business.')
+      ..writeln('You are a concise CFO assistant for a GCC small business.')
       ..writeln(
           'Write a 2-3 sentence executive summary for ${data.monthName} ${data.year}.')
       ..writeln('Use only the facts below; do not invent numbers.')
       ..writeln('Mention the biggest spending driver and savings progress.')
-      ..writeln('Currency is AED.')
+      ..writeln('Currency is local GCC currency.')
       ..writeln()
       ..writeln('DATA:')
       ..writeln('- Income: AED ${_fmt(data.income)}')

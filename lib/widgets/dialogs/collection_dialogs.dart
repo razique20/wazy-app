@@ -1,22 +1,129 @@
 import 'package:flutter/material.dart';
 
 import '../../models/document_collection.dart';
+import '../../models/gcc_country.dart';
 
-/// Bottom sheet / dialog helpers for managing the user's document
-/// collections. Every user has a built-in Personal collection plus any
-/// number of company collections.
+/// Result holder for collection creation.
+class CollectionDialogData {
+  final String name;
+  final String countryCode;
+
+  const CollectionDialogData({
+    required this.name,
+    this.countryCode = 'AE',
+  });
+}
 
 /// Show a dialog to create a new company collection. Returns the chosen
-/// name, or null if cancelled.
-Future<String?> showCreateCollectionDialog(BuildContext context) {
-  return _nameDialog(
-    context,
-    title: 'New collection',
-    hint: 'e.g. Al Mansoori Trading LLC',
-    actionLabel: 'Create',
-    info: 'Use collections to keep business documents separate — '
-        'one per company. Personal documents stay in Personal.',
+/// name and country code, or null if cancelled.
+Future<CollectionDialogData?> showCreateCollectionDialog(BuildContext context) {
+  return showDialog<CollectionDialogData>(
+    context: context,
+    builder: (ctx) => const _CreateCollectionDialog(),
   );
+}
+
+class _CreateCollectionDialog extends StatefulWidget {
+  const _CreateCollectionDialog();
+
+  @override
+  State<_CreateCollectionDialog> createState() => _CreateCollectionDialogState();
+}
+
+class _CreateCollectionDialogState extends State<_CreateCollectionDialog> {
+  final _controller = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  GccCountry _selectedCountry = GccCountry.uae;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (_formKey.currentState!.validate()) {
+      Navigator.pop(
+        context,
+        CollectionDialogData(
+          name: _controller.text.trim(),
+          countryCode: _selectedCountry.code,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return AlertDialog(
+      title: const Text('New collection'),
+      content: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Use collections to keep business documents separate — '
+                'one per company. Select the GCC country where the company is registered.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.outline,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _controller,
+                autofocus: true,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(
+                  labelText: 'Collection name',
+                  hintText: 'e.g. Al Mansoori Trading LLC',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.badge_outlined),
+                ),
+                validator: (v) =>
+                    (v?.trim().isEmpty ?? true) ? 'Enter a name' : null,
+                onFieldSubmitted: (_) => _submit(),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<GccCountry>(
+                value: _selectedCountry,
+                decoration: const InputDecoration(
+                  labelText: 'GCC Country',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.public_rounded),
+                ),
+                items: GccCountry.values.map((country) {
+                  return DropdownMenuItem<GccCountry>(
+                    value: country,
+                    child: Text('${country.flagEmoji} ${country.displayName} (${country.currency})'),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() => _selectedCountry = val);
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, null),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _submit,
+          child: const Text('Create'),
+        ),
+      ],
+    );
+  }
 }
 
 /// Show a dialog to rename a company collection. Returns the new name, or
@@ -132,9 +239,6 @@ class _NameDialogState extends State<_NameDialog> {
 
   @override
   void dispose() {
-    // The controller is disposed by the dialog's own State, i.e. only after
-    // the route (including the exit animation) has fully left the tree —
-    // never while the TextField is still mounted.
     _controller.dispose();
     super.dispose();
   }
@@ -198,3 +302,4 @@ class _NameDialogState extends State<_NameDialog> {
     );
   }
 }
+

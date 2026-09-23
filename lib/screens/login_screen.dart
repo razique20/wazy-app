@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/gcc_country.dart';
 import '../services/auth_service.dart';
 import '../services/collection_service.dart';
 import '../services/custom_document_type_service.dart';
@@ -22,6 +23,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _phoneController = TextEditingController();
+  GccCountry _selectedCountry = GccCountry.uae;
 
   bool _isSignUp = false;
   bool _busy = false;
@@ -45,9 +47,10 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final auth = AuthService.instance;
       if (_isSignUp) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('userCountry', _selectedCountry.code);
         final phone = _phoneController.text.trim();
         if (phone.isNotEmpty) {
-          final prefs = await SharedPreferences.getInstance();
           await prefs.setString('userPhone', phone);
         }
         await auth.signUp(
@@ -238,7 +241,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Financial & document intelligence\nfor UAE businesses.',
+                        'Financial & document intelligence\nfor GCC businesses.',
                         style: TextStyle(
                           fontSize: 13.5,
                           height: 1.45,
@@ -376,6 +379,59 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ],
                       if (_isSignUp) ...[
+                        const SizedBox(height: 14),
+                        DropdownButtonFormField<GccCountry>(
+                          value: _selectedCountry,
+                          isExpanded: true,
+                          dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                          style: TextStyle(color: _fieldTextColor(isDark)),
+                          decoration: _fieldDecoration(
+                            isDark,
+                            label: 'Residence / Base GCC Country',
+                            icon: Icons.public_rounded,
+                            helperText: 'Sets your primary personal document defaults',
+                          ),
+                          items: GccCountry.values.map((c) {
+                            return DropdownMenuItem<GccCountry>(
+                              value: c,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? WazyColors.cyanAccent.withOpacity(0.18)
+                                          : WazyColors.navyPrimary.withOpacity(0.10),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      c.code,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                        color: isDark ? WazyColors.cyanAccent : WazyColors.navyPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      '${c.displayName} (${c.currency})',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(color: _fieldTextColor(isDark)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() => _selectedCountry = val);
+                            }
+                          },
+                        ),
                         const SizedBox(height: 14),
                         TextFormField(
                           controller: _phoneController,
@@ -536,7 +592,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 18),
                       Text(
-                        '${AppVersionBadge.version} · Made in the UAE',
+                        '${AppVersionBadge.version} · Made for the GCC 🇦🇪 🇸🇦 🇰🇼 🇶🇦 🇧🇭 🇴🇲',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 11.5,

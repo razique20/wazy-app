@@ -151,16 +151,19 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted || selectedId == null) return;
 
     if (selectedId == _createAction) {
-      final name = await showCreateCollectionDialog(context);
-      if (!mounted || name == null) return;
+      final res = await showCreateCollectionDialog(context);
+      if (!mounted || res == null) return;
       try {
-        final created = await service.createCollection(name);
+        final created = await service.createCollection(
+          res.name,
+          countryCode: res.countryCode,
+        );
         await service.setActive(created.id);
       } catch (_) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Could not create "$name"'),
+              content: Text('Could not create "${res.name}"'),
               backgroundColor: Colors.red,
             ),
           );

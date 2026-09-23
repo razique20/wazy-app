@@ -21,7 +21,7 @@ class CompanionSuggestion {
 }
 
 /// A named group of document types that are usually tracked together in the
-/// UAE — e.g. a trade licence implies visas, Emirates IDs and labour cards.
+/// GCC — e.g. a trade licence implies visas, national IDs and labour cards.
 class CompanionPool {
   final String name;
 
@@ -44,7 +44,7 @@ class CompanionPool {
   });
 }
 
-/// Registry of UAE companion pools and the engine that turns them into
+/// Registry of GCC companion pools and the engine that turns them into
 /// suggestions for a just-added document.
 class CompanionSuggestionService {
   CompanionSuggestionService._();
@@ -57,7 +57,7 @@ class CompanionSuggestionService {
 
   /// The pools, ordered so the most common (company setup) comes first.
   static const List<CompanionPool> pools = [
-    // --- Company setup: the classic UAE business bundle -------------------
+    // --- Company setup: the classic GCC business bundle -------------------
     CompanionPool(
       name: 'Company Setup',
       description: 'What a business usually tracks alongside its Trade Licence',

@@ -32,7 +32,7 @@ class SmartCategoryEngine {
   Map<String, String> _userLearnedMemory = {};
   bool _isInitialized = false;
 
-  /// Built-in UAE vendor & keyword dictionary.
+  /// Built-in GCC vendor & keyword dictionary.
   static final Map<FinanceCategory, List<String>> _dictionary = {
     FinanceCategory.foodAndBeverages: [
       'talabat', 'deliveroo', 'zomato', 'noon food', 'carrefour', 'spinneys',

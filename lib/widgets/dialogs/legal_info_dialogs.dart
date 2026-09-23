@@ -129,7 +129,7 @@ void _showTermsSheet(BuildContext context) {
     title: 'Terms & Conditions',
     body: const _LegalBody(
       intro: 'These terms govern your use of Wazy — the financial and '
-          'document intelligence platform for UAE businesses. By creating an '
+          'document intelligence platform for GCC businesses. By creating an '
           'account you agree to them.',
       sections: [
         _LegalSection(
@@ -303,7 +303,7 @@ void showAboutSheet(BuildContext context) {
             ),
             const SizedBox(height: 20),
             Text(
-              'Financial & document intelligence for UAE businesses.',
+              'Financial & document intelligence for GCC businesses.',
               style: theme.textTheme.titleSmall,
             ),
             const SizedBox(height: 8),
@@ -347,7 +347,7 @@ void showAboutSheet(BuildContext context) {
             const SizedBox(height: 8),
             Center(
               child: Text(
-                'Made in the UAE · © 2026 Wazy',
+                'Made for the GCC 🇦🇪 🇸🇦 🇰🇼 🇶🇦 🇧🇭 🇴🇲 · © 2026 Wazy',
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
