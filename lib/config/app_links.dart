@@ -7,10 +7,10 @@ class AppLinks {
   AppLinks._();
 
   // ── Web pages ────────────────────────────────────────────────────────────
-  static const String website = 'https://wazy.app';
-  static const String terms = 'https://wazy.app/terms';
-  static const String privacy = 'https://wazy.app/privacy';
-  static const String support = 'https://wazy.app/support';
+  static const String website = 'https://wazy-admin-sgjt.vercel.app';
+  static const String terms = 'https://wazy-admin-sgjt.vercel.app/terms';
+  static const String privacy = 'https://wazy-admin-sgjt.vercel.app/privacy';
+  static const String support = 'https://wazy-admin-sgjt.vercel.app/support';
 
   // ── Direct contact ───────────────────────────────────────────────────────
   static const String supportEmail = 'support@wazy.app';

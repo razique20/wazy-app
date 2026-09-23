@@ -35,8 +35,13 @@ class _LegalSection {
 class _LegalBody extends StatelessWidget {
   final String intro;
   final List<_LegalSection> sections;
+  final Widget? action;
 
-  const _LegalBody({required this.intro, required this.sections});
+  const _LegalBody({
+    required this.intro,
+    required this.sections,
+    this.action,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +62,10 @@ class _LegalBody extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(s.body, style: theme.textTheme.bodySmall?.copyWith(height: 1.5)),
+          const SizedBox(height: 16),
+        ],
+        if (action != null) ...[
+          action!,
           const SizedBox(height: 16),
         ],
         Text(
@@ -188,11 +197,19 @@ void _showPrivacySheet(BuildContext context) {
   _showLegalSheet(
     context,
     title: 'Privacy Policy',
-    body: const _LegalBody(
+    body: _LegalBody(
       intro: 'Your documents and financial data are sensitive. This policy '
           'explains, in plain language, what Wazy collects, why, and how it '
           'stays protected.',
-      sections: [
+      action: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: () => _openLink(AppLinks.privacy),
+          icon: const Icon(Icons.open_in_new_rounded, size: 16),
+          label: const Text('View Full Hosted Privacy Policy'),
+        ),
+      ),
+      sections: const [
         _LegalSection(
           '1. What we collect',
           '• Account details: email address (and optional phone number for '
