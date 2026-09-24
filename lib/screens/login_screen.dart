@@ -11,7 +11,6 @@ import '../services/entitlement_service.dart';
 import '../services/finance_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/dialogs/legal_info_dialogs.dart';
-import '../widgets/widgets.dart';
 
 /// Redesigned Login & Sign-up screen adhering to Wazy's Bento Design System.
 ///
@@ -277,8 +276,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Row(
                         children: [
-                          const WazyLogo(size: 42, showShadow: false),
-                          const SizedBox(width: 12),
                           const Text(
                             'Wazy',
                             style: TextStyle(
@@ -328,35 +325,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           fontSize: 12.5,
                           height: 1.45,
                           color: Colors.white.withOpacity(0.72),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Feature highlight pills
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        child: Row(
-                          children: const [
-                            _HeroPill(
-                              icon: Icons.notifications_active_rounded,
-                              label: 'Expiry Alerts',
-                            ),
-                            SizedBox(width: 8),
-                            _HeroPill(
-                              icon: Icons.account_balance_wallet_rounded,
-                              label: 'Cash Flow',
-                            ),
-                            SizedBox(width: 8),
-                            _HeroPill(
-                              icon: Icons.verified_rounded,
-                              label: 'GCC Compliance',
-                            ),
-                            SizedBox(width: 8),
-                            _HeroPill(
-                              icon: Icons.auto_awesome_rounded,
-                              label: 'Groq AI',
-                            ),
-                          ],
                         ),
                       ),
                     ],
@@ -862,43 +830,7 @@ class _SparklePainter extends CustomPainter {
       oldDelegate.color != color;
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
-// Hero capability pill
-// ──────────────────────────────────────────────────────────────────────────────
 
-class _HeroPill extends StatelessWidget {
-  final IconData icon;
-  final String label;
-
-  const _HeroPill({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(WazyRadius.tile),
-        border: Border.all(color: Colors.white.withOpacity(0.14)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: WazyColors.accentBright),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.white.withOpacity(0.88),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Sign in / Sign up segmented pill toggle
