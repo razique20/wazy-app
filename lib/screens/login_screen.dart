@@ -257,7 +257,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final primaryAccent = isDark ? WazyColors.textPrimary : WazyColors.ink;
 
     return Scaffold(
-      backgroundColor: isDark ? WazyColors.obsidian : WazyColors.navyPrimaryDark,
+      backgroundColor: isDark ? WazyColors.obsidian : WazyColors.ink,
       body: Column(
         children: [
           // ── Brand hero header ──────────────────────────────────────────
