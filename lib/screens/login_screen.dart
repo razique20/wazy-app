@@ -196,7 +196,7 @@ class _LoginScreenState extends State<LoginScreen> {
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(
-              backgroundColor: isDark ? WazyColors.slate : WazyColors.ink,
+              backgroundColor: WazyColors.violet,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(WazyRadius.button),
               ),
@@ -252,7 +252,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final surface = isDark ? WazyColors.charcoal : Colors.white;
     final subColor =
         isDark ? WazyColors.textSecondary : WazyColors.textSecondaryLight;
-    final ctaColor = isDark ? WazyColors.slate : WazyColors.ink;
+    final ctaColor = WazyColors.violet;
     final primaryAccent = isDark ? WazyColors.textPrimary : WazyColors.ink;
 
     return Scaffold(
