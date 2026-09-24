@@ -7,7 +7,9 @@ import 'package:wazy/theme/app_theme.dart';
 
 void main() {
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
+    // Mark the first-launch app guide as seen so its overlay never covers
+    // the UI these layout tests interact with.
+    SharedPreferences.setMockInitialValues({'hasSeenAppGuide': true});
   });
 
   Future<void> pumpHome(WidgetTester tester) async {
@@ -27,9 +29,10 @@ void main() {
     expect(find.text('Record'), findsOneWidget);
     expect(find.text('Budget'), findsOneWidget);
 
-    // Content sheet sections.
+    // Content sheet sections. (Budgets tile was removed from the grid —
+    // budgets are reachable via the hero pill and the Money tab.)
     expect(find.text('Categories'), findsOneWidget);
-    expect(find.text('Budgets'), findsOneWidget);
+    expect(find.text('Budgets'), findsNothing);
     expect(find.text('Scan'), findsOneWidget);
     // Month card was removed — its details live in the hero header.
     expect(find.text('This month'), findsNothing);
@@ -88,16 +91,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
 
-    // Budgets tile → /budgets (BudgetsScreen), not the full Money tab.
-    await tester.tap(find.text('Budgets'));
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 1));
-    expect(find.text('Overall Monthly Budget'), findsOneWidget);
-
-    // Back home for the next tile.
-    router.go('/home');
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
+    // Budgets tile removed from the grid — start with the Records tile.
 
     // Records tile → /records (grouped transaction log).
     await tester.tap(find.text('Records'));

@@ -33,6 +33,9 @@ void main() {
     }
 
     SharedPreferences.setMockInitialValues({
+      // Mark the first-launch app guide as seen so its overlay never covers
+      // the layout this test measures.
+      'hasSeenAppGuide': true,
       'local_documents_v1': jsonEncode([
         jsonDecode(docJson(far)),
         jsonDecode(docJson(far2)),

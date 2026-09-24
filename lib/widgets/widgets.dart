@@ -10,6 +10,7 @@ export 'indicators/department_logo.dart';
 export 'indicators/wazy_logo.dart';
 export 'indicators/empty_state_illustration.dart';
 export 'cash_flow_forecast_chart.dart';
+export 'bento_icon_tile.dart';
 export 'dialogs/app_guide_dialog.dart';
 export 'cards/getting_started_checklist_card.dart';
 

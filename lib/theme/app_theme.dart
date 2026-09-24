@@ -6,65 +6,101 @@ import 'package:google_fonts/google_fonts.dart';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // WazyColors — the single source of truth for every color in the app.
+//
+// Modern bento palette: a calm indigo accent, ink hero backdrops, a soft
+// off-white canvas in light mode and deep desaturated surfaces in dark mode.
+// Legacy names (navyPrimary, cyanSecondary, …) are kept as aliases so every
+// existing call site picks up the new look automatically.
 // ──────────────────────────────────────────────────────────────────────────────
 
 class WazyColors {
   WazyColors._();
 
   // ── Brand accents ───────────────────────────────────────────────────────
-  static const Color navyPrimary = Color(0xFF23236B);
-  static const Color navyPrimaryDark = Color(0xFF1E1B4B);
-  static const Color cyanSecondary = Color(0xFF00E5FF);
+  static const Color accent = Color(0xFF4F46E5); // indigo-600
+  static const Color accentDeep = Color(0xFF4338CA); // indigo-700
+  static const Color accentBright = Color(0xFF818CF8); // indigo-400
+  static const Color accentSoft = Color(0xFFEEF2FF); // indigo-50
 
-  static const Color cyan = Color(0xFF00E5FF);
-  static const Color cyanDark = Color(0xFF00B8D4);
-  static const Color violet = Color(0xFF23236B);
-  static const Color violetDark = Color(0xFF1E1B4B);
-  static const Color emerald = Color(0xFF00E676);
-
-  static const Color cyanAccent = cyanSecondary;
-  static const Color violetAccent = navyPrimary;
+  // Legacy aliases — map old names onto the new accent so the whole app
+  // modernizes without touching every call site.
+  static const Color navyPrimary = accent;
+  static const Color navyPrimaryDark = accentDeep;
+  static const Color cyanSecondary = accentBright;
+  static const Color cyan = accentBright;
+  static const Color cyanDark = accent;
+  static const Color violet = accent;
+  static const Color violetDark = accentDeep;
+  static const Color cyanAccent = accentBright;
+  static const Color violetAccent = accent;
+  static const Color emerald = Color(0xFF10B981);
   static const Color emeraldAccent = emerald;
   static const Color textPrimaryDark = textPrimary;
 
+  // ── Ink (hero backdrops, dark CTAs) ─────────────────────────────────────
+  static const Color ink = Color(0xFF0F172A);
+  static const Color inkDeep = Color(0xFF0B1120);
+
   // ── Surfaces — Dark mode ────────────────────────────────────────────────
-  static const Color obsidian = Color(0xFF0A0E1A);
-  static const Color charcoal = Color(0xFF111827);
-  static const Color slate = Color(0xFF1E293B);
-  static const Color slateLight = Color(0xFF334155);
+  static const Color obsidian = Color(0xFF0C0E14);
+  static const Color charcoal = Color(0xFF151824);
+  static const Color slate = Color(0xFF1D2130);
+  static const Color slateLight = Color(0xFF2B3042);
 
   // ── Surfaces — Light mode ───────────────────────────────────────────────
-  static const Color snowWhite = Color(0xFFF8FAFC);
-  static const Color cloud = Color(0xFFF1F5F9);
-  static const Color mist = Color(0xFFE2E8F0);
-  static const Color fog = Color(0xFFCBD5E1);
+  static const Color snowWhite = Color(0xFFF7F8FA); // canvas
+  static const Color cloud = Color(0xFFF2F3F7); // tiles on white sheets
+  static const Color mist = Color(0xFFE9EBF1); // subtle fills
+  static const Color fog = Color(0xFFDFE3EC); // hairlines
+
+  // ── Bento tile tints (accent + matching pastel container) ───────────────
+  static const Color indigo = Color(0xFF4F46E5);
+  static const Color indigoTint = Color(0xFFEEF2FF);
+  static const Color blue = Color(0xFF3B82F6);
+  static const Color blueTint = Color(0xFFDBEAFE);
+  static const Color sky = Color(0xFF0EA5E9);
+  static const Color skyTint = Color(0xFFE0F2FE);
+  static const Color teal = Color(0xFF14B8A6);
+  static const Color tealTint = Color(0xFFCCFBF1);
+  static const Color green = Color(0xFF22C55E);
+  static const Color greenTint = Color(0xFFDCFCE7);
+  static const Color amber = Color(0xFFF59E0B);
+  static const Color amberTint = Color(0xFFFEF3C7);
+  static const Color orange = Color(0xFFF97316);
+  static const Color orangeTint = Color(0xFFFFEDD5);
+  static const Color red = Color(0xFFEF4444);
+  static const Color redTint = Color(0xFFFEE2E2);
+  static const Color pink = Color(0xFFEC4899);
+  static const Color pinkTint = Color(0xFFFCE7F3);
+  static const Color lilac = Color(0xFF8B5CF6);
+  static const Color lilacTint = Color(0xFFEDE9FE);
 
   // ── Semantic: urgency ───────────────────────────────────────────────────
   static const Color safe = Color(0xFF10B981);
-  static const Color safeBg = Color(0xFF064E3B);
+  static const Color safeBg = Color(0xFF052E1F);
   static const Color safeBgLight = Color(0xFFECFDF5);
 
-  static const Color caution = Color(0xFFFFD740);
-  static const Color cautionBg = Color(0xFF332B00);
-  static const Color cautionBgLight = Color(0xFFFFF8E1);
+  static const Color caution = Color(0xFFFBBF24);
+  static const Color cautionBg = Color(0xFF3A2A03);
+  static const Color cautionBgLight = Color(0xFFFFFBEB);
 
-  static const Color warning = Color(0xFFFF9100);
-  static const Color warningBg = Color(0xFF331D00);
-  static const Color warningBgLight = Color(0xFFFFF3E0);
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color warningBg = Color(0xFF3B2503);
+  static const Color warningBgLight = Color(0xFFFFF7ED);
 
-  static const Color danger = Color(0xFFFF5252);
-  static const Color dangerDark = Color(0xFFD32F2F);
-  static const Color dangerBg = Color(0xFF330A0A);
-  static const Color dangerBgLight = Color(0xFFFFEBEE);
+  static const Color danger = Color(0xFFEF4444);
+  static const Color dangerDark = Color(0xFFDC2626);
+  static const Color dangerBg = Color(0xFF450A0A);
+  static const Color dangerBgLight = Color(0xFFFEF2F2);
 
   // ── Text ────────────────────────────────────────────────────────────────
-  static const Color textPrimary = Color(0xFFF1F5F9);
-  static const Color textSecondary = Color(0xFF94A3B8);
-  static const Color textMuted = Color(0xFF64748B);
+  static const Color textPrimary = Color(0xFFF2F4F8);
+  static const Color textSecondary = Color(0xFF9AA3B5);
+  static const Color textMuted = Color(0xFF6C7688);
 
   static const Color textPrimaryLight = Color(0xFF0F172A);
-  static const Color textSecondaryLight = Color(0xFF475569);
-  static const Color textMutedLight = Color(0xFF94A3B8);
+  static const Color textSecondaryLight = Color(0xFF5B6472);
+  static const Color textMutedLight = Color(0xFF8A93A6);
 
   // ── Glass ───────────────────────────────────────────────────────────────
   static const Color glassWhite = Color(0x14FFFFFF); // 8%
@@ -97,6 +133,51 @@ class WazyColors {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
+// WazyRadius — the corner-radius scale. Everything sits on a 16–28px grid.
+// ──────────────────────────────────────────────────────────────────────────────
+
+class WazyRadius {
+  WazyRadius._();
+
+  static const double card = 20;
+  static const double tile = 16;
+  static const double field = 14;
+  static const double button = 16;
+  static const double sheet = 28;
+  static const double dialog = 24;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// WazyShadows — soft, diffuse elevation. Light mode lifts cards with a whisper
+// shadow; dark mode relies on hairline borders instead (shadow-on-dark reads
+// as noise).
+// ──────────────────────────────────────────────────────────────────────────────
+
+class WazyShadows {
+  WazyShadows._();
+
+  static const List<BoxShadow> soft = [
+    BoxShadow(
+      color: Color(0x12101828),
+      blurRadius: 20,
+      offset: Offset(0, 6),
+    ),
+  ];
+
+  static const List<BoxShadow> raised = [
+    BoxShadow(
+      color: Color(0x1F101828),
+      blurRadius: 28,
+      offset: Offset(0, 10),
+    ),
+  ];
+
+  static const List<BoxShadow> none = [];
+
+  static List<BoxShadow> adaptive(bool isDark) => isDark ? none : soft;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
 // WazyGradients — reusable gradient definitions.
 // ──────────────────────────────────────────────────────────────────────────────
 
@@ -104,7 +185,7 @@ class WazyGradients {
   WazyGradients._();
 
   static const LinearGradient primary = LinearGradient(
-    colors: [WazyColors.cyan, WazyColors.violet],
+    colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -125,13 +206,13 @@ class WazyGradients {
   );
 
   static const LinearGradient splash = LinearGradient(
-    colors: [Color(0xFF0A0E1A), Color(0xFF0D1B2A), Color(0xFF1B2838)],
+    colors: [Color(0xFF0B1120), Color(0xFF151830), Color(0xFF1E1B4B)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient splashLight = LinearGradient(
-    colors: [Color(0xFFF0F4FF), Color(0xFFE8EEFF), Color(0xFFF8FAFC)],
+    colors: [Color(0xFFF5F6FB), Color(0xFFEEF0FA), Color(0xFFF7F8FA)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -164,7 +245,7 @@ class WazyGlass extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark
         ? Colors.white.withOpacity(opacity)
-        : Colors.white.withOpacity(0.65);
+        : Colors.white.withOpacity(0.72);
     final border = borderColor ??
         (isDark ? WazyColors.glassBorderWhite : WazyColors.glassBorderBlack);
 
@@ -193,10 +274,10 @@ class WazyGlass extends StatelessWidget {
 class WazyTheme {
   WazyTheme._();
 
-  // google_fonts hardcodes `fontFamilyFallback: ['Space Grotesk']` on every
-  // style it returns, which blocks the engine's automatic fallback to the
-  // platform emoji font — emoji then render as tofu ("?") on iOS. Append the
-  // platform emoji fonts explicitly so emoji always resolve.
+  // google_fonts hardcodes `fontFamilyFallback: ['Inter']` on
+  // every style it returns, which blocks the engine's automatic fallback to
+  // the platform emoji font — emoji then render as tofu ("?") on iOS. Append
+  // the platform emoji fonts explicitly so emoji always resolve.
   static const List<String> _emojiFallback = [
     'Apple Color Emoji', // iOS, macOS
     'Segoe UI Emoji', // Windows
@@ -207,78 +288,82 @@ class WazyTheme {
       style.copyWith(fontFamilyFallback: _emojiFallback);
 
   // ── Typography ──────────────────────────────────────────────────────────
+  //
+  // Inter: a neutral, professional UI sans — crisp and compact, the default
+  // choice of modern fintech apps. Sizes match the original scale so nothing
+  // feels oversized.
 
   static TextTheme _textTheme(Brightness brightness) {
     final base = brightness == Brightness.dark
         ? Typography.material2021().white
         : Typography.material2021().black;
 
-    return GoogleFonts.spaceGroteskTextTheme(base).copyWith(
-      displayLarge: GoogleFonts.spaceGrotesk(
+    return GoogleFonts.interTextTheme(base).copyWith(
+      displayLarge: GoogleFonts.inter(
         fontSize: 28,
         fontWeight: FontWeight.w700,
         letterSpacing: -1.0,
       ),
-      displayMedium: GoogleFonts.spaceGrotesk(
+      displayMedium: GoogleFonts.inter(
         fontSize: 24,
         fontWeight: FontWeight.w700,
         letterSpacing: -0.6,
       ),
-      displaySmall: GoogleFonts.spaceGrotesk(
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        letterSpacing: -0.4,
-      ),
-      headlineLarge: GoogleFonts.spaceGrotesk(
+      displaySmall: GoogleFonts.inter(
         fontSize: 20,
         fontWeight: FontWeight.w700,
         letterSpacing: -0.4,
       ),
-      headlineMedium: GoogleFonts.spaceGrotesk(
-        fontSize: 17,
-        fontWeight: FontWeight.w600,
+      headlineLarge: GoogleFonts.inter(
+        fontSize: 20,
+        fontWeight: FontWeight.w700,
+        letterSpacing: -0.4,
+      ),
+      headlineMedium: GoogleFonts.inter(
+        fontSize: 17.5,
+        fontWeight: FontWeight.w700,
         letterSpacing: -0.3,
       ),
-      headlineSmall: GoogleFonts.spaceGrotesk(
-        fontSize: 15,
+      headlineSmall: GoogleFonts.inter(
+        fontSize: 15.5,
         fontWeight: FontWeight.w600,
         letterSpacing: -0.2,
       ),
-      titleLarge: GoogleFonts.spaceGrotesk(
+      titleLarge: GoogleFonts.inter(
         fontSize: 16,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w700,
         letterSpacing: -0.2,
       ),
-      titleMedium: GoogleFonts.spaceGrotesk(
+      titleMedium: GoogleFonts.inter(
         fontSize: 14,
         fontWeight: FontWeight.w600,
         letterSpacing: -0.1,
       ),
-      titleSmall: GoogleFonts.spaceGrotesk(
+      titleSmall: GoogleFonts.inter(
         fontSize: 12.5,
         fontWeight: FontWeight.w600,
       ),
-      bodyLarge: GoogleFonts.spaceGrotesk(
+      bodyLarge: GoogleFonts.inter(
         fontSize: 13.5,
         fontWeight: FontWeight.w400,
       ),
-      bodyMedium: GoogleFonts.spaceGrotesk(
+      bodyMedium: GoogleFonts.inter(
         fontSize: 12.5,
         fontWeight: FontWeight.w400,
       ),
-      bodySmall: GoogleFonts.spaceGrotesk(
+      bodySmall: GoogleFonts.inter(
         fontSize: 11,
         fontWeight: FontWeight.w400,
       ),
-      labelLarge: GoogleFonts.spaceGrotesk(
+      labelLarge: GoogleFonts.inter(
         fontSize: 12.5,
         fontWeight: FontWeight.w600,
       ),
-      labelMedium: GoogleFonts.spaceGrotesk(
+      labelMedium: GoogleFonts.inter(
         fontSize: 11,
         fontWeight: FontWeight.w500,
       ),
-      labelSmall: GoogleFonts.spaceGrotesk(
+      labelSmall: GoogleFonts.inter(
         fontSize: 10,
         fontWeight: FontWeight.w500,
       ),
@@ -290,31 +375,31 @@ class WazyTheme {
   static ThemeData dark() {
     const scheme = ColorScheme(
       brightness: Brightness.dark,
-      primary: Color(0xFF23236B),
-      onPrimary: Colors.white,
-      primaryContainer: Color(0xFF1E1B4B),
-      onPrimaryContainer: Colors.white,
-      secondary: WazyColors.cyanSecondary,
-      onSecondary: Color(0xFF0A0E1A),
-      secondaryContainer: Color(0xFF004D5A),
-      onSecondaryContainer: Color(0xFF80F4FF),
-      tertiary: WazyColors.emerald,
-      onTertiary: WazyColors.obsidian,
-      tertiaryContainer: Color(0xFF003D1A),
-      onTertiaryContainer: Color(0xFFA5F3C8),
-      error: WazyColors.danger,
-      onError: Colors.white,
-      errorContainer: WazyColors.dangerBg,
-      onErrorContainer: Color(0xFFFFB4AB),
+      primary: WazyColors.accentBright,
+      onPrimary: Color(0xFF101223),
+      primaryContainer: Color(0xFF312E81),
+      onPrimaryContainer: Color(0xFFE0E7FF),
+      secondary: Color(0xFFA5B4FC),
+      onSecondary: Color(0xFF101223),
+      secondaryContainer: Color(0xFF2E2A5C),
+      onSecondaryContainer: Color(0xFFC7D2FE),
+      tertiary: Color(0xFF34D399),
+      onTertiary: Color(0xFF052E1F),
+      tertiaryContainer: Color(0xFF064E3B),
+      onTertiaryContainer: Color(0xFFA7F3D0),
+      error: Color(0xFFF87171),
+      onError: Color(0xFF450A0A),
+      errorContainer: Color(0xFF7F1D1D),
+      onErrorContainer: Color(0xFFFECACA),
       surface: WazyColors.obsidian,
       onSurface: WazyColors.textPrimary,
       surfaceContainerHighest: WazyColors.slate,
-      outline: WazyColors.textMuted,
+      outline: Color(0xFF6B7280),
       outlineVariant: WazyColors.slateLight,
       shadow: Colors.black,
       scrim: Colors.black,
-      inverseSurface: WazyColors.cloud,
-      onInverseSurface: WazyColors.charcoal,
+      inverseSurface: WazyColors.snowWhite,
+      onInverseSurface: WazyColors.obsidian,
     );
 
     return ThemeData(
@@ -325,32 +410,34 @@ class WazyTheme {
       scaffoldBackgroundColor: WazyColors.obsidian,
       canvasColor: WazyColors.charcoal,
       cardColor: WazyColors.charcoal,
-      dividerColor: WazyColors.slateLight.withOpacity(0.3),
+      dividerColor: Colors.white.withOpacity(0.06),
+      splashColor: Colors.white.withOpacity(0.06),
+      highlightColor: Colors.white.withOpacity(0.04),
       appBarTheme: AppBarTheme(
         backgroundColor: WazyColors.obsidian,
         foregroundColor: WazyColors.textPrimary,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: _withEmojiFallback(GoogleFonts.spaceGrotesk(
-          fontSize: 17.5,
-          fontWeight: FontWeight.w600,
+        titleTextStyle: _withEmojiFallback(GoogleFonts.inter(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
           color: WazyColors.textPrimary,
-          letterSpacing: -0.3,
+          letterSpacing: -0.4,
         )),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: WazyColors.obsidian.withOpacity(0.85),
-        indicatorColor: WazyColors.cyanSecondary.withOpacity(0.15),
+        indicatorColor: WazyColors.accentBright.withOpacity(0.16),
         labelTextStyle: WidgetStatePropertyAll(
-          _withEmojiFallback(GoogleFonts.spaceGrotesk(
+          _withEmojiFallback(GoogleFonts.inter(
             fontSize: 11,
             fontWeight: FontWeight.w500,
           )),
         ),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return const IconThemeData(color: WazyColors.cyanSecondary, size: 22);
+            return const IconThemeData(color: WazyColors.accentBright, size: 22);
           }
           return const IconThemeData(color: WazyColors.textMuted, size: 22);
         }),
@@ -362,110 +449,145 @@ class WazyTheme {
         color: WazyColors.charcoal,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: WazyColors.glassBorderWhite),
+          borderRadius: BorderRadius.circular(WazyRadius.card),
         ),
+      ),
+      listTileTheme: ListTileThemeData(
+        iconColor: WazyColors.textSecondary,
+        titleTextStyle: _withEmojiFallback(GoogleFonts.inter(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: WazyColors.textPrimary,
+        )),
+        subtitleTextStyle: _withEmojiFallback(GoogleFonts.inter(
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+          color: WazyColors.textSecondary,
+        )),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: WazyColors.slate.withOpacity(0.5),
+        fillColor: WazyColors.slate.withOpacity(0.55),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: WazyColors.slateLight),
+          borderRadius: BorderRadius.circular(WazyRadius.field),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: WazyColors.slateLight.withOpacity(0.5)),
+          borderRadius: BorderRadius.circular(WazyRadius.field),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: WazyColors.cyanSecondary, width: 1.5),
+          borderRadius: BorderRadius.circular(WazyRadius.field),
+          borderSide: const BorderSide(color: WazyColors.accentBright, width: 1.5),
         ),
         labelStyle: const TextStyle(color: WazyColors.textSecondary, fontSize: 13),
         hintStyle: const TextStyle(color: WazyColors.textMuted, fontSize: 13),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFF23236B),
-          foregroundColor: Colors.white,
+          backgroundColor: scheme.primary,
+          foregroundColor: scheme.onPrimary,
+          minimumSize: const Size(0, 48),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(WazyRadius.button),
           ),
-          textStyle: _withEmojiFallback(GoogleFonts.spaceGrotesk(
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
+          textStyle: _withEmojiFallback(GoogleFonts.inter(
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
           )),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: WazyColors.cyanSecondary,
-          foregroundColor: const Color(0xFF0A0E1A),
+          backgroundColor: WazyColors.accent,
+          foregroundColor: Colors.white,
+          minimumSize: const Size(0, 48),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(WazyRadius.button),
           ),
-          textStyle: _withEmojiFallback(GoogleFonts.spaceGrotesk(
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
+          textStyle: _withEmojiFallback(GoogleFonts.inter(
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
           )),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: WazyColors.cyanSecondary,
-          textStyle: _withEmojiFallback(GoogleFonts.spaceGrotesk(
-            fontWeight: FontWeight.w500,
-            fontSize: 13,
+          foregroundColor: scheme.secondary,
+          textStyle: _withEmojiFallback(GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+            fontSize: 13.5,
           )),
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: WazyColors.cyanSecondary,
-        foregroundColor: const Color(0xFF0A0E1A),
-        elevation: 4,
+        backgroundColor: scheme.primary,
+        foregroundColor: scheme.onPrimary,
+        elevation: 0,
+        highlightElevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(WazyRadius.card),
         ),
       ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: WazyColors.charcoal,
+        modalBackgroundColor: WazyColors.charcoal,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(WazyRadius.sheet)),
         ),
+        dragHandleColor: Colors.white.withOpacity(0.2),
+        dragHandleSize: const Size(40, 4),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: WazyColors.charcoal,
+        backgroundColor: WazyColors.slate,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(WazyRadius.dialog),
         ),
-        elevation: 8,
+        elevation: 0,
+        titleTextStyle: _withEmojiFallback(GoogleFonts.inter(
+          fontSize: 17,
+          fontWeight: FontWeight.w700,
+          color: WazyColors.textPrimary,
+        )),
+        contentTextStyle: _withEmojiFallback(GoogleFonts.inter(
+          fontSize: 13.5,
+          height: 1.5,
+          color: WazyColors.textSecondary,
+        )),
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: WazyColors.slate,
+        backgroundColor: WazyColors.slateLight,
         contentTextStyle:
-            _withEmojiFallback(GoogleFonts.spaceGrotesk(
+            _withEmojiFallback(GoogleFonts.inter(
           color: WazyColors.textPrimary,
           fontSize: 13,
         )),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
         ),
         behavior: SnackBarBehavior.floating,
       ),
       chipTheme: ChipThemeData(
         backgroundColor: WazyColors.slate,
-        selectedColor: WazyColors.cyanSecondary.withOpacity(0.2),
+        selectedColor: WazyColors.accentBright.withOpacity(0.18),
+        checkmarkColor: scheme.secondary,
         labelStyle: _withEmojiFallback(
-            GoogleFonts.spaceGrotesk(fontSize: 11.5, color: WazyColors.textPrimary)),
-        secondaryLabelStyle: _withEmojiFallback(GoogleFonts.spaceGrotesk(
-            fontSize: 11.5, color: WazyColors.cyanSecondary)),
+            GoogleFonts.inter(fontSize: 12, color: WazyColors.textPrimary, fontWeight: FontWeight.w500)),
+        secondaryLabelStyle: _withEmojiFallback(GoogleFonts.inter(
+            fontSize: 12, color: scheme.secondary, fontWeight: FontWeight.w600)),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(10),
         ),
-        side: BorderSide(color: WazyColors.slateLight.withOpacity(0.3)),
+        side: BorderSide(color: Colors.white.withOpacity(0.06)),
       ),
       progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: WazyColors.cyanSecondary,
+        color: WazyColors.accentBright,
       ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
@@ -481,32 +603,32 @@ class WazyTheme {
   static ThemeData light() {
     const scheme = ColorScheme(
       brightness: Brightness.light,
-      primary: Color(0xFF23236B), // Deep Navy Primary from screenshot
+      primary: WazyColors.accent,
       onPrimary: Colors.white,
-      primaryContainer: Color(0xFF23236B),
-      onPrimaryContainer: Colors.white,
-      secondary: Color(0xFF00E5FF), // Light Cyan Secondary from screenshot
-      onSecondary: Color(0xFF0A0E1A),
-      secondaryContainer: Color(0xFFE0F7FA),
-      onSecondaryContainer: Color(0xFF004D40),
-      tertiary: Color(0xFF006D3B),
+      primaryContainer: WazyColors.accentSoft,
+      onPrimaryContainer: Color(0xFF312E81),
+      secondary: Color(0xFF6366F1),
+      onSecondary: Colors.white,
+      secondaryContainer: WazyColors.accentSoft,
+      onSecondaryContainer: Color(0xFF3730A3),
+      tertiary: Color(0xFF0D9488),
       onTertiary: Colors.white,
-      tertiaryContainer: Color(0xFFA5F3C8),
-      onTertiaryContainer: Color(0xFF002110),
+      tertiaryContainer: Color(0xFFCCFBF1),
+      onTertiaryContainer: Color(0xFF134E4A),
       error: WazyColors.dangerDark,
       onError: Colors.white,
       errorContainer: WazyColors.dangerBgLight,
-      onErrorContainer: Color(0xFF410E0E),
-      surface: WazyColors.snowWhite,
+      onErrorContainer: Color(0xFF7F1D1D),
+      surface: Colors.white,
       onSurface: WazyColors.textPrimaryLight,
       onSurfaceVariant: WazyColors.textSecondaryLight,
-      surfaceContainerHighest: WazyColors.mist,
-      outline: WazyColors.textMutedLight,
-      outlineVariant: WazyColors.fog,
+      surfaceContainerHighest: WazyColors.cloud,
+      outline: Color(0xFF667085),
+      outlineVariant: Color(0xFFE5E8EF),
       shadow: Color(0x1A000000),
       scrim: Colors.black,
       inverseSurface: WazyColors.charcoal,
-      onInverseSurface: WazyColors.cloud,
+      onInverseSurface: WazyColors.snowWhite,
     );
 
     return ThemeData(
@@ -517,25 +639,27 @@ class WazyTheme {
       scaffoldBackgroundColor: WazyColors.snowWhite,
       canvasColor: Colors.white,
       cardColor: Colors.white,
-      dividerColor: WazyColors.fog,
+      dividerColor: WazyColors.mist,
+      splashColor: scheme.primary.withOpacity(0.05),
+      highlightColor: scheme.primary.withOpacity(0.03),
       appBarTheme: AppBarTheme(
         backgroundColor: WazyColors.snowWhite,
         foregroundColor: WazyColors.textPrimaryLight,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: _withEmojiFallback(GoogleFonts.spaceGrotesk(
-          fontSize: 17.5,
-          fontWeight: FontWeight.w600,
+        titleTextStyle: _withEmojiFallback(GoogleFonts.inter(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
           color: WazyColors.textPrimaryLight,
-          letterSpacing: -0.3,
+          letterSpacing: -0.4,
         )),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: Colors.white.withOpacity(0.92),
-        indicatorColor: scheme.primary.withOpacity(0.1),
+        indicatorColor: WazyColors.accentSoft,
         labelTextStyle: WidgetStatePropertyAll(
-          _withEmojiFallback(GoogleFonts.spaceGrotesk(
+          _withEmojiFallback(GoogleFonts.inter(
             fontSize: 11,
             fontWeight: FontWeight.w500,
           )),
@@ -554,107 +678,142 @@ class WazyTheme {
         color: Colors.white,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: WazyColors.fog.withOpacity(0.5)),
+          borderRadius: BorderRadius.circular(WazyRadius.card),
         ),
+      ),
+      listTileTheme: ListTileThemeData(
+        iconColor: WazyColors.textSecondaryLight,
+        titleTextStyle: _withEmojiFallback(GoogleFonts.inter(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: WazyColors.textPrimaryLight,
+        )),
+        subtitleTextStyle: _withEmojiFallback(GoogleFonts.inter(
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+          color: WazyColors.textSecondaryLight,
+        )),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: WazyColors.cloud,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: WazyColors.fog),
+          borderRadius: BorderRadius.circular(WazyRadius.field),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: WazyColors.fog),
+          borderRadius: BorderRadius.circular(WazyRadius.field),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(WazyRadius.field),
           borderSide: BorderSide(color: scheme.primary, width: 1.5),
         ),
         labelStyle: const TextStyle(color: WazyColors.textSecondaryLight, fontSize: 13),
         hintStyle: const TextStyle(color: WazyColors.textMutedLight, fontSize: 13),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           backgroundColor: scheme.primary,
           foregroundColor: Colors.white,
+          minimumSize: const Size(0, 48),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(WazyRadius.button),
           ),
-          textStyle: _withEmojiFallback(GoogleFonts.spaceGrotesk(
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
+          textStyle: _withEmojiFallback(GoogleFonts.inter(
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
           )),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: scheme.primary,
+          backgroundColor: WazyColors.ink,
           foregroundColor: Colors.white,
+          minimumSize: const Size(0, 48),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(WazyRadius.button),
           ),
-          textStyle: _withEmojiFallback(GoogleFonts.spaceGrotesk(
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
+          textStyle: _withEmojiFallback(GoogleFonts.inter(
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
           )),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: scheme.primary,
-          textStyle: _withEmojiFallback(GoogleFonts.spaceGrotesk(
-            fontWeight: FontWeight.w500,
-            fontSize: 13,
+          textStyle: _withEmojiFallback(GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+            fontSize: 13.5,
           )),
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: scheme.primary,
+        backgroundColor: WazyColors.ink,
         foregroundColor: Colors.white,
-        elevation: 4,
+        elevation: 0,
+        highlightElevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(WazyRadius.card),
         ),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: Colors.white,
+        modalBackgroundColor: Colors.white,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(WazyRadius.sheet)),
         ),
+        dragHandleColor: Color(0xFFE2E5EC),
+        dragHandleSize: Size(40, 4),
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(WazyRadius.dialog),
         ),
-        elevation: 8,
+        elevation: 0,
+        titleTextStyle: _withEmojiFallback(GoogleFonts.inter(
+          fontSize: 17,
+          fontWeight: FontWeight.w700,
+          color: WazyColors.textPrimaryLight,
+        )),
+        contentTextStyle: _withEmojiFallback(GoogleFonts.inter(
+          fontSize: 13.5,
+          height: 1.5,
+          color: WazyColors.textSecondaryLight,
+        )),
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: WazyColors.charcoal,
+        backgroundColor: WazyColors.ink,
         contentTextStyle:
-            _withEmojiFallback(GoogleFonts.spaceGrotesk(
-          color: WazyColors.textPrimary,
+            _withEmojiFallback(GoogleFonts.inter(
+          color: Colors.white,
           fontSize: 13,
         )),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
         ),
         behavior: SnackBarBehavior.floating,
       ),
       chipTheme: ChipThemeData(
         backgroundColor: WazyColors.cloud,
-        selectedColor: scheme.primary.withOpacity(0.12),
-        labelStyle: _withEmojiFallback(GoogleFonts.spaceGrotesk(
-            fontSize: 11.5, color: WazyColors.textPrimaryLight)),
-        secondaryLabelStyle: _withEmojiFallback(GoogleFonts.spaceGrotesk(
-            fontSize: 11.5, color: scheme.primary)),
+        selectedColor: WazyColors.accentSoft,
+        checkmarkColor: scheme.primary,
+        labelStyle: _withEmojiFallback(GoogleFonts.inter(
+            fontSize: 12, color: WazyColors.textPrimaryLight, fontWeight: FontWeight.w500)),
+        secondaryLabelStyle: _withEmojiFallback(GoogleFonts.inter(
+            fontSize: 12, color: scheme.primary, fontWeight: FontWeight.w600)),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(10),
         ),
-        side: BorderSide(color: WazyColors.fog),
+        side: const BorderSide(color: Color(0xFFEAECF2)),
       ),
       progressIndicatorTheme: ProgressIndicatorThemeData(
         color: scheme.primary,

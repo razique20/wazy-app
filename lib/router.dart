@@ -274,17 +274,19 @@ class _AppShellState extends State<_AppShell> {
           margin: const EdgeInsets.only(left: 16, right: 16, bottom: 0),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            // Near-black like the reference bar — must stay clearly distinct
-            // from the navy hero backdrop on the Home tab.
-            color: isDark ? const Color(0xFF1E293B) : const Color(0xFF0B1020),
+            // Soft white pill on light mode, deep surface on dark — modern
+            // floating dock with a diffuse shadow instead of a hard black bar.
+            color: isDark ? WazyColors.slate.withOpacity(0.92) : Colors.white,
             borderRadius: BorderRadius.circular(30),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.22),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
+            boxShadow: isDark
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.4),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                    ),
+                  ]
+                : WazyShadows.raised,
           ),
           // Fixed height: the Center inside each item would otherwise
           // expand into the loose height constraints of the nav slot.
@@ -366,6 +368,7 @@ class _NavPillItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Expanded(
       child: Tooltip(
         message: tooltip,
@@ -380,26 +383,30 @@ class _NavPillItem extends StatelessWidget {
                 clipBehavior: Clip.none,
                 children: [
                   Container(
-                    width: 40,
-                    height: 40,
+                    width: 42,
+                    height: 42,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: active
-                          ? Colors.white.withOpacity(0.16)
+                          ? (isDark
+                              ? Colors.white.withOpacity(0.14)
+                              : WazyColors.ink)
                           : Colors.transparent,
                     ),
                     child: Icon(
                       icon,
-                      size: 22,
+                      size: 21,
                       color: active
                           ? Colors.white
-                          : Colors.white.withOpacity(0.55),
+                          : (isDark
+                              ? Colors.white.withOpacity(0.5)
+                              : WazyColors.textMutedLight),
                     ),
                   ),
                   if (showDot)
                     Positioned(
-                      right: 4,
-                      top: 3,
+                      right: 3,
+                      top: 2,
                       child: Container(
                         width: 9,
                         height: 9,
@@ -407,7 +414,9 @@ class _NavPillItem extends StatelessWidget {
                           color: dotColor ?? WazyColors.danger,
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.9),
+                            color: isDark
+                                ? WazyColors.slate
+                                : Colors.white,
                             width: 1.5,
                           ),
                         ),

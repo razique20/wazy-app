@@ -110,10 +110,10 @@ class _MoneyScreenState extends State<MoneyScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      // Navy backdrop behind the hero; the content sheet covers the rest.
+      // Ink backdrop behind the hero; the content sheet covers the rest.
       // Same backdrop colors as the redesigned Home and Documents tabs.
       backgroundColor:
-          isDark ? WazyColors.obsidian : WazyColors.navyPrimaryDark,
+          isDark ? WazyColors.obsidian : WazyColors.ink,
       body: SafeArea(
         bottom: false,
         child: _loading
@@ -133,7 +133,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
                         decoration: BoxDecoration(
                           color: theme.colorScheme.surface,
                           borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(24),
+                            top: Radius.circular(28),
                           ),
                         ),
                         child: Column(
@@ -261,7 +261,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           // One-line live status: month + record count (tappable to view transactions).
           InkWell(
             onTap: () => context.push('/records'),
@@ -287,11 +287,12 @@ class _MoneyScreenState extends State<MoneyScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             'Net this month',
             style: theme.textTheme.bodySmall?.copyWith(
               color: Colors.white.withOpacity(0.6),
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 4),
@@ -315,6 +316,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
             '${MoneyFormat.aed(summary.income)} in · ${MoneyFormat.aed(summary.expense)} out',
             style: theme.textTheme.bodySmall?.copyWith(
               color: Colors.white.withOpacity(0.6),
+              fontWeight: FontWeight.w500,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -403,12 +405,11 @@ class _MoneyScreenState extends State<MoneyScreen> {
         Card(
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: WazyColors.warning.withOpacity(0.5)),
+            borderRadius: BorderRadius.circular(WazyRadius.card),
           ),
           color: isDark
-              ? const Color(0xFF2A2118)
-              : WazyColors.warning.withOpacity(0.08),
+              ? const Color(0xFF2A2110)
+              : WazyColors.amberTint,
           child: Padding(
             padding: const EdgeInsets.all(14),
             child: Column(
@@ -417,10 +418,11 @@ class _MoneyScreenState extends State<MoneyScreen> {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(6),
+                      width: 36,
+                      height: 36,
                       decoration: BoxDecoration(
-                        color: WazyColors.warning.withOpacity(0.2),
-                        shape: BoxShape.circle,
+                        color: WazyColors.warning.withOpacity(isDark ? 0.2 : 0.14),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
                         Icons.trending_up_rounded,
@@ -3167,15 +3169,15 @@ class _MoneyHeroIconButton extends StatelessWidget {
       message: tooltip,
       child: Material(
         color: enabled
-            ? Colors.white.withOpacity(0.14)
-            : Colors.white.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(12),
+            ? Colors.white.withOpacity(0.12)
+            : Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(13),
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(13),
           onTap: enabled ? onTap : null,
           child: SizedBox(
-            width: 38,
-            height: 38,
+            width: 40,
+            height: 40,
             child: Icon(
               icon,
               color: enabled
@@ -3207,26 +3209,27 @@ class _MoneyAddCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: WazyColors.cyanSecondary,
-      borderRadius: BorderRadius.circular(14),
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
           child: Row(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 16, color: const Color(0xFF0A0E1A)),
-              const SizedBox(width: 6),
+              Icon(icon, size: 17, color: WazyColors.ink),
+              const SizedBox(width: 7),
               Flexible(
                 child: Text(
                   label,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Color(0xFF0A0E1A),
+                    color: WazyColors.ink,
                     fontWeight: FontWeight.w700,
-                    fontSize: 12.5,
+                    fontSize: 13,
                   ),
                 ),
               ),
@@ -3260,12 +3263,12 @@ class _MoneyActionPill extends StatelessWidget {
     return Material(
       color: bg,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(22),
         side: side,
       ),
       child: InkWell(
         customBorder: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(22),
         ),
         onTap: onTap,
         child: Padding(

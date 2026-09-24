@@ -270,8 +270,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      // Navy backdrop behind the hero; the content sheet covers the rest.
-      backgroundColor: isDark ? WazyColors.obsidian : WazyColors.navyPrimaryDark,
+      // Ink backdrop behind the hero; the content sheet covers the rest.
+      backgroundColor: isDark ? WazyColors.obsidian : WazyColors.ink,
       body: SafeArea(
         bottom: false,
         child: _loading
@@ -291,7 +291,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         decoration: BoxDecoration(
                           color: theme.colorScheme.surface,
                           borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(24),
+                            top: Radius.circular(28),
                           ),
                         ),
                         child: Column(
@@ -361,41 +361,39 @@ class _HomeScreenState extends State<HomeScreen> {
   // ------------------------------------------------------------------
   // Categories grid (top of white content sheet, like the reference)
   // ------------------------------------------------------------------
-
   Widget _buildCategoriesGrid(ThemeData theme, UrgencySnapshot urgency) {
     final pending = urgency.pendingActions.length;
     final isDark = theme.brightness == Brightness.dark;
-    final tileBg = isDark ? WazyColors.slate.withOpacity(0.55) : WazyColors.cloud;
-    final iconColor = isDark ? WazyColors.textPrimary : WazyColors.navyPrimary;
+    final tileBg = isDark ? WazyColors.slate.withOpacity(0.5) : Colors.white;
+    final labelColor = isDark ? WazyColors.textSecondary : WazyColors.textPrimaryLight;
 
-    Widget tile(IconData icon, String label, VoidCallback onTap) =>
-        InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
-          child: Container(
-            decoration: BoxDecoration(
-              color: tileBg,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  icon,
-                  size: 22,
-                  color: iconColor,
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  label,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.8),
-                    fontWeight: FontWeight.w500,
+    Widget tile(BentoIconTile iconTile, String label, VoidCallback onTap) =>
+        Material(
+          color: tileBg,
+          borderRadius: BorderRadius.circular(WazyRadius.tile),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  iconTile,
+                  const SizedBox(height: 6),
+                  Text(
+                    label,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: labelColor,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 10.5,
+                      height: 1.1,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
@@ -405,11 +403,24 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Categories',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
+          Row(
+            children: [
+              Text(
+                'Categories',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Spacer(),
+              if (pending > 0)
+                Text(
+                  '$pending need attention',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: WazyColors.danger,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 12),
           GridView.count(
@@ -422,40 +433,53 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: EdgeInsets.zero,
             mainAxisSpacing: 8,
             crossAxisSpacing: 8,
-            childAspectRatio: 1.05,
+            childAspectRatio: 0.95,
             children: [
-              tile(Icons.description_rounded, 'Documents',
-                  () => context.go('/documents')),
-              tile(Icons.account_balance_wallet_rounded, 'Budgets',
-                  () => context.push('/budgets')),
-              tile(Icons.calendar_month_rounded, 'Renewals',
-                  () => context.push('/expiry-list')),
-              tile(Icons.savings_rounded, 'Envelopes',
-                  () => context.push('/envelopes')),
-              tile(Icons.receipt_long_rounded, 'Records',
-                  () => context.push('/records')),
-              tile(Icons.trending_up_rounded, 'Forecast',
-                  () => context.push('/cash-flow-forecast')),
-              tile(Icons.auto_awesome_rounded, 'AI Summary',
-                  () => context.push('/ai-summary')),
-              tile(Icons.flag_rounded, 'AI Planner',
-                  () => context.push('/ai-budget-plan')),
-              tile(Icons.document_scanner_rounded, 'Scan', () {
-                // Free plan document limit — paywall when the quota is full.
-                unawaited(_openScanner());
-              }),
+              tile(
+                const BentoIconTile(icon: Icons.description_rounded, color: WazyColors.blue),
+                'Documents',
+                () => context.go('/documents'),
+              ),
+              tile(
+                const BentoIconTile(icon: Icons.calendar_month_rounded, color: WazyColors.red),
+                'Renewals',
+                () => context.push('/expiry-list'),
+              ),
+              tile(
+                const BentoIconTile(icon: Icons.savings_rounded, color: WazyColors.green),
+                'Envelopes',
+                () => context.push('/envelopes'),
+              ),
+              tile(
+                const BentoIconTile(icon: Icons.receipt_long_rounded, color: WazyColors.orange),
+                'Records',
+                () => context.push('/records'),
+              ),
+              tile(
+                const BentoIconTile(icon: Icons.trending_up_rounded, color: WazyColors.lilac),
+                'Forecast',
+                () => context.push('/cash-flow-forecast'),
+              ),
+              tile(
+                const BentoIconTile(icon: Icons.auto_awesome_rounded, color: WazyColors.amber),
+                'AI Summary',
+                () => context.push('/ai-summary'),
+              ),
+              tile(
+                const BentoIconTile(icon: Icons.flag_rounded, color: WazyColors.sky),
+                'AI Planner',
+                () => context.push('/ai-budget-plan'),
+              ),
+              tile(
+                const BentoIconTile(icon: Icons.document_scanner_rounded, color: WazyColors.indigo),
+                'Scan',
+                () {
+                  // Free plan document limit — paywall when the quota is full.
+                  unawaited(_openScanner());
+                },
+              ),
             ],
           ),
-          if (pending > 0) ...[
-            const SizedBox(height: 8),
-            Text(
-              '$pending document${pending == 1 ? '' : 's'} need attention',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: WazyColors.danger,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -499,11 +523,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Row(
                     children: [
                       Container(
-                        width: 38,
-                        height: 38,
+                        width: 40,
+                        height: 40,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.14),
-                          borderRadius: BorderRadius.circular(10),
+                          color: Colors.white.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(13),
                         ),
                         child: Icon(
                           _activeCollection?.icon ?? Icons.person_rounded,
@@ -518,7 +542,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Text(
                             greeting,
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.white.withOpacity(0.65),
+                              color: Colors.white.withOpacity(0.7),
                             ),
                           ),
                           Row(
@@ -560,12 +584,13 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildNotificationBell(theme),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 22),
           // Balance block.
           Text(
             'Net this month',
             style: theme.textTheme.bodySmall?.copyWith(
               color: Colors.white.withOpacity(0.6),
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 4),
@@ -591,7 +616,7 @@ class _HomeScreenState extends State<HomeScreen> {
               if (summary.income > 0 || summary.expense > 0) ...[
                 const SizedBox(width: 12),
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
+                  padding: const EdgeInsets.only(bottom: 7),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
@@ -605,6 +630,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       DocumentCollectionService.instance.activeCurrency,
                       style: theme.textTheme.labelMedium?.copyWith(
                         color: Colors.white.withOpacity(0.85),
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -618,6 +644,7 @@ class _HomeScreenState extends State<HomeScreen> {
             '${nextRenewal == null ? '' : ' · next: $nextRenewal'}',
             style: theme.textTheme.bodySmall?.copyWith(
               color: Colors.white.withOpacity(0.6),
+              fontWeight: FontWeight.w500,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -702,14 +729,14 @@ class _HomeScreenState extends State<HomeScreen> {
       clipBehavior: Clip.none,
       children: [
         Material(
-          color: Colors.white.withOpacity(0.14),
-          borderRadius: BorderRadius.circular(12),
+          color: Colors.white.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(13),
           child: InkWell(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(13),
             onTap: _showNotificationsSheet,
             child: const SizedBox(
-              width: 38,
-              height: 38,
+              width: 40,
+              height: 40,
               child: Icon(
                 Icons.notifications_outlined,
                 color: Colors.white,
@@ -727,7 +754,7 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: BoxDecoration(
                 color: WazyColors.danger,
                 shape: BoxShape.circle,
-                border: Border.all(color: WazyColors.navyPrimaryDark, width: 1.5),
+                border: Border.all(color: WazyColors.ink, width: 1.5),
               ),
               constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
               child: Text(
@@ -925,11 +952,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     final isDark = theme.brightness == Brightness.dark;
-    final bannerBg = isDark ? const Color(0xFF38230D) : const Color(0xFFFFFBEB);
-    final bannerBorder = isDark
-        ? const Color(0xFFF59E0B).withOpacity(0.4)
-        : const Color(0xFFFDE68A);
-    const iconColor = WazyColors.warning;
+    final bannerBg = isDark ? const Color(0xFF2A2110) : WazyColors.amberTint;
+    const iconColor = WazyColors.amber;
     final textColor = isDark ? Colors.white : const Color(0xFF92400E);
     final subtitleColor = isDark
         ? const Color(0xFFFDE68A)
@@ -946,27 +970,27 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
       child: InkWell(
         onTap: () => showTierRequestSheet(context),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(WazyRadius.card),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: bannerBg,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: bannerBorder),
+            borderRadius: BorderRadius.circular(WazyRadius.card),
           ),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.15),
-                  shape: BoxShape.circle,
+                  color: iconColor.withOpacity(isDark ? 0.18 : 0.15),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: const Icon(
                   Icons.lock_rounded,
                   color: iconColor,
-                  size: 22,
+                  size: 21,
                 ),
               ),
               const SizedBox(width: 14),
@@ -995,14 +1019,14 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(width: 8),
               FilledButton(
                 style: FilledButton.styleFrom(
-                  backgroundColor: iconColor,
-                  foregroundColor: Colors.black,
+                  backgroundColor: isDark ? Colors.white : WazyColors.ink,
+                  foregroundColor: isDark ? WazyColors.ink : Colors.white,
                   visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: () => showTierRequestSheet(context),
-                child: const Text('Renew', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                child: const Text('Renew', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5)),
               ),
             ],
           ),
@@ -1136,26 +1160,26 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: InkWell(
         onTap: () => context.push('/document/${worst.id}'),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(WazyRadius.card),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.red.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.red.withOpacity(0.25)),
+            color: WazyColors.redTint,
+            borderRadius: BorderRadius.circular(WazyRadius.card),
           ),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                width: 42,
+                height: 42,
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.15),
-                  shape: BoxShape.circle,
+                  color: WazyColors.red.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(13),
                 ),
                 child: const Icon(
                   Icons.event_busy_rounded,
-                  color: Colors.red,
+                  color: WazyColors.red,
                   size: 20,
                 ),
               ),
@@ -1167,8 +1191,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       '${expired.length} document${expired.length == 1 ? '' : 's'} already expired',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: Colors.red,
+                        fontWeight: FontWeight.w700,
+                        color: WazyColors.red,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -1185,7 +1209,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: Colors.red),
+              const Icon(Icons.chevron_right_rounded, color: WazyColors.red),
             ],
           ),
         ),
@@ -1364,14 +1388,14 @@ class _HeroIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white.withOpacity(0.14),
-      borderRadius: BorderRadius.circular(12),
+      color: Colors.white.withOpacity(0.12),
+      borderRadius: BorderRadius.circular(13),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(13),
         onTap: onTap,
         child: SizedBox(
-          width: 38,
-          height: 38,
+          width: 40,
+          height: 40,
           child: Icon(icon, color: Colors.white, size: 20),
         ),
       ),
@@ -1403,24 +1427,24 @@ class _HeroActionPill extends StatelessWidget {
     final Color fg;
     final BorderSide side;
     if (filled) {
-      bg = WazyColors.cyanSecondary;
-      fg = const Color(0xFF0A0E1A);
+      bg = Colors.white;
+      fg = WazyColors.ink;
       side = BorderSide.none;
     } else {
       bg = Colors.white.withOpacity(0.10);
       fg = Colors.white;
-      side = BorderSide(color: Colors.white.withOpacity(0.25));
+      side = BorderSide(color: Colors.white.withOpacity(0.22));
     }
 
     return Material(
       color: bg,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(22),
         side: side,
       ),
       child: InkWell(
         customBorder: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(22),
         ),
         onTap: onTap,
         child: Padding(

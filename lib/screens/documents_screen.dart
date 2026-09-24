@@ -11,6 +11,7 @@ import '../services/document_scanner_service.dart';
 import '../services/collection_service.dart';
 import '../services/urgency_engine.dart';
 import '../theme/app_theme.dart';
+import '../widgets/bento_icon_tile.dart';
 import '../widgets/indicators/department_logo.dart';
 import '../widgets/indicators/empty_state_illustration.dart';
 import '../widgets/dialogs/natural_language_add_dialog.dart';
@@ -193,11 +194,11 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     final filtered = _filtered;
 
     return Scaffold(
-      // Navy backdrop behind the hero; the content sheet covers the rest.
+      // Ink backdrop behind the hero; the content sheet covers the rest.
       // Same backdrop colors as the redesigned Home tab.
       backgroundColor: isDark
           ? WazyColors.obsidian
-          : WazyColors.navyPrimaryDark,
+          : WazyColors.ink,
       body: SafeArea(
         bottom: false,
         child: _loading
@@ -217,7 +218,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                         decoration: BoxDecoration(
                           color: theme.colorScheme.surface,
                           borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(24),
+                            top: Radius.circular(28),
                           ),
                         ),
                         child: Column(
@@ -338,7 +339,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           // Action pills: filter + sort, mirroring Home's Record/Budget row.
           Row(
             children: [
@@ -388,6 +389,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
         style: TextStyle(
           color: isDark ? WazyColors.textPrimary : WazyColors.textPrimaryLight,
           fontSize: 14,
+          fontWeight: FontWeight.w500,
         ),
         decoration: InputDecoration(
           isDense: true,
@@ -395,9 +397,10 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
           hintStyle: TextStyle(
             color: isDark ? WazyColors.textMuted : WazyColors.textMutedLight,
             fontSize: 14,
+            fontWeight: FontWeight.w400,
           ),
           prefixIcon: Icon(
-            Icons.search,
+            Icons.search_rounded,
             size: 20,
             color: isDark
                 ? WazyColors.textSecondary
@@ -407,7 +410,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
               ? null
               : IconButton(
                   icon: Icon(
-                    Icons.close,
+                    Icons.close_rounded,
                     size: 18,
                     color: isDark
                         ? WazyColors.textSecondary
@@ -421,7 +424,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
               : WazyColors.cloud,
           contentPadding: EdgeInsets.zero,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(WazyRadius.field),
             borderSide: BorderSide.none,
           ),
         ),
@@ -531,8 +534,8 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
   ) {
     final isDark = theme.brightness == Brightness.dark;
     final tileBg = isDark
-        ? WazyColors.slate.withOpacity(0.55)
-        : WazyColors.cloud;
+        ? WazyColors.slate.withOpacity(0.5)
+        : Colors.white;
     final pending = urgency.pendingActions.length;
     final nextDue = _nextDue;
 
@@ -549,12 +552,12 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
               value: nextDue == null
                   ? '—'
                   : '${nextDue.displayName} · ${nextDue.daysRemaining}d',
-              iconColor: pending > 0
-                  ? (isDark ? WazyColors.danger : const Color(0xFFDC2626))
-                  : (isDark ? WazyColors.textPrimary : WazyColors.navyPrimary),
+              iconColor: WazyColors.orange,
+              tint: WazyColors.orangeTint,
+              onDark: isDark,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           Expanded(
             child: _insightTile(
               theme,
@@ -564,9 +567,9 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
               value: _totalUpcomingFees > 0
                   ? MoneyFormat.aed(_totalUpcomingFees)
                   : '—',
-              iconColor: isDark
-                  ? WazyColors.textPrimary
-                  : WazyColors.navyPrimary,
+              iconColor: WazyColors.teal,
+              tint: WazyColors.tealTint,
+              onDark: isDark,
             ),
           ),
         ],
@@ -581,18 +584,26 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     required String label,
     required String value,
     required Color iconColor,
+    Color? tint,
+    bool onDark = false,
   }) {
-    final isDark = theme.brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: tileBg,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(WazyRadius.card),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: iconColor),
-          const SizedBox(width: 8),
+          BentoIconTile(
+            icon: icon,
+            color: iconColor,
+            tint: onDark ? tint?.withOpacity(0.16) : tint,
+            size: 36,
+            iconSize: 17,
+            radius: 11,
+          ),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -600,7 +611,8 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                 Text(
                   label,
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    color: theme.colorScheme.onSurface.withOpacity(0.55),
+                    fontWeight: FontWeight.w500,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -609,8 +621,9 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                 Text(
                   value,
                   style: theme.textTheme.labelMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.85),
-                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurface.withOpacity(0.9),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -1157,16 +1170,16 @@ class _HeroIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white.withOpacity(0.14),
-      borderRadius: BorderRadius.circular(12),
+      color: Colors.white.withOpacity(0.12),
+      borderRadius: BorderRadius.circular(13),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(13),
         onTap: onTap,
         child: Tooltip(
           message: tooltip,
           child: SizedBox(
-            width: 38,
-            height: 38,
+            width: 40,
+            height: 40,
             child: Icon(icon, color: Colors.white, size: 20),
           ),
         ),
@@ -1199,24 +1212,24 @@ class _HeroActionPill extends StatelessWidget {
     final Color fg;
     final BorderSide side;
     if (filled) {
-      bg = WazyColors.cyanSecondary;
-      fg = const Color(0xFF0A0E1A);
+      bg = Colors.white;
+      fg = WazyColors.ink;
       side = BorderSide.none;
     } else {
       bg = Colors.white.withOpacity(0.10);
       fg = Colors.white;
-      side = BorderSide(color: Colors.white.withOpacity(0.25));
+      side = BorderSide(color: Colors.white.withOpacity(0.22));
     }
 
     return Material(
       color: bg,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(22),
         side: side,
       ),
       child: InkWell(
         customBorder: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(22),
         ),
         onTap: onTap,
         child: Padding(

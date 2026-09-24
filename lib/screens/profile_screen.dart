@@ -439,10 +439,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      // Navy backdrop behind the hero; the content sheet covers the rest.
+      // Ink backdrop behind the hero; the content sheet covers the rest.
       // Same backdrop as Home/Documents.
       backgroundColor:
-          isDark ? WazyColors.obsidian : WazyColors.navyPrimaryDark,
+          isDark ? WazyColors.obsidian : WazyColors.ink,
       body: SafeArea(
         bottom: false,
         child: _loading
@@ -460,7 +460,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         decoration: BoxDecoration(
                           color: theme.colorScheme.surface,
                           borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(24),
+                            top: Radius.circular(28),
                           ),
                         ),
                         child: Column(
@@ -557,27 +557,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 16),
           Row(
             children: [
-              // Avatar: initials on the cyan accent — the only cyan-forward
-              // element in the hero, echoing the filled "Budget" pill.
+              // Avatar: white on the ink hero — quiet, premium, no glare.
               Container(
-                width: 52,
-                height: 52,
+                width: 54,
+                height: 54,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [WazyColors.cyanSecondary, Color(0xFF00B8D4)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+                  color: Colors.white.withOpacity(0.14),
+                  borderRadius: BorderRadius.circular(17),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.18),
+                    width: 1,
                   ),
-                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Center(
                   child: Text(
                     initials.isEmpty ? 'U' : initials,
                     style: const TextStyle(
-                      color: Color(0xFF0A0E1A),
+                      color: Colors.white,
                       fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
                     ),
                   ),
                 ),
@@ -1634,8 +1633,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Color _tileBg(ThemeData theme) {
     final isDark = theme.brightness == Brightness.dark;
     return isDark
-        ? WazyColors.slate.withOpacity(0.55)
-        : WazyColors.cloud;
+        ? WazyColors.slate.withOpacity(0.5)
+        : Colors.white;
   }
 }
 
@@ -1661,8 +1660,8 @@ class _SettingsGroup extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final tileBg = isDark
-        ? WazyColors.slate.withOpacity(0.55)
-        : WazyColors.cloud;
+        ? WazyColors.slate.withOpacity(0.5)
+        : Colors.white;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1675,19 +1674,19 @@ class _SettingsGroup extends StatelessWidget {
                 child: Text(
                   title,
                   style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
               if (action != null) action!,
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Container(
             width: double.infinity,
             decoration: BoxDecoration(
               color: tileBg,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(WazyRadius.card),
             ),
             child: Column(
               children: [
@@ -1737,29 +1736,26 @@ class _SettingsTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final accent = iconColor ??
-        (isDark ? WazyColors.textPrimary : WazyColors.navyPrimary);
+    final accent = iconColor ?? WazyColors.indigo;
 
     return Material(
       color: highlighted
-          ? theme.colorScheme.primary.withOpacity(isDark ? 0.14 : 0.06)
+          ? theme.colorScheme.primary.withOpacity(isDark ? 0.14 : 0.05)
           : Colors.transparent,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(WazyRadius.tile),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(WazyRadius.tile),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(
             children: [
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: accent.withOpacity(isDark ? 0.14 : 0.08),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 17, color: accent),
+              BentoIconTile(
+                icon: icon,
+                color: accent,
+                size: 38,
+                iconSize: 18,
+                radius: 12,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -2020,7 +2016,7 @@ class _HeroPill extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.10),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.25)),
+        border: Border.all(color: Colors.white.withOpacity(0.18)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -2059,14 +2055,14 @@ class _HeroIconButton extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: Colors.white.withOpacity(0.14),
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(13),
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(13),
           onTap: onTap,
           child: SizedBox(
-            width: 38,
-            height: 38,
+            width: 40,
+            height: 40,
             child: Icon(icon, color: Colors.white, size: 20),
           ),
         ),
