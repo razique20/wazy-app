@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,7 +11,14 @@ import '../services/entitlement_service.dart';
 import '../services/finance_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/dialogs/legal_info_dialogs.dart';
+import '../widgets/widgets.dart';
 
+/// Redesigned Login & Sign-up screen adhering to Wazy's Bento Design System.
+///
+/// Features a dark navy hero header with logo & GCC capabilities, over a smooth
+/// rounded surface sheet containing the sign-in / sign-up mode switcher,
+/// styled form inputs with password visibility toggle, GCC country picker,
+/// legal consent links, and app version badge.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -27,6 +35,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _isSignUp = false;
   bool _busy = false;
+  bool _obscurePassword = true;
   String? _error;
 
   @override
@@ -133,24 +142,44 @@ class _LoginScreenState extends State<LoginScreen> {
     final resetEmailController = TextEditingController(
       text: _emailController.text.trim(),
     );
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Reset Password'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(WazyRadius.dialog),
+        ),
+        backgroundColor: isDark ? WazyColors.charcoal : Colors.white,
+        title: Text(
+          'Reset Password',
+          style: TextStyle(
+            color: isDark ? WazyColors.textPrimary : WazyColors.textPrimaryLight,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Enter your email address and we\'ll send you a link to reset your password.',
+              style: TextStyle(
+                fontSize: 13.5,
+                color: isDark ? WazyColors.textSecondary : WazyColors.textSecondaryLight,
+              ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: resetEmailController,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                prefixIcon: Icon(Icons.alternate_email_rounded),
+              style: TextStyle(
+                color: isDark ? WazyColors.textPrimary : WazyColors.textPrimaryLight,
+              ),
+              decoration: _fieldDecoration(
+                isDark,
+                label: 'Email',
+                icon: Icons.alternate_email_rounded,
               ),
             ),
           ],
@@ -158,10 +187,21 @@ class _LoginScreenState extends State<LoginScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: isDark ? WazyColors.textSecondary : WazyColors.textSecondaryLight,
+              ),
+            ),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: isDark ? WazyColors.slate : WazyColors.ink,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(WazyRadius.button),
+              ),
+            ),
             child: const Text('Send Reset Link'),
           ),
         ],
@@ -170,8 +210,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final email = resetEmailController.text.trim();
 
-    // Dispose after the dialog animation finishes to avoid
-    // "used after being disposed" errors during the exit transition.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       resetEmailController.dispose();
     });
@@ -210,22 +248,23 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final surface = isDark ? WazyColors.charcoal : Colors.white;
     final subColor =
         isDark ? WazyColors.textSecondary : WazyColors.textSecondaryLight;
-    final ctaColor = isDark ? WazyColors.cyanAccent : WazyColors.navyPrimary;
-    final ctaTextColor = isDark ? WazyColors.obsidian : Colors.white;
+    final ctaColor = isDark ? WazyColors.slate : WazyColors.ink;
+    final primaryAccent = isDark ? WazyColors.textPrimary : WazyColors.ink;
 
     return Scaffold(
-      backgroundColor: WazyColors.navyPrimary,
+      backgroundColor: isDark ? WazyColors.obsidian : WazyColors.navyPrimaryDark,
       body: Column(
         children: [
-          // ── Brand hero (navy header) ────────────────────────────────────
+          // ── Brand hero header ──────────────────────────────────────────
           SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(28, 16, 28, 26),
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
               child: Stack(
                 children: [
                   Positioned(
@@ -238,10 +277,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Row(
                         children: [
+                          const WazyLogo(size: 42, showShadow: false),
+                          const SizedBox(width: 12),
                           const Text(
                             'Wazy',
                             style: TextStyle(
-                              fontSize: 32,
+                              fontSize: 30,
                               fontWeight: FontWeight.w800,
                               letterSpacing: -0.8,
                               color: Colors.white,
@@ -250,14 +291,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(width: 10),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
+                              horizontal: 10,
+                              vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: WazyColors.cyanAccent.withOpacity(0.18),
-                              borderRadius: BorderRadius.circular(12),
+                              color: WazyColors.accentBright.withOpacity(0.18),
+                              borderRadius: BorderRadius.circular(WazyRadius.tile),
                               border: Border.all(
-                                color: WazyColors.cyanAccent.withOpacity(0.35),
+                                color: WazyColors.accentBright.withOpacity(0.35),
                               ),
                             ),
                             child: const Text(
@@ -265,17 +306,17 @@ class _LoginScreenState extends State<LoginScreen> {
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                color: WazyColors.cyanAccent,
+                                color: WazyColors.accentBright,
                               ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                       Text(
                         'Financial & document intelligence for GCC businesses.',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 14.5,
                           fontWeight: FontWeight.w600,
                           color: Colors.white.withOpacity(0.92),
                         ),
@@ -286,7 +327,36 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: TextStyle(
                           fontSize: 12.5,
                           height: 1.45,
-                          color: Colors.white.withOpacity(0.7),
+                          color: Colors.white.withOpacity(0.72),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Feature highlight pills
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        child: Row(
+                          children: const [
+                            _HeroPill(
+                              icon: Icons.notifications_active_rounded,
+                              label: 'Expiry Alerts',
+                            ),
+                            SizedBox(width: 8),
+                            _HeroPill(
+                              icon: Icons.account_balance_wallet_rounded,
+                              label: 'Cash Flow',
+                            ),
+                            SizedBox(width: 8),
+                            _HeroPill(
+                              icon: Icons.verified_rounded,
+                              label: 'GCC Compliance',
+                            ),
+                            SizedBox(width: 8),
+                            _HeroPill(
+                              icon: Icons.auto_awesome_rounded,
+                              label: 'Groq AI',
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -303,17 +373,19 @@ class _LoginScreenState extends State<LoginScreen> {
               decoration: BoxDecoration(
                 color: surface,
                 borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(28),
+                  top: Radius.circular(WazyRadius.sheet),
                 ),
+                boxShadow: WazyShadows.adaptive(isDark),
               ),
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 10, 24, 28),
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
                 child: Form(
                   key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Drag-handle for the sheet look
+                      // Sheet drag-handle bar
                       Center(
                         child: Container(
                           width: 36,
@@ -321,23 +393,24 @@ class _LoginScreenState extends State<LoginScreen> {
                           margin: const EdgeInsets.only(bottom: 18),
                           decoration: BoxDecoration(
                             color: isDark
-                                ? Colors.white.withOpacity(0.15)
+                                ? Colors.white.withOpacity(0.18)
                                 : Colors.black.withOpacity(0.12),
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
                       ),
 
-                      // ── Sign in / Sign up pill toggle ──────────────────
+                      // ── Sign in / Sign up mode toggle ──────────────────
                       _ModeToggle(
                         isSignUp: _isSignUp,
                         enabled: !_busy,
                         activeColor: ctaColor,
-                        activeTextColor: ctaTextColor,
+                        activeTextColor: Colors.white,
                         onChanged: (v) => setState(() => _isSignUp = v),
                       ),
                       const SizedBox(height: 22),
 
+                      // Email input
                       TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
@@ -345,7 +418,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: TextStyle(color: _fieldTextColor(isDark)),
                         decoration: _fieldDecoration(
                           isDark,
-                          label: 'Email',
+                          label: 'Email Address',
                           icon: Icons.alternate_email_rounded,
                         ),
                         validator: (v) {
@@ -358,15 +431,33 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                       ),
                       const SizedBox(height: 14),
+
+                      // Password input with visibility toggle
                       TextFormField(
                         controller: _passwordController,
-                        obscureText: true,
+                        obscureText: _obscurePassword,
                         autofillHints: const [AutofillHints.password],
                         style: TextStyle(color: _fieldTextColor(isDark)),
                         decoration: _fieldDecoration(
                           isDark,
                           label: 'Password',
-                          icon: Icons.lock_person_rounded,
+                          icon: Icons.lock_outline_rounded,
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off_rounded
+                                  : Icons.visibility_rounded,
+                              size: 20,
+                              color: isDark
+                                  ? WazyColors.textSecondary
+                                  : WazyColors.textSecondaryLight,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                          ),
                         ),
                         validator: (v) {
                           final value = v ?? '';
@@ -377,6 +468,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           return null;
                         },
                       ),
+
                       if (!_isSignUp) ...[
                         Align(
                           alignment: Alignment.centerRight,
@@ -391,27 +483,28 @@ class _LoginScreenState extends State<LoginScreen> {
                               'Forgot password?',
                               style: TextStyle(
                                 fontSize: 13,
-                                color: isDark
-                                    ? WazyColors.cyanAccent
-                                    : WazyColors.navyPrimary,
+                                color: primaryAccent,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
                         ),
                       ],
+
                       if (_isSignUp) ...[
                         const SizedBox(height: 14),
                         DropdownButtonFormField<GccCountry>(
-                          value: _selectedCountry,
+                          initialValue: _selectedCountry,
                           isExpanded: true,
-                          dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                          dropdownColor:
+                              isDark ? WazyColors.slate : Colors.white,
                           style: TextStyle(color: _fieldTextColor(isDark)),
                           decoration: _fieldDecoration(
                             isDark,
                             label: 'Residence / Base GCC Country',
                             icon: Icons.public_rounded,
-                            helperText: 'Sets your primary personal document defaults',
+                            helperText:
+                                'Sets your primary personal document defaults',
                           ),
                           items: GccCountry.values.map((c) {
                             return DropdownMenuItem<GccCountry>(
@@ -420,19 +513,20 @@ class _LoginScreenState extends State<LoginScreen> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 7,
+                                      vertical: 2,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: isDark
-                                          ? WazyColors.cyanAccent.withOpacity(0.18)
-                                          : WazyColors.navyPrimary.withOpacity(0.10),
-                                      borderRadius: BorderRadius.circular(4),
+                                      color: primaryAccent.withOpacity(0.10),
+                                      borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
                                       c.code,
                                       style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w800,
-                                        color: isDark ? WazyColors.cyanAccent : WazyColors.navyPrimary,
+                                        color: primaryAccent,
                                       ),
                                     ),
                                   ),
@@ -441,7 +535,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                     child: Text(
                                       '${c.displayName} (${c.currency})',
                                       overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(color: _fieldTextColor(isDark)),
+                                      style: TextStyle(
+                                        color: _fieldTextColor(isDark),
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -470,6 +566,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ],
+
                       if (_error != null) ...[
                         const SizedBox(height: 16),
                         Container(
@@ -478,7 +575,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             color: isDark
                                 ? WazyColors.dangerBg
                                 : WazyColors.dangerBgLight,
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(WazyRadius.tile),
                             border: Border.all(
                               color: WazyColors.danger.withOpacity(0.3),
                             ),
@@ -505,45 +602,53 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ],
+
                       const SizedBox(height: 22),
+
+                      // Form Submit CTA Button
                       SizedBox(
-                        height: 54,
-                        child: FilledButton(
-                          onPressed: _busy ? null : _submit,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: ctaColor,
-                            foregroundColor: ctaTextColor,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
+                        height: 52,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(WazyRadius.button),
+                            boxShadow: WazyShadows.adaptive(isDark),
                           ),
-                          child: _busy
-                              ? SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      ctaTextColor,
+                          child: FilledButton(
+                            onPressed: _busy ? null : _submit,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: ctaColor,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.circular(WazyRadius.button),
+                              ),
+                            ),
+                            child: _busy
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                : Text(
+                                    _isSignUp ? 'Create account' : 'Sign in',
+                                    style: const TextStyle(
+                                      fontSize: 15.5,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.2,
                                     ),
                                   ),
-                                )
-                              : Text(
-                                  _isSignUp ? 'Create account' : 'Sign in',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 0.2,
-                                  ),
-                                ),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 20),
 
                       // ── Legal consent line ──────────────────────────────
-                      // Opens the in-app legal sheets — the external
-                      // wazy.app pages are placeholders until they go live.
                       Wrap(
                         alignment: WrapAlignment.center,
                         crossAxisAlignment: WrapCrossAlignment.center,
@@ -559,9 +664,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           _LegalLink(
                             label: 'Terms & Conditions',
-                            color: isDark
-                                ? WazyColors.cyanAccent
-                                : WazyColors.navyPrimary,
+                            color: primaryAccent,
                             onTap: () => showTermsDialog(context),
                           ),
                           Text(
@@ -574,14 +677,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           _LegalLink(
                             label: 'Privacy Policy',
-                            color: isDark
-                                ? WazyColors.cyanAccent
-                                : WazyColors.navyPrimary,
+                            color: primaryAccent,
                             onTap: () => showPrivacyDialog(context),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 12),
 
                       // ── Info links row ─────────────────────────────────
                       Row(
@@ -642,27 +743,29 @@ class _LoginScreenState extends State<LoginScreen> {
     required String label,
     required IconData icon,
     String? helperText,
+    Widget? suffixIcon,
   }) {
-    final accent = isDark ? WazyColors.cyanAccent : WazyColors.navyPrimary;
+    final accent = isDark ? WazyColors.textPrimary : WazyColors.ink;
     return InputDecoration(
       labelText: label,
       helperText: helperText,
       prefixIcon: Icon(icon, size: 20, color: accent),
+      suffixIcon: suffixIcon,
       filled: true,
       fillColor: isDark
           ? Colors.white.withOpacity(0.06)
-          : const Color(0xFFF1F5F9),
+          : WazyColors.cloud,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(WazyRadius.field),
         borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(WazyRadius.field),
         borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(WazyRadius.field),
         borderSide: BorderSide(color: accent, width: 1.5),
       ),
     );
@@ -670,7 +773,7 @@ class _LoginScreenState extends State<LoginScreen> {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Header decorative shapes (poster-style sparkle + soft ring)
+// Header decorative shapes
 // ──────────────────────────────────────────────────────────────────────────────
 
 class _HeaderDecor extends StatelessWidget {
@@ -699,7 +802,7 @@ class _HeaderDecor extends StatelessWidget {
           const Positioned(
             left: 0,
             top: 0,
-            child: _Sparkle(size: 13, color: WazyColors.cyanAccent),
+            child: _Sparkle(size: 13, color: WazyColors.accentBright),
           ),
           Positioned(
             right: 34,
@@ -772,23 +875,23 @@ class _HeroPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(WazyRadius.tile),
         border: Border.all(color: Colors.white.withOpacity(0.14)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: WazyColors.cyanAccent),
+          Icon(icon, size: 14, color: WazyColors.accentBright),
           const SizedBox(width: 6),
           Text(
             label,
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: Colors.white.withOpacity(0.85),
+              color: Colors.white.withOpacity(0.88),
             ),
           ),
         ],
@@ -821,7 +924,7 @@ class _ModeToggle extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final trackColor = isDark
         ? Colors.white.withOpacity(0.06)
-        : const Color(0xFFF1F5F9);
+        : WazyColors.cloud;
     final inactiveColor =
         isDark ? WazyColors.textSecondary : WazyColors.textSecondaryLight;
 
@@ -834,11 +937,12 @@ class _ModeToggle extends StatelessWidget {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 220),
             curve: Curves.easeOut,
-            height: 42,
+            height: 44,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: selected ? activeColor : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(WazyRadius.tile),
+              boxShadow: selected ? WazyShadows.soft : null,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -865,11 +969,11 @@ class _ModeToggle extends StatelessWidget {
     }
 
     return Container(
-      height: 50,
+      height: 52,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: trackColor,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(WazyRadius.tile + 2),
       ),
       child: Row(
         children: [
@@ -931,7 +1035,7 @@ class _DotSeparator extends StatelessWidget {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Legal consent link — opens the matching in-app sheet
+// Legal consent link
 // ──────────────────────────────────────────────────────────────────────────────
 
 class _LegalLink extends StatelessWidget {
@@ -967,7 +1071,7 @@ class _LegalLink extends StatelessWidget {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Version badge — single source for the version string shown here.
+// Version badge
 // ──────────────────────────────────────────────────────────────────────────────
 
 class AppVersionBadge {
