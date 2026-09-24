@@ -338,15 +338,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _createCollection() async {
     // Track 1 gate: company workspaces are tiered — Free has none, Plus one,
     // Business unlimited.
-    final entitlements = EntitlementService.instance;
-    final companyCount = await entitlements.companyCollectionsInUse();
-    if (!entitlements.canAddCompanyCollections(companyCount)) {
-      final feature = entitlements.limits.maxCompanyCollections == 0
-          ? EntitlementFeature.companyCollection
-          : EntitlementFeature.multipleCompanyCollections;
-      await showUpgradeDialog(context, feature);
-      return;
-    }
+    if (!await enforceCompanyCollectionLimit(context)) return;
 
     final res = await showCreateCollectionDialog(context);
     if (res == null || !mounted) return;
@@ -369,6 +361,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _renameCollection(DocumentCollection collection) async {
+    if (EntitlementService.instance.isCollectionLocked(collection)) {
+      await showUpgradeDialog(
+        context,
+        EntitlementService.instance.requiredFeatureForCollection(collection),
+      );
+      return;
+    }
+
     final name = await showRenameCollectionDialog(context, collection);
     if (name == null || !mounted) return;
 
@@ -406,6 +406,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _switchTo(DocumentCollection collection) async {
+    if (EntitlementService.instance.isCollectionLocked(collection)) {
+      await showUpgradeDialog(
+        context,
+        EntitlementService.instance.requiredFeatureForCollection(collection),
+      );
+      return;
+    }
+
     await DocumentCollectionService.instance.setActive(collection.id);
     await DocumentScannerService.instance.refresh();
     // Same as the Home switcher: re-scope finance data so the Money tab
@@ -895,6 +903,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ------------------------------------------------------------------
 
   Widget _buildCollectionsSection(BuildContext context, ThemeData theme) {
+    final entitlements = EntitlementService.instance;
     return _SettingsGroup(
       title: 'My Collections',
       action: IconButton(
@@ -905,54 +914,110 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       children: [
         for (final collection in _collections)
-          _SettingsTile(
-            icon: collection.icon,
-            title: collection.name,
-            subtitle: collection.isPersonal
-                ? 'Your own documents — always here'
-                : 'Company collection',
-            highlighted: _activeId == collection.id,
-            trailing: _activeId == collection.id
-                ? const Tooltip(
-                    message: 'Active collection',
-                    child: Icon(
-                      Icons.check_circle,
-                      color: Colors.green,
-                      size: 20,
-                    ),
-                  )
-                : Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Personal collection cannot be renamed/deleted.
-                      if (!collection.isPersonal) ...[
-                        IconButton(
-                          icon: const Icon(Icons.edit_outlined, size: 18),
-                          tooltip: 'Rename',
-                          visualDensity: VisualDensity.compact,
-                          onPressed: () => _renameCollection(collection),
-                        ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.delete_outline,
-                            size: 18,
-                            color: Colors.red,
+          Builder(
+            builder: (ctx) {
+              final isLocked = entitlements.isCollectionLocked(collection);
+              final reqTier = entitlements.requiredTierForCollection(collection);
+              final reqFeature = entitlements.requiredFeatureForCollection(collection);
+
+              return _SettingsTile(
+                icon: isLocked ? Icons.lock_rounded : collection.icon,
+                iconColor: isLocked ? WazyColors.warning : null,
+                title: collection.name,
+                subtitle: isLocked
+                    ? 'Locked • Requires ${TierInfo.all[reqTier]!.name} Plan'
+                    : (collection.isPersonal
+                        ? 'Your own documents — always here'
+                        : 'Company collection'),
+                highlighted: _activeId == collection.id && !isLocked,
+                trailing: isLocked
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: WazyColors.warning.withAlpha(35),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: WazyColors.warning.withAlpha(120),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: const Text(
+                              'LOCKED',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: WazyColors.warning,
+                              ),
+                            ),
                           ),
-                          tooltip: 'Delete',
-                          visualDensity: VisualDensity.compact,
-                          onPressed: () => _deleteCollection(collection),
-                        ),
-                      ],
-                      const Icon(
-                        Icons.chevron_right_rounded,
-                        size: 20,
-                        color: Colors.grey,
-                      ),
-                    ],
-                  ),
-            onTap: _activeId == collection.id
-                ? null
-                : () => _switchTo(collection),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              size: 18,
+                              color: Colors.red,
+                            ),
+                            tooltip: 'Delete',
+                            visualDensity: VisualDensity.compact,
+                            onPressed: () => _deleteCollection(collection),
+                          ),
+                          const Icon(
+                            Icons.chevron_right_rounded,
+                            size: 20,
+                            color: Colors.grey,
+                          ),
+                        ],
+                      )
+                    : (_activeId == collection.id
+                        ? const Tooltip(
+                            message: 'Active collection',
+                            child: Icon(
+                              Icons.check_circle,
+                              color: Colors.green,
+                              size: 20,
+                            ),
+                          )
+                        : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Personal collection cannot be renamed/deleted.
+                              if (!collection.isPersonal) ...[
+                                IconButton(
+                                  icon: const Icon(Icons.edit_outlined, size: 18),
+                                  tooltip: 'Rename',
+                                  visualDensity: VisualDensity.compact,
+                                  onPressed: () => _renameCollection(collection),
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.delete_outline,
+                                    size: 18,
+                                    color: Colors.red,
+                                  ),
+                                  tooltip: 'Delete',
+                                  visualDensity: VisualDensity.compact,
+                                  onPressed: () => _deleteCollection(collection),
+                                ),
+                              ],
+                              const Icon(
+                                Icons.chevron_right_rounded,
+                                size: 20,
+                                color: Colors.grey,
+                              ),
+                            ],
+                          )),
+                onTap: isLocked
+                    ? () => showUpgradeDialog(context, reqFeature)
+                    : (_activeId == collection.id
+                        ? null
+                        : () => _switchTo(collection)),
+              );
+            },
           ),
       ],
     );
@@ -1126,6 +1191,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return _SettingsGroup(
       title: 'Help & Support',
       children: [
+        _SettingsTile(
+          icon: Icons.auto_stories_rounded,
+          iconColor: Colors.teal,
+          title: 'App Guide',
+          subtitle: 'Interactive walkthrough of all Wazy features',
+          trailing: const Icon(
+            Icons.chevron_right_rounded,
+            size: 20,
+            color: Colors.grey,
+          ),
+          onTap: () => showAppGuideDialog(context),
+        ),
         _SettingsTile(
           icon: Icons.add_comment_rounded,
           iconColor: Colors.teal,

@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/document_collection.dart';
 import '../models/gcc_country.dart';
 import 'auth_service.dart';
+import 'entitlement_service.dart';
 import 'supabase_service.dart';
 
 /// Store for the signed-in user's document collections.
@@ -39,16 +40,22 @@ class DocumentCollectionService extends ChangeNotifier {
   List<DocumentCollection> _collections = [];
   String _activeId = DocumentCollection.personalId;
   bool _initialized = false;
+  bool _entitlementListenerAttached = false;
 
   /// All collections owned by the user, personal first.
   List<DocumentCollection> get collections => List.unmodifiable(_collections);
 
   /// Id of the active collection. Synchronous access is safe before [init]
   /// runs — it falls back to the built-in personal collection.
+  /// If the active collection is locked due to plan expiry/downgrade, automatically
+  /// falls back to the personal collection or first unlocked collection.
   String get activeCollectionId {
-    if (_activeId == DocumentCollection.personalId || !_collections.any((c) => c.id == _activeId)) {
+    final isLocked = EntitlementService.instance.isCollectionIdLocked(_activeId);
+    if (_activeId == DocumentCollection.personalId || !_collections.any((c) => c.id == _activeId) || isLocked) {
       final personal = _collections.where((c) => c.isPersonal).firstOrNull;
       if (personal != null) return personal.id;
+      final firstUnlocked = _collections.where((c) => !EntitlementService.instance.isCollectionLocked(c)).firstOrNull;
+      if (firstUnlocked != null) return firstUnlocked.id;
       if (_collections.isNotEmpty) return _collections.first.id;
     }
     return _activeId;
@@ -70,8 +77,9 @@ class DocumentCollectionService extends ChangeNotifier {
   /// The active collection (defaults to Personal).
   Future<DocumentCollection> getActiveCollection() async {
     await _ensureInitialized();
+    final currentActiveId = activeCollectionId;
     return _collections.firstWhere(
-      (c) => c.id == _activeId,
+      (c) => c.id == currentActiveId,
       orElse: () => _collections.isEmpty
           ? const DocumentCollection.personal()
           : _collections.first,
@@ -81,6 +89,11 @@ class DocumentCollectionService extends ChangeNotifier {
   /// Load the user's collections, ensure the personal one exists, and
   /// restore the persisted active selection.
   Future<void> init() async {
+    if (!_entitlementListenerAttached) {
+      _entitlementListenerAttached = true;
+      EntitlementService.instance.addListener(_onEntitlementsChanged);
+    }
+
     if (_initialized) return;
 
     final client = _client;
@@ -114,20 +127,37 @@ class DocumentCollectionService extends ChangeNotifier {
     notifyListeners();
   }
 
+  void _onEntitlementsChanged() {
+    if (EntitlementService.instance.isCollectionIdLocked(_activeId)) {
+      final personal = _collections.where((c) => c.isPersonal).firstOrNull;
+      final fallbackId = personal?.id ?? _collections.where((c) => !EntitlementService.instance.isCollectionLocked(c)).firstOrNull?.id ?? DocumentCollection.personalId;
+      if (_activeId != fallbackId) {
+        _activeId = fallbackId;
+        SharedPreferences.getInstance().then((p) => p.setString(_activeIdKey, fallbackId));
+        notifyListeners();
+      }
+    } else {
+      notifyListeners();
+    }
+  }
+
   /// Make [id] the active collection and persist the choice.
-  Future<void> setActive(String id) async {
+  /// Returns false if the collection cannot be set active or is locked.
+  Future<bool> setActive(String id) async {
     await _ensureInitialized();
     var targetId = id;
     if (targetId == DocumentCollection.personalId) {
       final personal = _collections.where((c) => c.isPersonal).firstOrNull;
       if (personal != null) targetId = personal.id;
     }
-    if (!_collections.any((c) => c.id == targetId)) return;
+    if (!_collections.any((c) => c.id == targetId)) return false;
+    if (EntitlementService.instance.isCollectionIdLocked(targetId)) return false;
     final changed = _activeId != targetId;
     _activeId = targetId;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_activeIdKey, targetId);
     if (changed) notifyListeners();
+    return true;
   }
 
   /// Create a new company collection named [name] in [countryCode] and return it.
@@ -137,6 +167,11 @@ class DocumentCollectionService extends ChangeNotifier {
     String countryCode = 'AE',
   }) async {
     await _ensureInitialized();
+    final companyCount = _collections.where((c) => !c.isPersonal).length;
+    if (!EntitlementService.instance.canAddCompanyCollections(companyCount)) {
+      throw StateError('Plan limit reached for company collections');
+    }
+
     final trimmed = name.trim();
     if (trimmed.isEmpty) {
       throw ArgumentError('Collection name cannot be empty');
@@ -314,15 +349,18 @@ class DocumentCollectionService extends ChangeNotifier {
     ];
   }
 
-  /// Restore the persisted active selection, validating it still exists.
+  /// Restore the persisted active selection, validating it still exists and is not locked.
   Future<void> _restoreActiveSelection() async {
     final prefs = await SharedPreferences.getInstance();
     final stored = prefs.getString(_activeIdKey);
-    if (stored != null && _collections.any((c) => c.id == stored)) {
+    if (stored != null &&
+        _collections.any((c) => c.id == stored) &&
+        !EntitlementService.instance.isCollectionIdLocked(stored)) {
       _activeId = stored;
     } else {
       final personal = _collections.where((c) => c.isPersonal).firstOrNull;
-      _activeId = personal?.id ?? _collections.firstOrNull?.id ?? DocumentCollection.personalId;
+      final firstUnlocked = _collections.where((c) => !EntitlementService.instance.isCollectionLocked(c)).firstOrNull;
+      _activeId = personal?.id ?? firstUnlocked?.id ?? DocumentCollection.personalId;
     }
   }
 

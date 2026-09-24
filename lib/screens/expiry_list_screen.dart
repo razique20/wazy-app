@@ -885,17 +885,29 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
                             },
                           ),
                           ...DocumentCollectionService.instance.collections.map(
-                            (c) => FilterChip(
-                              avatar: Icon(c.icon, size: 16),
-                              label: Text(c.name),
-                              selected: _spec.collectionId == c.id,
-                              onSelected: (_) {
-                                _updateSpec(
-                                  (s) => s.copyWith(collectionId: c.id),
-                                );
-                                Navigator.pop(ctx);
-                              },
-                            ),
+                            (c) {
+                              final isLocked = EntitlementService.instance.isCollectionLocked(c);
+                              final reqFeature = EntitlementService.instance.requiredFeatureForCollection(c);
+                              return FilterChip(
+                                avatar: Icon(
+                                  isLocked ? Icons.lock_rounded : c.icon,
+                                  size: 16,
+                                  color: isLocked ? WazyColors.warning : null,
+                                ),
+                                label: Text(isLocked ? '${c.name} (Locked)' : c.name),
+                                selected: _spec.collectionId == c.id,
+                                onSelected: (_) {
+                                  Navigator.pop(ctx);
+                                  if (isLocked) {
+                                    showUpgradeDialog(context, reqFeature);
+                                  } else {
+                                    _updateSpec(
+                                      (s) => s.copyWith(collectionId: c.id),
+                                    );
+                                  }
+                                },
+                              );
+                            },
                           ),
                         ],
                       ),

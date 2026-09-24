@@ -2,18 +2,22 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/document_collection.dart';
 import '../models/expiry_item.dart';
 import '../models/finance.dart';
+import '../models/subscription_tier.dart';
 import '../services/alert_preferences_service.dart';
 import '../services/anomaly_detection_service.dart';
 import '../services/collection_service.dart';
 import '../services/document_scanner_service.dart';
+import '../services/entitlement_service.dart';
 import '../services/finance_service.dart';
 import '../services/theme_service.dart';
 import '../services/urgency_engine.dart';
 import '../theme/app_theme.dart';
+import '../widgets/dialogs/upgrade_dialog.dart';
 import '../widgets/widgets.dart';
 import 'money_screen.dart';
 
@@ -42,8 +46,20 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadData();
+    _checkFirstTimeGuide();
     FinanceService.instance.addListener(_reloadMoney);
     DocumentScannerService.instance.addListener(_onServiceChanged);
+  }
+
+  /// Auto-show the interactive app guide on first ever launch.
+  Future<void> _checkFirstTimeGuide() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasSeen = prefs.getBool('hasSeenAppGuide') ?? false;
+    if (!hasSeen && mounted) {
+      // Small delay so the home screen renders first before overlaying the guide.
+      await Future.delayed(const Duration(milliseconds: 600));
+      if (mounted) showAppGuideDialog(context);
+    }
   }
 
   @override
@@ -92,6 +108,10 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
 
     final theme = Theme.of(context);
+    final entitlements = EntitlementService.instance;
+    final companyCount = collections.where((c) => !c.isPersonal).length;
+    final canCreateMore = entitlements.canAddCompanyCollections(companyCount);
+
     final selectedId = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: theme.colorScheme.surface,
@@ -125,22 +145,81 @@ class _HomeScreenState extends State<HomeScreen> {
                 shrinkWrap: true,
                 children: [
                   for (final collection in collections)
-                    ListTile(
-                      leading: Icon(collection.icon),
-                      title: Text(collection.name),
-                      subtitle: Text(collection.subtitle),
-                      trailing: collection.id == service.activeCollectionId
-                          ? const Icon(Icons.check_circle, color: Colors.green)
-                          : null,
-                      onTap: () => Navigator.pop(ctx, collection.id),
+                    Builder(
+                      builder: (tileCtx) {
+                        final isLocked = entitlements.isCollectionLocked(collection);
+                        final reqTier = entitlements.requiredTierForCollection(collection);
+                        final reqFeature = entitlements.requiredFeatureForCollection(collection);
+
+                        return ListTile(
+                          leading: isLocked
+                              ? const Icon(Icons.lock_rounded, color: WazyColors.warning)
+                              : Icon(collection.icon),
+                          title: Row(
+                            children: [
+                              Expanded(child: Text(collection.name)),
+                              if (isLocked)
+                                Container(
+                                  margin: const EdgeInsets.only(left: 6),
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: WazyColors.warning.withAlpha(35),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(
+                                      color: WazyColors.warning.withAlpha(120),
+                                      width: 0.8,
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'LOCKED',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: WazyColors.warning,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          subtitle: Text(
+                            isLocked
+                                ? 'Plan limit reached • Requires ${TierInfo.all[reqTier]!.name}'
+                                : collection.subtitle,
+                            style: isLocked
+                                ? TextStyle(color: theme.colorScheme.outline, fontSize: 12)
+                                : null,
+                          ),
+                          trailing: isLocked
+                              ? const Icon(Icons.lock_outline_rounded, size: 18, color: WazyColors.warning)
+                              : (collection.id == service.activeCollectionId
+                                  ? const Icon(Icons.check_circle, color: Colors.green)
+                                  : null),
+                          onTap: () {
+                            if (isLocked) {
+                              Navigator.pop(ctx);
+                              showUpgradeDialog(context, reqFeature);
+                            } else {
+                              Navigator.pop(ctx, collection.id);
+                            }
+                          },
+                        );
+                      },
                     ),
                 ],
               ),
             ),
             const Divider(height: 1),
             ListTile(
-              leading: const Icon(Icons.add_circle_outline),
+              leading: Icon(
+                canCreateMore
+                    ? Icons.add_circle_outline
+                    : Icons.lock_outline_rounded,
+                color: canCreateMore ? null : WazyColors.warning,
+              ),
               title: const Text('New collection'),
+              trailing: !canCreateMore
+                  ? const TierBadge(compact: true, tier: SubscriptionTier.plus)
+                  : null,
               onTap: () => Navigator.pop(ctx, _createAction),
             ),
           ],
@@ -151,6 +230,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted || selectedId == null) return;
 
     if (selectedId == _createAction) {
+      if (!await enforceCompanyCollectionLimit(context)) return;
       final res = await showCreateCollectionDialog(context);
       if (!mounted || res == null) return;
       try {
@@ -159,11 +239,11 @@ class _HomeScreenState extends State<HomeScreen> {
           countryCode: res.countryCode,
         );
         await service.setActive(created.id);
-      } catch (_) {
+      } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Could not create "${res.name}"'),
+              content: Text('Could not create "${res.name}": $e'),
               backgroundColor: Colors.red,
             ),
           );
@@ -219,6 +299,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             const SizedBox(height: 20),
                             _buildCategoriesGrid(theme, urgency),
+                            _buildPlanRestrictionBanner(theme),
                             // Both banners own their top margin internally and
                             // collapse to zero height when not applicable, so
                             // no reserved gap can ever appear between sections.
@@ -823,6 +904,106 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: rows,
                   ),
                 ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // Plan expired & locked collections alert
+  // ------------------------------------------------------------------
+
+  Widget _buildPlanRestrictionBanner(ThemeData theme) {
+    final entitlements = EntitlementService.instance;
+    final isExpired = entitlements.isPlanExpired;
+    final lockedCount = entitlements.lockedCollectionsCount;
+
+    if (!isExpired && lockedCount == 0) {
+      return const SizedBox.shrink();
+    }
+
+    final isDark = theme.brightness == Brightness.dark;
+    final bannerBg = isDark ? const Color(0xFF38230D) : const Color(0xFFFFFBEB);
+    final bannerBorder = isDark
+        ? const Color(0xFFF59E0B).withOpacity(0.4)
+        : const Color(0xFFFDE68A);
+    const iconColor = WazyColors.warning;
+    final textColor = isDark ? Colors.white : const Color(0xFF92400E);
+    final subtitleColor = isDark
+        ? const Color(0xFFFDE68A)
+        : const Color(0xFFB45309);
+
+    final title = isExpired
+        ? 'Subscription plan expired'
+        : '$lockedCount collection${lockedCount == 1 ? '' : 's'} locked';
+    final subtitle = isExpired
+        ? 'Renew your plan to unlock all workspaces and premium features.'
+        : 'Your current plan limits company collections. Upgrade to unlock all.';
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+      child: InkWell(
+        onTap: () => showTierRequestSheet(context),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: bannerBg,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: bannerBorder),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.lock_rounded,
+                  color: iconColor,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: textColor,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      style: TextStyle(fontSize: 13, color: subtitleColor),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: iconColor,
+                  foregroundColor: Colors.black,
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: () => showTierRequestSheet(context),
+                child: const Text('Renew', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+              ),
             ],
           ),
         ),

@@ -51,6 +51,27 @@ Future<bool> enforceDocumentLimit(
   return false;
 }
 
+/// Convenience for the company-collection gate: returns true when adding a
+/// company collection is allowed; otherwise shows the paywall and returns false.
+Future<bool> enforceCompanyCollectionLimit(
+  BuildContext context, {
+  int additional = 1,
+}) async {
+  final entitlements = EntitlementService.instance;
+  final used = await entitlements.companyCollectionsInUse();
+  if (entitlements.canAddCompanyCollections(used, additional: additional)) {
+    return true;
+  }
+
+  if (context.mounted) {
+    final feature = (entitlements.limits.maxCompanyCollections ?? 0) == 0
+        ? EntitlementFeature.companyCollection
+        : EntitlementFeature.multipleCompanyCollections;
+    await showUpgradeDialog(context, feature);
+  }
+  return false;
+}
+
 /// General tier-upgrade sheet for the profile's subscription section: pick
 /// Plus or Business, pick a billing period (1 / 3 / 12 months), then send the
 /// pre-filled request email. The admin replies with a payment link; after

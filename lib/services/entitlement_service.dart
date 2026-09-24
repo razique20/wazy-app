@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/document_collection.dart';
 import '../models/subscription_tier.dart';
 import 'auth_service.dart';
 import 'collection_service.dart';
@@ -210,6 +211,66 @@ class EntitlementService extends ChangeNotifier {
       return 0;
     }
   }
+
+  /// Whether a specific collection is locked under the current subscription tier.
+  /// The personal collection is never locked.
+  /// Company collections are unlocked up to [TierLimits.maxCompanyCollections].
+  /// Any company collection exceeding the active plan's allowance is locked.
+  bool isCollectionLocked(DocumentCollection collection) {
+    if (collection.isPersonal) return false;
+    final max = limits.maxCompanyCollections;
+    if (max == null) return false; // unlimited (Business tier)
+    if (max <= 0) return true; // Free tier allows 0 company collections
+    final companyCollections = DocumentCollectionService.instance.collections
+        .where((c) => !c.isPersonal)
+        .toList();
+    final index = companyCollections.indexWhere((c) => c.id == collection.id);
+    if (index == -1) {
+      return companyCollections.length >= max;
+    }
+    return index >= max;
+  }
+
+  /// Whether a collection by [id] is locked.
+  bool isCollectionIdLocked(String id) {
+    final collection = DocumentCollectionService.instance.collections
+        .where((c) => c.id == id)
+        .firstOrNull;
+    if (collection == null) return false;
+    return isCollectionLocked(collection);
+  }
+
+  /// The minimum subscription tier required to unlock [collection].
+  SubscriptionTier requiredTierForCollection(DocumentCollection collection) {
+    if (collection.isPersonal) return SubscriptionTier.free;
+    final companyCollections = DocumentCollectionService.instance.collections
+        .where((c) => !c.isPersonal)
+        .toList();
+    final index = companyCollections.indexWhere((c) => c.id == collection.id);
+    if (index <= 0) return SubscriptionTier.plus; // 1st company collection is Plus
+    return SubscriptionTier.business; // 2nd+ company collections are Business
+  }
+
+  /// The entitlement feature needed to unlock [collection].
+  EntitlementFeature requiredFeatureForCollection(DocumentCollection collection) {
+    if (collection.isPersonal) return EntitlementFeature.companyCollection;
+    final companyCollections = DocumentCollectionService.instance.collections
+        .where((c) => !c.isPersonal)
+        .toList();
+    final index = companyCollections.indexWhere((c) => c.id == collection.id);
+    if (index <= 0) return EntitlementFeature.companyCollection;
+    return EntitlementFeature.multipleCompanyCollections;
+  }
+
+  /// How many company collections are currently locked for the user.
+  int get lockedCollectionsCount {
+    final companyCollections = DocumentCollectionService.instance.collections
+        .where((c) => !c.isPersonal);
+    return companyCollections.where(isCollectionLocked).length;
+  }
+
+  /// Whether the user has at least one locked collection.
+  bool get hasAnyLockedCollections => lockedCollectionsCount > 0;
 
   /// Clear cached state on sign-out so the next user starts from Free.
   void reset() {
