@@ -436,42 +436,42 @@ class _HomeScreenState extends State<HomeScreen> {
             childAspectRatio: 0.95,
             children: [
               tile(
-                const BentoIconTile(icon: Icons.description_rounded, color: WazyColors.blue),
+                const BentoIconTile(icon: Icons.description_rounded, color: WazyColors.violet),
                 'Documents',
                 () => context.go('/documents'),
               ),
               tile(
-                const BentoIconTile(icon: Icons.calendar_month_rounded, color: WazyColors.red),
+                const BentoIconTile(icon: Icons.calendar_month_rounded, color: WazyColors.violet),
                 'Renewals',
                 () => context.push('/expiry-list'),
               ),
               tile(
-                const BentoIconTile(icon: Icons.savings_rounded, color: WazyColors.green),
+                const BentoIconTile(icon: Icons.savings_rounded, color: WazyColors.violet),
                 'Envelopes',
                 () => context.push('/envelopes'),
               ),
               tile(
-                const BentoIconTile(icon: Icons.receipt_long_rounded, color: WazyColors.orange),
+                const BentoIconTile(icon: Icons.receipt_long_rounded, color: WazyColors.violet),
                 'Records',
                 () => context.push('/records'),
               ),
               tile(
-                const BentoIconTile(icon: Icons.trending_up_rounded, color: WazyColors.lilac),
+                const BentoIconTile(icon: Icons.trending_up_rounded, color: WazyColors.violet),
                 'Forecast',
                 () => context.push('/cash-flow-forecast'),
               ),
               tile(
-                const BentoIconTile(icon: Icons.auto_awesome_rounded, color: WazyColors.amber),
+                const BentoIconTile(icon: Icons.auto_awesome_rounded, color: WazyColors.violet),
                 'AI Summary',
                 () => context.push('/ai-summary'),
               ),
               tile(
-                const BentoIconTile(icon: Icons.flag_rounded, color: WazyColors.sky),
+                const BentoIconTile(icon: Icons.flag_rounded, color: WazyColors.violet),
                 'AI Planner',
                 () => context.push('/ai-budget-plan'),
               ),
               tile(
-                const BentoIconTile(icon: Icons.document_scanner_rounded, color: WazyColors.indigo),
+                const BentoIconTile(icon: Icons.document_scanner_rounded, color: WazyColors.violet),
                 'Scan',
                 () {
                   // Free plan document limit — paywall when the quota is full.
