@@ -126,8 +126,8 @@ class TierLimits {
     documentAssignment: false,
     renewalAuditHistory: false,
     teamExport: false,
-    groqAiSummaryMonthlyQuota: 30,
-    aiBudgetPlanMonthlyQuota: 20,
+    groqAiSummaryMonthlyQuota: 15,
+    aiBudgetPlanMonthlyQuota: 10,
   );
 
   static const business = TierLimits(
@@ -140,8 +140,8 @@ class TierLimits {
     documentAssignment: true,
     renewalAuditHistory: true,
     teamExport: true,
-    groqAiSummaryMonthlyQuota: 100,
-    aiBudgetPlanMonthlyQuota: 60,
+    groqAiSummaryMonthlyQuota: 40,
+    aiBudgetPlanMonthlyQuota: 25,
   );
 }
 
@@ -179,7 +179,7 @@ class TierInfo {
     SubscriptionTier.plus: TierInfo(
       tier: SubscriptionTier.plus,
       name: 'Plus',
-      priceLabel: '~\$1.99 / month  (or \$14.99 / year)',
+      priceLabel: 'AED 25 / month  (~\$6.99)',
       tagline: 'For power users who never miss a renewal',
       benefits: [
         'Unlimited documents',
@@ -194,7 +194,7 @@ class TierInfo {
     SubscriptionTier.business: TierInfo(
       tier: SubscriptionTier.business,
       name: 'Business',
-      priceLabel: '~\$9.99 / month',
+      priceLabel: 'AED 99 / month  (~\$26.99)',
       tagline: 'Multiple workspaces for PROs & SMEs',
       benefits: [
         'Everything in Plus',

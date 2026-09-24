@@ -17,9 +17,9 @@ The core business model: free tracking drives volume and habit formation; power 
 
 | Tier | Price | Contents | Audience |
 |---|---|---|---|
-| **Free** | AED 0 | 1 collection, up to ~10 documents, local 30/60/90-day reminders, basic budgets | Volume + habit formation |
-| **Plus** | ~AED 5–10 / month (or ~AED 50 / year) | Unlimited documents, company collections, 90-day cash-flow forecast, PDF/CSV exports, custom alert days | Individual power users |
-| **Business** | ~AED 25–50 / month | Multiple company workspaces, document assignment, renewal audit history, team exports | PROs & small SMEs — **highest ARPUs** |
+| **Free** | AED 0 / Free | 1 collection, up to ~10 documents, local 30/60/90-day reminders, basic budgets | Volume + habit formation |
+| **Plus** | AED 25 / month (~$6.99) | Unlimited documents, company collections, 90-day cash-flow forecast, PDF/CSV exports, custom alert days | Individual power users |
+| **Business** | AED 99 / month (~$26.99) | Multiple company workspaces, document assignment, renewal audit history, team exports | PROs & small SMEs — **highest ARPUs** |
 
 ### Candidate paid-feature gates (mapped to what's already built)
 

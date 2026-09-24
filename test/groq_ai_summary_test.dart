@@ -50,7 +50,7 @@ void main() {
       expect(await service.getRemainingQuotaThisMonth(), 3);
     });
 
-    test('Plus tier allows exactly 30 monthly summaries', () async {
+    test('Plus tier allows exactly 15 monthly summaries', () async {
       await SharedPreferences.getInstance().then(
         (p) => p.setString(EntitlementService.tierOverrideKey, 'plus'),
       );
@@ -58,10 +58,10 @@ void main() {
 
       expect(EntitlementService.instance.tier, SubscriptionTier.plus);
       final service = AiExecutiveSummaryService.instance;
-      expect(service.getMonthlyQuotaLimit(), 30);
+      expect(service.getMonthlyQuotaLimit(), 15);
     });
 
-    test('Business tier allows exactly 100 monthly summaries', () async {
+    test('Business tier allows exactly 40 monthly summaries', () async {
       await SharedPreferences.getInstance().then(
         (p) => p.setString(EntitlementService.tierOverrideKey, 'business'),
       );
@@ -69,7 +69,7 @@ void main() {
 
       expect(EntitlementService.instance.tier, SubscriptionTier.business);
       final service = AiExecutiveSummaryService.instance;
-      expect(service.getMonthlyQuotaLimit(), 100);
+      expect(service.getMonthlyQuotaLimit(), 40);
     });
   });
 
