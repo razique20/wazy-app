@@ -41,6 +41,9 @@ class DocumentScannerService extends ChangeNotifier {
   final List<PendingOp> _outbox = [];
   bool _initialized = false;
 
+  /// Whether documents have been loaded into memory.
+  bool get isInitialized => _initialized;
+
   /// Load documents from Supabase or local offline storage into the cache.
   Future<void> init() async {
     if (_initialized) return;
@@ -169,7 +172,7 @@ class DocumentScannerService extends ChangeNotifier {
   }
 
   /// Documents in the active collection.
-  List<ExpiryItem> get _activeItems => _cache
+  List<ExpiryItem> get activeItems => _cache
       .where((item) =>
           item.collectionId == DocumentCollectionService.instance.activeCollectionId)
       .toList();
@@ -228,14 +231,14 @@ class DocumentScannerService extends ChangeNotifier {
 
   Future<List<ExpiryItem>> getItemsByType(DocumentTypeMeta type) async {
     await _ensureInitialized();
-    return _activeItems
+    return activeItems
         .where((item) => item.isActive && item.docType.key == type.key)
         .toList();
   }
 
   Future<List<ExpiryItem>> getItemsDueBefore(DateTime date) async {
     await _ensureInitialized();
-    return _activeItems
+    return activeItems
         .where((item) => item.isActive && item.expiresAt.isBefore(date))
         .toList();
   }
@@ -244,7 +247,7 @@ class DocumentScannerService extends ChangeNotifier {
     await _ensureInitialized();
     final now = DateTime.now();
     final cutoff = now.add(Duration(days: days));
-    return _activeItems
+    return activeItems
         .where((item) => item.isActive && item.expiresAt.isBefore(cutoff))
         .toList();
   }
@@ -256,9 +259,9 @@ class DocumentScannerService extends ChangeNotifier {
   Future<List<ExpiryItem>> search(String query) async {
     await _ensureInitialized();
     final q = query.trim().toLowerCase();
-    if (q.isEmpty) return _activeItems.where((i) => i.isActive).toList();
+    if (q.isEmpty) return activeItems.where((i) => i.isActive).toList();
 
-    return _activeItems
+    return activeItems
         .where((i) => i.isActive && DocumentScannerSearch.matchesQuery(i, q))
         .toList();
   }

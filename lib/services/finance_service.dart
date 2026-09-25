@@ -41,6 +41,9 @@ class FinanceService extends ChangeNotifier {
   final Map<String, double> _overallBudgets = {};
   bool _initialized = false;
 
+  /// Whether finance records have been loaded into memory.
+  bool get isInitialized => _initialized;
+
   // ------------------------------------------------------------------
   // Reads
   // ------------------------------------------------------------------

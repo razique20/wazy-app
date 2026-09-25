@@ -60,10 +60,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
+    final service = DocumentCollectionService.instance;
+    if (service.collections.isNotEmpty) {
+      _collections = service.collections;
+      _activeId = service.activeCollectionId;
+      _loading = false;
+    }
     _loadCollections();
     _loadSettings();
-    // The active collection can be switched elsewhere (e.g. the Home page's
-    // switcher); mirror those changes in the My Collections section.
     DocumentCollectionService.instance.addListener(_onCollectionsChanged);
   }
 
@@ -445,9 +449,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           isDark ? WazyColors.obsidian : WazyColors.ink,
       body: SafeArea(
         bottom: false,
-        child: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : RefreshIndicator(
+        child: RefreshIndicator(
                 color: theme.colorScheme.secondary,
                 onRefresh: _loadSettings,
                 child: CustomScrollView(
@@ -463,11 +465,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             top: Radius.circular(28),
                           ),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 20),
-                            _buildAccountCard(theme),
+                        child: _loading
+                            ? SizedBox(
+                                height: 320,
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: theme.colorScheme.secondary,
+                                  ),
+                                ),
+                              )
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 20),
+                                  _buildAccountCard(theme),
                             const SizedBox(height: 16),
                             _buildSubscriptionSection(context, theme),
                             const SizedBox(height: 16),

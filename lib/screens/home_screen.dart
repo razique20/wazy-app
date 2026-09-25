@@ -45,6 +45,13 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    if (DocumentScannerService.instance.isInitialized) {
+      _activeCollection = DocumentCollectionService.instance.collections
+          .where((c) => c.id == DocumentCollectionService.instance.activeCollectionId)
+          .firstOrNull;
+      _items = DocumentScannerService.instance.activeItems;
+      _loading = false;
+    }
     _loadData();
     _checkFirstTimeGuide();
     FinanceService.instance.addListener(_reloadMoney);
@@ -274,9 +281,7 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: isDark ? WazyColors.obsidian : WazyColors.ink,
       body: SafeArea(
         bottom: false,
-        child: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : RefreshIndicator(
+        child: RefreshIndicator(
                 color: theme.colorScheme.secondary,
                 onRefresh: _loadData,
                 child: CustomScrollView(
@@ -294,28 +299,37 @@ class _HomeScreenState extends State<HomeScreen> {
                             top: Radius.circular(28),
                           ),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 20),
-                            _buildCategoriesGrid(theme, urgency),
-                            _buildPlanRestrictionBanner(theme),
-                            // Both banners own their top margin internally and
-                            // collapse to zero height when not applicable, so
-                            // no reserved gap can ever appear between sections.
-                            _buildAttentionBanner(theme, urgency),
-                            if (_expiredItems.isNotEmpty)
-                              _buildExpiredAlert(theme),
-                            const SizedBox(height: 20),
-                            _buildUpcomingSection(theme, urgency),
-                            // Keep the last tile scrollable clear of the
-                            // floating nav pill (height + margins ≈ 80).
-                            SizedBox(
-                              height:
-                                  8 + MediaQuery.of(context).padding.bottom + 80,
-                            ),
-                          ],
-                        ),
+                        child: _loading
+                            ? SizedBox(
+                                height: 320,
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: theme.colorScheme.secondary,
+                                  ),
+                                ),
+                              )
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 20),
+                                  _buildCategoriesGrid(theme, urgency),
+                                  _buildPlanRestrictionBanner(theme),
+                                  // Both banners own their top margin internally and
+                                  // collapse to zero height when not applicable, so
+                                  // no reserved gap can ever appear between sections.
+                                  _buildAttentionBanner(theme, urgency),
+                                  if (_expiredItems.isNotEmpty)
+                                    _buildExpiredAlert(theme),
+                                  const SizedBox(height: 20),
+                                  _buildUpcomingSection(theme, urgency),
+                                  // Keep the last tile scrollable clear of the
+                                  // floating nav pill (height + margins ≈ 80).
+                                  SizedBox(
+                                    height:
+                                        8 + MediaQuery.of(context).padding.bottom + 80,
+                                  ),
+                                ],
+                              ),
                       ),
                     ),
                     // White filler: extends the sheet across the rest of the

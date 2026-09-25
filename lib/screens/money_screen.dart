@@ -54,6 +54,17 @@ class _MoneyScreenState extends State<MoneyScreen> {
   @override
   void initState() {
     super.initState();
+    if (FinanceService.instance.isInitialized) {
+      _transactions = FinanceService.instance.activeTransactions;
+      _budgets = FinanceService.instance.activeBudgets;
+      _envelopes = FinanceService.instance.activeEnvelopes;
+      _recurring = FinanceService.instance.activeRecurring;
+      if (DocumentScannerService.instance.isInitialized) {
+        _items = DocumentScannerService.instance.activeItems;
+        _renewalOutlook90 = FinanceMath.renewalOutlook(_items, 90);
+      }
+      _loading = false;
+    }
     FinanceService.instance.addListener(_reload);
     _alertSub = BudgetAlertService.instance.stream.listen(_showBudgetAlert);
     _reload();
@@ -116,9 +127,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
           isDark ? WazyColors.obsidian : WazyColors.ink,
       body: SafeArea(
         bottom: false,
-        child: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : RefreshIndicator(
+        child: RefreshIndicator(
                 color: theme.colorScheme.secondary,
                 onRefresh: _reload,
                 child: CustomScrollView(
@@ -136,9 +145,18 @@ class _MoneyScreenState extends State<MoneyScreen> {
                             top: Radius.circular(28),
                           ),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                        child: _loading
+                            ? SizedBox(
+                                height: 320,
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: theme.colorScheme.secondary,
+                                  ),
+                                ),
+                              )
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
                             const SizedBox(height: 20),
                             // Urgent anomalies (section owns its top spacing).
                             _sheetPadding(_buildBillSpikeAlertsSection(theme)),

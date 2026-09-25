@@ -76,6 +76,10 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
   @override
   void initState() {
     super.initState();
+    if (DocumentScannerService.instance.isInitialized) {
+      _items = DocumentScannerService.instance.activeItems;
+      _loading = false;
+    }
     _loadData();
     DocumentScannerService.instance.addListener(_onServiceChanged);
   }
@@ -201,9 +205,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
           : WazyColors.ink,
       body: SafeArea(
         bottom: false,
-        child: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : RefreshIndicator(
+        child: RefreshIndicator(
                 color: theme.colorScheme.secondary,
                 onRefresh: _loadData,
                 child: CustomScrollView(
@@ -221,9 +223,18 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                             top: Radius.circular(28),
                           ),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                        child: _loading
+                            ? SizedBox(
+                                height: 320,
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: theme.colorScheme.secondary,
+                                  ),
+                                ),
+                              )
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
                             const SizedBox(height: 16),
                             // Inline search field, styled like the tiles.
                             _buildSearchField(theme),
