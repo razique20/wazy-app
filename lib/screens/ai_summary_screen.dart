@@ -222,13 +222,6 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
       appBar: AppBar(
         title: const Text('AI Executive Summary'),
         centerTitle: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.tune_rounded),
-            tooltip: 'Groq API Settings',
-            onPressed: _showKeySettingsDialog,
-          ),
-        ],
       ),
       body: _loading
           ? const Center(
