@@ -1087,80 +1087,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildAlertsSection(BuildContext context, ThemeData theme) {
     return _SettingsGroup(
-      title: 'Alerts & Reminders',
+      title: 'Preferences',
       children: [
-        _SettingsSwitchTile(
-          icon: Icons.notifications_rounded,
-          title: 'Renewal notifications',
-          subtitle: 'Remind me before documents expire',
-          value: _notificationsEnabled,
-          onChanged: (value) async {
-            setState(() => _notificationsEnabled = value);
-            await _applyReminderSettings();
-          },
-        ),
-        _SettingsSwitchTile(
-          icon: Icons.trending_up_rounded,
-          title: 'Bill spike alerts',
-          subtitle: 'Flag bills unusually higher than your average',
-          value: _billSpikesEnabled,
-          onChanged: (value) async {
-            setState(() => _billSpikesEnabled = value);
-            await AlertPreferencesService.instance.setBillSpikesEnabled(value);
-          },
-        ),
-        _SettingsSwitchTile(
-          icon: Icons.account_balance_wallet_rounded,
-          title: 'Budget alerts',
-          subtitle: 'Warn when spending nears a category budget',
-          value: _budgetAlertsEnabled,
-          onChanged: (value) async {
-            setState(() => _budgetAlertsEnabled = value);
-            await AlertPreferencesService.instance
-                .setBudgetAlertsEnabled(value);
-          },
-        ),
-        _SettingsDropdownTile<int>(
-          icon: Icons.notifications_active,
-          iconColor: Colors.indigo,
-          title: 'First reminder',
-          subtitle: 'First notification when an expiry is this far away',
-          value: _reminderCadence,
-          items: [30, 60, 90, 120],
-          onChanged: (v) async {
-            if (v != null) {
-              setState(() => _reminderCadence = v);
-              await _applyReminderSettings();
-            }
-          },
-        ),
-        _SettingsDropdownTile<int>(
-          icon: Icons.assignment_turned_in,
-          iconColor: Colors.amber.shade700,
-          title: 'Renewal task',
-          subtitle: 'Assign the renewal task to a responsible person',
-          value: _taskCadence,
-          items: [30, 45, 60, 75, 90],
-          onChanged: (v) async {
-            if (v != null) {
-              setState(() => _taskCadence = v);
-              await _applyReminderSettings();
-            }
-          },
-        ),
-        _SettingsDropdownTile<int>(
-          icon: Icons.priority_high_rounded,
-          iconColor: Colors.orange,
-          title: 'Escalation',
-          subtitle: 'Escalate to management / stakeholders',
-          value: _escalationCadence,
-          items: [15, 21, 30, 45],
-          onChanged: (v) async {
-            if (v != null) {
-              setState(() => _escalationCadence = v);
-              await _applyReminderSettings();
-            }
-          },
+        _SettingsTile(
+          icon: Icons.notifications_active_rounded,
+          iconColor: WazyColors.indigo,
+          title: 'Alerts & Reminders',
+          subtitle: 'Notifications, bill spikes, budget alerts & lead times',
+          trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+          onTap: () => context.push('/alerts-reminders'),
         ),
       ],
     );

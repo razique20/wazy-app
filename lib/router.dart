@@ -26,6 +26,7 @@ import 'screens/cash_flow_forecast_screen.dart';
 import 'screens/global_search_screen.dart';
 import 'screens/ai_summary_screen.dart';
 import 'screens/ai_budget_plan_screen.dart';
+import 'screens/alerts_reminders_screen.dart';
 import 'services/auth_service.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -138,6 +139,11 @@ final router = GoRouter(
       path: '/ai-budget-plan',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const AiBudgetPlanScreen(),
+    ),
+    GoRoute(
+      path: '/alerts-reminders',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const AlertsRemindersScreen(),
     ),
     // 4-tab bottom-nav shell:
     //   Home      — cross-tier dashboard (documents + money summary)

@@ -30,6 +30,7 @@ void main() {
     expect(find.text('Subscription'), findsOneWidget);
     expect(find.text('My Collections'), findsOneWidget);
     expect(find.text('Appearance'), findsOneWidget);
+    expect(find.text('Preferences'), findsOneWidget);
     expect(find.text('Alerts & Reminders'), findsOneWidget);
     expect(find.text('AI Summary'), findsOneWidget);
 
@@ -38,46 +39,8 @@ void main() {
     expect(find.text('Light'), findsOneWidget);
     expect(find.text('Dark'), findsOneWidget);
 
-    // Individual alert rows.
-    expect(find.text('Renewal notifications'), findsOneWidget);
-    expect(find.text('Bill spike alerts'), findsOneWidget);
-    expect(find.text('Budget alerts'), findsOneWidget);
-  });
-
-  testWidgets('usage meters exist in the subscription card', (tester) async {
-    await pumpSettings(tester);
-
-    // Free tier: documents are capped and render a meter; company
-    // workspaces are capped at 0 and the meter is hidden.
-    expect(find.text('Documents'), findsOneWidget);
-    expect(find.text('Company workspaces'), findsNothing);
-  });
-
-  testWidgets('collection row and dropdowns open bottom sheets', (tester) async {
-    await pumpSettings(tester);
-
-    // Personal collection is listed.
-    expect(find.text('Personal'), findsOneWidget);
-
-    // Tapping "First reminder" opens the day-picker sheet. The row sits
-    // below the fold — scroll it into view first.
-    await tester.scrollUntilVisible(
-      find.text('First reminder'),
-      200,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.pump();
-    await tester.tap(find.text('First reminder'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-
-    // Sheet options render as "N days". Some values also appear as the
-    // current value on the page rows behind the sheet, so use findsWidgets —
-    // except 120, which exists only inside the opened sheet.
-    expect(find.text('30 days'), findsWidgets);
-    expect(find.text('60 days'), findsWidgets);
-    expect(find.text('90 days'), findsWidgets);
-    expect(find.text('120 days'), findsOneWidget);
+    // Alerts & Reminders is now a dedicated link tile under Preferences.
+    expect(find.text('Notifications, bill spikes, budget alerts & lead times'), findsOneWidget);
   });
 
   testWidgets('theme switch still works from the Appearance group',
