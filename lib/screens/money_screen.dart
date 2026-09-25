@@ -24,6 +24,7 @@ import '../widgets/dialogs/natural_language_money_add_dialog.dart';
 import '../widgets/dialogs/ai_budget_plan_sheet.dart';
 import '../widgets/dialogs/upgrade_dialog.dart';
 import '../widgets/cards/monthly_summary_card.dart';
+import '../widgets/shimmer_skeleton.dart';
 import 'package:uuid/uuid.dart';
 
 /// The Money tab: renewal cost outlook, monthly budget tracking, savings
@@ -146,14 +147,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
                           ),
                         ),
                         child: _loading
-                            ? SizedBox(
-                                height: 320,
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    color: theme.colorScheme.secondary,
-                                  ),
-                                ),
-                              )
+                            ? MoneySkeletonView()
                             : Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [

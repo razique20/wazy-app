@@ -14,5 +14,6 @@ export 'bento_icon_tile.dart';
 export 'dialogs/app_guide_dialog.dart';
 export 'cards/getting_started_checklist_card.dart';
 export 'dialogs/faq_sheet.dart';
+export 'shimmer_skeleton.dart';
 
 

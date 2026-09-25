@@ -17,6 +17,7 @@ import '../widgets/indicators/empty_state_illustration.dart';
 import '../widgets/dialogs/natural_language_add_dialog.dart';
 import '../widgets/dialogs/renew_document_dialog.dart';
 import '../widgets/dialogs/upgrade_dialog.dart';
+import '../widgets/shimmer_skeleton.dart';
 
 /// Documents tab (Tier 1): the full expiry-tracking workspace.
 ///
@@ -224,14 +225,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                           ),
                         ),
                         child: _loading
-                            ? SizedBox(
-                                height: 320,
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    color: theme.colorScheme.secondary,
-                                  ),
-                                ),
-                              )
+                            ? DocumentsSkeletonView()
                             : Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [

@@ -300,14 +300,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         child: _loading
-                            ? SizedBox(
-                                height: 320,
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    color: theme.colorScheme.secondary,
-                                  ),
-                                ),
-                              )
+                            ? HomeSkeletonView()
                             : Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
