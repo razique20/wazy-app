@@ -1988,7 +1988,7 @@ class _UsageMeter extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(3),
           child: LinearProgressIndicator(
-            value: max == null ? null : ratio,
+            value: max == null ? 1.0 : ratio,
             minHeight: 5,
             backgroundColor: isDark
                 ? Colors.white.withOpacity(0.08)
