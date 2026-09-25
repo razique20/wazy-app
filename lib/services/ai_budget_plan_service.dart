@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/finance.dart';
@@ -144,6 +145,9 @@ class BudgetPlanTemplate {
   /// Emoji shown on the template chip.
   final String emoji;
 
+  /// Icon shown on the template chip.
+  final IconData icon;
+
   /// One-line explanation of what the template does.
   final String description;
 
@@ -154,6 +158,7 @@ class BudgetPlanTemplate {
     required this.id,
     required this.label,
     required this.emoji,
+    required this.icon,
     required this.description,
     required this.caps,
   });
@@ -652,6 +657,7 @@ class AiBudgetPlanService {
         id: 'comfortable',
         label: 'Comfortable',
         emoji: '😌',
+        icon: Icons.spa_rounded,
         description:
             'A light 8% trim on your most flexible categories — easy to keep up.',
         caps: capsForTrim(0.08),
@@ -660,6 +666,7 @@ class AiBudgetPlanService {
         id: 'balanced',
         label: 'Balanced',
         emoji: '⚖️',
+        icon: Icons.scale_rounded,
         description:
             'Trims flexible spending by 15% — steady progress, still comfortable.',
         caps: capsForTrim(0.15),
@@ -668,6 +675,7 @@ class AiBudgetPlanService {
         id: 'goal_first',
         label: 'Goal-first',
         emoji: '🎯',
+        icon: Icons.track_changes_rounded,
         description: monthlySavingTarget > 0
             ? 'Cuts your biggest flexible budgets until you free up ${_cur()} ${_fmt(monthlySavingTarget)}/month for the goal.'
             : 'Cuts your biggest flexible budgets by 30% to free up cash faster.',
@@ -678,9 +686,9 @@ class AiBudgetPlanService {
 
   /// "Happy index" for the budget adjuster: how comfortably the adjusted
   /// budgets reach the goal. [coverage] = monthly spare after trims ÷ the
-  /// monthly amount the goal needs. Returns a 0-100 score, an emoji and a
+  /// monthly amount the goal needs. Returns a 0-100 score, an icon and a
   /// plain-language label + hint a normal user instantly understands.
-  static ({int score, String emoji, String label, String hint}) goalMood({
+  static ({int score, String emoji, IconData icon, String label, String hint}) goalMood({
     required double coverage,
   }) {
     assert(coverage >= 0, 'coverage must not be negative');
@@ -688,6 +696,7 @@ class AiBudgetPlanService {
       return (
         score: 100,
         emoji: '😄',
+        icon: Icons.sentiment_very_satisfied_rounded,
         label: 'On track — with room to spare',
         hint: 'Even with these budgets you still have spare cash each month. Nice!',
       );
@@ -696,6 +705,7 @@ class AiBudgetPlanService {
       return (
         score: 85,
         emoji: '🙂',
+        icon: Icons.sentiment_satisfied_alt_rounded,
         label: 'On track',
         hint: 'These budgets get you to the goal right on time.',
       );
@@ -704,6 +714,7 @@ class AiBudgetPlanService {
       return (
         score: 60,
         emoji: '😐',
+        icon: Icons.sentiment_neutral_rounded,
         label: 'A little tight',
         hint: 'Almost there — trim one more category or add a few months to the deadline.',
       );
@@ -712,13 +723,15 @@ class AiBudgetPlanService {
       return (
         score: 35,
         emoji: '😕',
+        icon: Icons.sentiment_dissatisfied_rounded,
         label: 'Hard to reach',
-        hint: 'This saves too little for the goal — try the 🎯 Goal-first template.',
+        hint: 'This saves too little for the goal — try the Goal-first template.',
       );
     }
     return (
       score: 10,
       emoji: '😟',
+      icon: Icons.warning_amber_rounded,
       label: 'Off track',
       hint: 'These budgets won\'t get you there — trim more, or move the deadline out.',
     );

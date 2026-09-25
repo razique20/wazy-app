@@ -434,13 +434,6 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
       appBar: AppBar(
         title: const Text('AI Budget Planner'),
         centerTitle: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.tune_rounded),
-            tooltip: 'Groq API Settings',
-            onPressed: _showKeySettingsDialog,
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -1108,8 +1101,19 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
               children: [
                 Row(
                   children: [
-                    Text(mood.emoji, style: const TextStyle(fontSize: 22)),
-                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: moodColor.withOpacity(0.18),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        mood.icon,
+                        size: 20,
+                        color: moodColor,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         mood.label,
@@ -1160,28 +1164,39 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
                 style: theme.textTheme.labelLarge
                     ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final t in templates)
-                  ChoiceChip(
-                    label: Text('${t.emoji} ${t.label}'),
-                    selected: _activeTemplateId == t.id,
-                    onSelected: (sel) {
-                      if (!sel) return;
-                      setState(() {
-                        _activeTemplateId = t.id;
-                        _appliedBudgetCategories.clear();
-                        for (final c in t.caps.entries) {
-                          if (_adjustCaps!.containsKey(c.key)) {
-                            _adjustCaps![c.key] = c.value;
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
+              child: Row(
+                children: [
+                  for (final t in templates) ...[
+                    ChoiceChip(
+                      avatar: Icon(
+                        t.icon,
+                        size: 16,
+                        color: _activeTemplateId == t.id
+                            ? WazyColors.navyPrimary
+                            : theme.colorScheme.onSurfaceVariant,
+                      ),
+                      label: Text(t.label),
+                      selected: _activeTemplateId == t.id,
+                      onSelected: (sel) {
+                        if (!sel) return;
+                        setState(() {
+                          _activeTemplateId = t.id;
+                          _appliedBudgetCategories.clear();
+                          for (final c in t.caps.entries) {
+                            if (_adjustCaps!.containsKey(c.key)) {
+                              _adjustCaps![c.key] = c.value;
+                            }
                           }
-                        }
-                      });
-                    },
-                  ),
-              ],
+                        });
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                ],
+              ),
             ),
             if (selectedTemplate != null) ...[
               const SizedBox(height: 8),

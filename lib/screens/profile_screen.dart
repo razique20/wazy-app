@@ -1202,6 +1202,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
       title: 'Help & Support',
       children: [
         _SettingsTile(
+          icon: Icons.quiz_rounded,
+          iconColor: const Color(0xFFD97706),
+          title: 'Frequently Asked Questions (FAQ)',
+          subtitle: 'Instant answers for documents, money, AI & account',
+          trailing: const Icon(
+            Icons.chevron_right_rounded,
+            size: 20,
+            color: Colors.grey,
+          ),
+          onTap: () => showFaqSheet(
+            context,
+            onOpenSupportTicket: () => _showSubmitSupportSheet(context),
+          ),
+        ),
+        _SettingsTile(
           icon: Icons.auto_stories_rounded,
           iconColor: Colors.teal,
           title: 'App Guide',
