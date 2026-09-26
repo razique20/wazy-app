@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
-/// The official Wazy Fintech platform logo widget.
-class WazyLogo extends StatelessWidget {
+/// The official Finavig Fintech platform logo widget.
+class FinavigLogo extends StatelessWidget {
   final double size;
   final bool showShadow;
   final BorderRadius? borderRadius;
 
-  const WazyLogo({
+  const FinavigLogo({
     super.key,
     this.size = 64,
     this.showShadow = true,

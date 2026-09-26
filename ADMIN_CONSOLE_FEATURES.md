@@ -1,4 +1,4 @@
-# Wazy Admin Console — Features & Database Reference
+# Finavig Admin Console — Features & Database Reference
 
 > Complete guide to every admin-manageable feature, its Supabase table, columns, and ready-to-use SQL helpers.
 > Admin Console connects with the **service-role key** (bypasses all RLS).

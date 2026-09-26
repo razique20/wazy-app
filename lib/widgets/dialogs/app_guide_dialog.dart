@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../theme/app_theme.dart';
 
-/// Show the comprehensive Wazy App Guide modal.
+/// Show the comprehensive Finavig App Guide modal.
 Future<void> showAppGuideDialog(
   BuildContext context, {
   int initialPage = 0,
@@ -17,7 +17,7 @@ Future<void> showAppGuideDialog(
   );
 }
 
-/// The comprehensive, interactive user guide introducing everything in Wazy:
+/// The comprehensive, interactive user guide introducing everything in Finavig:
 /// 1. Overview & Vision (Financial & Document Command Center)
 /// 2. Document & Expiry Intelligence (OCR, Authority catalogs, 90/60/30/7 reminder ladders)
 /// 3. Money, Budgets & Cash Flow (GCC currencies, categories, 90-day forecast, bill spikes)
@@ -85,7 +85,7 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
           color: isDark ? const Color(0xFF0F172A) : Colors.white,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isDark ? WazyColors.slate : WazyColors.cloud,
+            color: isDark ? FinavigColors.slate : FinavigColors.cloud,
             width: 1.2,
           ),
           boxShadow: [
@@ -106,12 +106,12 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
                 decoration: BoxDecoration(
                   color: isDark
                       ? const Color(0xFF1E293B).withOpacity(0.5)
-                      : WazyColors.cloud.withOpacity(0.6),
+                      : FinavigColors.cloud.withOpacity(0.6),
                   border: Border(
                     bottom: BorderSide(
                       color: isDark
-                          ? WazyColors.slate.withOpacity(0.5)
-                          : WazyColors.mist,
+                          ? FinavigColors.slate.withOpacity(0.5)
+                          : FinavigColors.mist,
                       width: 1,
                     ),
                   ),
@@ -124,12 +124,12 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
                         Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: WazyColors.navyPrimary.withOpacity(0.12),
+                            color: FinavigColors.navyPrimary.withOpacity(0.12),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Icon(
                             Icons.explore_rounded,
-                            color: WazyColors.navyPrimary,
+                            color: FinavigColors.navyPrimary,
                             size: 18,
                           ),
                         ),
@@ -139,7 +139,7 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Wazy App Guide',
+                                'Finavig App Guide',
                                 style: theme.textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: -0.2,
@@ -208,8 +208,8 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
                   border: Border(
                     top: BorderSide(
                       color: isDark
-                          ? WazyColors.slate.withOpacity(0.4)
-                          : WazyColors.mist,
+                          ? FinavigColors.slate.withOpacity(0.4)
+                          : FinavigColors.mist,
                       width: 1,
                     ),
                   ),
@@ -227,10 +227,10 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
                           height: 6,
                           decoration: BoxDecoration(
                             color: index == _currentPage
-                                ? WazyColors.navyPrimary
+                                ? FinavigColors.navyPrimary
                                 : (isDark
-                                    ? WazyColors.slateLight
-                                    : WazyColors.fog),
+                                    ? FinavigColors.slateLight
+                                    : FinavigColors.fog),
                             borderRadius: BorderRadius.circular(3),
                           ),
                         ),
@@ -246,7 +246,7 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
                     ],
                     FilledButton(
                       style: FilledButton.styleFrom(
-                        backgroundColor: WazyColors.navyPrimary,
+                        backgroundColor: FinavigColors.navyPrimary,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 18,
@@ -292,10 +292,10 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
           color: active
-              ? WazyColors.navyPrimary
+              ? FinavigColors.navyPrimary
               : (isDark
-                  ? WazyColors.slate.withOpacity(0.6)
-                  : WazyColors.cloud),
+                  ? FinavigColors.slate.withOpacity(0.6)
+                  : FinavigColors.cloud),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -306,7 +306,7 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
               size: 13,
               color: active
                   ? Colors.white
-                  : (isDark ? WazyColors.textSecondary : WazyColors.textMuted),
+                  : (isDark ? FinavigColors.textSecondary : FinavigColors.textMuted),
             ),
             const SizedBox(width: 5),
             Text(
@@ -317,8 +317,8 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
                 color: active
                     ? Colors.white
                     : (isDark
-                        ? WazyColors.textSecondary
-                        : WazyColors.textSecondaryLight),
+                        ? FinavigColors.textSecondary
+                        : FinavigColors.textSecondaryLight),
               ),
             ),
           ],
@@ -346,7 +346,7 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [WazyColors.navyPrimary, WazyColors.navyPrimaryDark],
+                colors: [FinavigColors.navyPrimary, FinavigColors.navyPrimaryDark],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -360,19 +360,19 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: WazyColors.cyanSecondary.withOpacity(0.2),
+                        color: FinavigColors.cyanSecondary.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(
                         Icons.rocket_launch_rounded,
-                        color: WazyColors.cyanSecondary,
+                        color: FinavigColors.cyanSecondary,
                         size: 22,
                       ),
                     ),
                     const SizedBox(width: 10),
                     const Expanded(
                       child: Text(
-                        'Welcome to Wazy',
+                        'Welcome to Finavig',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -396,20 +396,20 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
           ),
           const SizedBox(height: 18),
           Text(
-            'The Four Pillars of Wazy',
+            'The Four Pillars of Finavig',
             style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),
           _featureRow(
             icon: Icons.description_rounded,
-            color: WazyColors.cyanSecondary,
+            color: FinavigColors.cyanSecondary,
             title: '1. Document & Expiry Tracking',
             desc: 'OCR scan IDs, Passports, Visas, Trade Licenses, Ejari & get 90/60/30/7-day alerts.',
             isDark: isDark,
           ),
           _featureRow(
             icon: Icons.account_balance_wallet_rounded,
-            color: WazyColors.emerald,
+            color: FinavigColors.emerald,
             title: '2. Money, Budgets & Cash Flow',
             desc: 'Track income/expenses in GCC currencies, set category limits & forecast 90-day cash flow.',
             isDark: isDark,
@@ -448,7 +448,7 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
         children: [
           Row(
             children: [
-              const Icon(Icons.document_scanner_rounded, color: WazyColors.navyPrimary, size: 22),
+              const Icon(Icons.document_scanner_rounded, color: FinavigColors.navyPrimary, size: 22),
               const SizedBox(width: 8),
               Text(
                 'Document & Expiry Intelligence',
@@ -466,10 +466,10 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: isDark ? WazyColors.slate.withOpacity(0.5) : WazyColors.cloud,
+              color: isDark ? FinavigColors.slate.withOpacity(0.5) : FinavigColors.cloud,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isDark ? WazyColors.slateLight : WazyColors.mist,
+                color: isDark ? FinavigColors.slateLight : FinavigColors.mist,
               ),
             ),
             child: Column(
@@ -480,10 +480,10 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: WazyColors.navyPrimary.withOpacity(0.12),
+                        color: FinavigColors.navyPrimary.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.badge_outlined, color: WazyColors.navyPrimary, size: 20),
+                      child: const Icon(Icons.badge_outlined, color: FinavigColors.navyPrimary, size: 20),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -504,13 +504,13 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: WazyColors.warning.withOpacity(0.15),
+                        color: FinavigColors.warning.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: const Text(
                         '18 Days Left',
                         style: TextStyle(
-                          color: WazyColors.warning,
+                          color: FinavigColors.warning,
                           fontWeight: FontWeight.bold,
                           fontSize: 10,
                         ),
@@ -536,8 +536,8 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
               icon: const Icon(Icons.add_photo_alternate_rounded, size: 16),
               label: const Text('Try Adding or Scanning a Document'),
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: WazyColors.navyPrimary),
-                foregroundColor: WazyColors.navyPrimary,
+                side: const BorderSide(color: FinavigColors.navyPrimary),
+                foregroundColor: FinavigColors.navyPrimary,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
@@ -562,7 +562,7 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
         children: [
           Row(
             children: [
-              const Icon(Icons.account_balance_wallet_rounded, color: WazyColors.emerald, size: 22),
+              const Icon(Icons.account_balance_wallet_rounded, color: FinavigColors.emerald, size: 22),
               const SizedBox(width: 8),
               Text(
                 'Money, Budgets & Cash Flow',
@@ -580,10 +580,10 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: isDark ? WazyColors.slate.withOpacity(0.5) : WazyColors.cloud,
+              color: isDark ? FinavigColors.slate.withOpacity(0.5) : FinavigColors.cloud,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isDark ? WazyColors.slateLight : WazyColors.mist,
+                color: isDark ? FinavigColors.slateLight : FinavigColors.mist,
               ),
             ),
             child: Column(
@@ -593,7 +593,7 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text('Office & Rent Budget', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    Text('65% used', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: isDark ? WazyColors.cyanSecondary : WazyColors.navyPrimary)),
+                    Text('65% used', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: isDark ? FinavigColors.cyanSecondary : FinavigColors.navyPrimary)),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -603,7 +603,7 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
                     value: 0.65,
                     minHeight: 8,
                     backgroundColor: isDark ? Colors.black26 : Colors.black12,
-                    valueColor: const AlwaysStoppedAnimation<Color>(WazyColors.emerald),
+                    valueColor: const AlwaysStoppedAnimation<Color>(FinavigColors.emerald),
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -632,8 +632,8 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
               icon: const Icon(Icons.arrow_outward_rounded, size: 16),
               label: const Text('Go to Money & Budgets Tab'),
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: WazyColors.emerald),
-                foregroundColor: isDark ? WazyColors.emerald : const Color(0xFF065F46),
+                side: const BorderSide(color: FinavigColors.emerald),
+                foregroundColor: isDark ? FinavigColors.emerald : const Color(0xFF065F46),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
@@ -675,10 +675,10 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: isDark ? WazyColors.slate.withOpacity(0.5) : WazyColors.cloud,
+              color: isDark ? FinavigColors.slate.withOpacity(0.5) : FinavigColors.cloud,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isDark ? WazyColors.slateLight : WazyColors.mist,
+                color: isDark ? FinavigColors.slateLight : FinavigColors.mist,
               ),
             ),
             child: Column(
@@ -808,7 +808,7 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
               icon: const Icon(Icons.auto_awesome_rounded, size: 16),
               label: const Text('Try AI Executive Summary'),
               style: FilledButton.styleFrom(
-                backgroundColor: WazyColors.navyPrimary,
+                backgroundColor: FinavigColors.navyPrimary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
@@ -858,7 +858,7 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
                   style: TextStyle(
                     fontSize: 11.5,
                     height: 1.35,
-                    color: isDark ? WazyColors.textSecondary : WazyColors.textMutedLight,
+                    color: isDark ? FinavigColors.textSecondary : FinavigColors.textMutedLight,
                   ),
                 ),
               ],
@@ -879,7 +879,7 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
         children: [
           const Icon(
             Icons.check_circle_rounded,
-            color: WazyColors.emerald,
+            color: FinavigColors.emerald,
             size: 16,
           ),
           const SizedBox(width: 8),
@@ -889,7 +889,7 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
                 style: TextStyle(
                   fontSize: 12,
                   height: 1.4,
-                  color: isDark ? WazyColors.textPrimary : WazyColors.textPrimaryLight,
+                  color: isDark ? FinavigColors.textPrimary : FinavigColors.textPrimaryLight,
                 ),
                 children: [
                   TextSpan(
@@ -899,7 +899,7 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
                   TextSpan(
                     text: desc,
                     style: TextStyle(
-                      color: isDark ? WazyColors.textSecondary : WazyColors.textSecondaryLight,
+                      color: isDark ? FinavigColors.textSecondary : FinavigColors.textSecondaryLight,
                     ),
                   ),
                 ],
@@ -923,10 +923,10 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
         Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: WazyColors.navyPrimary.withOpacity(0.1),
+            color: FinavigColors.navyPrimary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, size: 16, color: WazyColors.navyPrimary),
+          child: Icon(icon, size: 16, color: FinavigColors.navyPrimary),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -941,7 +941,7 @@ class _AppGuideDialogState extends State<AppGuideDialog> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(
-            color: isDark ? WazyColors.slate : WazyColors.mist,
+            color: isDark ? FinavigColors.slate : FinavigColors.mist,
             borderRadius: BorderRadius.circular(4),
           ),
           child: Text(country, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),

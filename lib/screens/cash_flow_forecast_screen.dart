@@ -186,14 +186,14 @@ class _CashFlowForecastScreenState extends State<CashFlowForecastScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: WazyColors.violetAccent.withAlpha(25),
+                        color: FinavigColors.violetAccent.withAlpha(25),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         DateFormat('MMM d').format(point.date),
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: WazyColors.violetAccent,
+                          color: FinavigColors.violetAccent,
                           fontSize: 12,
                         ),
                       ),
@@ -211,7 +211,7 @@ class _CashFlowForecastScreenState extends State<CashFlowForecastScreen> {
                   'Balance: ${MoneyFormat.aed(point.balance)}',
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: point.balance >= 0 ? WazyColors.safe : WazyColors.danger,
+                    color: point.balance >= 0 ? FinavigColors.safe : FinavigColors.danger,
                   ),
                 ),
               ],
@@ -228,8 +228,8 @@ class _CashFlowForecastScreenState extends State<CashFlowForecastScreen> {
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
                         color: (ev.isDocumentRenewal
-                                ? WazyColors.caution
-                                : (ev.kind == FinanceKind.income ? WazyColors.safe : Colors.red))
+                                ? FinavigColors.caution
+                                : (ev.kind == FinanceKind.income ? FinavigColors.safe : Colors.red))
                             .withAlpha(25),
                         shape: BoxShape.circle,
                       ),
@@ -241,8 +241,8 @@ class _CashFlowForecastScreenState extends State<CashFlowForecastScreen> {
                                 : Icons.arrow_outward_rounded),
                         size: 14,
                         color: ev.isDocumentRenewal
-                            ? WazyColors.caution
-                            : (ev.kind == FinanceKind.income ? WazyColors.safe : Colors.red),
+                            ? FinavigColors.caution
+                            : (ev.kind == FinanceKind.income ? FinavigColors.safe : Colors.red),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -271,7 +271,7 @@ class _CashFlowForecastScreenState extends State<CashFlowForecastScreen> {
                       '${ev.kind == FinanceKind.income ? '+' : '-'}${MoneyFormat.aed(ev.amount)}',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: ev.kind == FinanceKind.income ? WazyColors.safe : Colors.red,
+                        color: ev.kind == FinanceKind.income ? FinavigColors.safe : Colors.red,
                       ),
                     ),
                   ],

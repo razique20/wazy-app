@@ -446,7 +446,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // Ink backdrop behind the hero; the content sheet covers the rest.
       // Same backdrop as Home/Documents.
       backgroundColor:
-          isDark ? WazyColors.obsidian : WazyColors.ink,
+          isDark ? FinavigColors.obsidian : FinavigColors.ink,
       body: SafeArea(
         bottom: false,
         child: RefreshIndicator(
@@ -771,7 +771,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 icon: daysLeft <= 7
                     ? Icons.notification_important_rounded
                     : Icons.event_available_rounded,
-                color: daysLeft <= 7 ? WazyColors.warning : WazyColors.safe,
+                color: daysLeft <= 7 ? FinavigColors.warning : FinavigColors.safe,
                 text: daysLeft == 0
                     ? 'Your ${info.name} plan expires today'
                     : 'Your ${info.name} plan expires in $daysLeft '
@@ -785,7 +785,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _planNotice(
                 theme,
                 icon: Icons.error_outline_rounded,
-                color: WazyColors.danger,
+                color: FinavigColors.danger,
                 text: 'Your ${info.name} plan expired on '
                     '${_formatDate(planEndsAt!)} — features are locked '
                     'again. Tap Renew Plan to resubscribe.',
@@ -840,16 +840,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ? 'Extend Plan'
                           : 'Upgrade Plan'),
                   style: FilledButton.styleFrom(
-                    backgroundColor: WazyColors.navyPrimary,
+                    backgroundColor: FinavigColors.navyPrimary,
                     foregroundColor: Colors.white,
                   ),
                 ),
               )
             else
               Text(
-                'You are on the highest plan — thanks for supporting Wazy!',
+                'You are on the highest plan — thanks for supporting Finavig!',
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: WazyColors.safe,
+                  color: FinavigColors.safe,
                 ),
               ),
               ],
@@ -932,7 +932,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               return _SettingsTile(
                 icon: isLocked ? Icons.lock_rounded : collection.icon,
-                iconColor: isLocked ? WazyColors.warning : null,
+                iconColor: isLocked ? FinavigColors.warning : null,
                 title: collection.name,
                 subtitle: isLocked
                     ? 'Locked • Requires ${TierInfo.all[reqTier]!.name} Plan'
@@ -950,10 +950,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: WazyColors.warning.withAlpha(35),
+                              color: FinavigColors.warning.withAlpha(35),
                               borderRadius: BorderRadius.circular(4),
                               border: Border.all(
-                                color: WazyColors.warning.withAlpha(120),
+                                color: FinavigColors.warning.withAlpha(120),
                                 width: 0.8,
                               ),
                             ),
@@ -962,7 +962,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
-                                color: WazyColors.warning,
+                                color: FinavigColors.warning,
                               ),
                             ),
                           ),
@@ -1091,7 +1091,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         _SettingsTile(
           icon: Icons.notifications_active_rounded,
-          iconColor: WazyColors.indigo,
+          iconColor: FinavigColors.indigo,
           title: 'Alerts & Reminders',
           subtitle: 'Notifications, bill spikes, budget alerts & lead times',
           trailing: const Icon(Icons.chevron_right_rounded, size: 20),
@@ -1155,7 +1155,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           icon: Icons.auto_stories_rounded,
           iconColor: Colors.teal,
           title: 'App Guide',
-          subtitle: 'Interactive walkthrough of all Wazy features',
+          subtitle: 'Interactive walkthrough of all Finavig features',
           trailing: const Icon(
             Icons.chevron_right_rounded,
             size: 20,
@@ -1427,7 +1427,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         icon: const Icon(Icons.send_rounded),
                         label: const Text('Submit Request'),
                         style: FilledButton.styleFrom(
-                          backgroundColor: WazyColors.navyPrimary,
+                          backgroundColor: FinavigColors.navyPrimary,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
@@ -1594,7 +1594,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Color _tileBg(ThemeData theme) {
     final isDark = theme.brightness == Brightness.dark;
     return isDark
-        ? WazyColors.slate.withOpacity(0.5)
+        ? FinavigColors.slate.withOpacity(0.5)
         : Colors.white;
   }
 }
@@ -1621,7 +1621,7 @@ class _SettingsGroup extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final tileBg = isDark
-        ? WazyColors.slate.withOpacity(0.5)
+        ? FinavigColors.slate.withOpacity(0.5)
         : Colors.white;
 
     return Padding(
@@ -1647,7 +1647,7 @@ class _SettingsGroup extends StatelessWidget {
             width: double.infinity,
             decoration: BoxDecoration(
               color: tileBg,
-              borderRadius: BorderRadius.circular(WazyRadius.card),
+              borderRadius: BorderRadius.circular(FinavigRadius.card),
             ),
             child: Column(
               children: [
@@ -1697,16 +1697,16 @@ class _SettingsTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final accent = iconColor ?? WazyColors.indigo;
+    final accent = iconColor ?? FinavigColors.indigo;
 
     return Material(
       color: highlighted
           ? theme.colorScheme.primary.withOpacity(isDark ? 0.14 : 0.05)
           : Colors.transparent,
-      borderRadius: BorderRadius.circular(WazyRadius.tile),
+      borderRadius: BorderRadius.circular(FinavigRadius.tile),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(WazyRadius.tile),
+        borderRadius: BorderRadius.circular(FinavigRadius.tile),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(
@@ -1914,11 +1914,11 @@ class _UsageMeter extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final ratio = max == null || max == 0 ? 0.0 : (used / max!).clamp(0.0, 1.0);
     final barColor = max == null
-        ? WazyColors.safe
+        ? FinavigColors.safe
         : ratio >= 1.0
-            ? WazyColors.danger
+            ? FinavigColors.danger
             : ratio >= 0.8
-                ? WazyColors.warning
+                ? FinavigColors.warning
                 : theme.colorScheme.primary;
 
     return Column(
@@ -2046,7 +2046,7 @@ class _SupportRequestCard extends StatelessWidget {
 
     final (Color statusColor, IconData statusIcon) = switch (item.status) {
       'in_progress' => (Colors.orange, Icons.autorenew_rounded),
-      'resolved' => (WazyColors.safe, Icons.check_circle_outline_rounded),
+      'resolved' => (FinavigColors.safe, Icons.check_circle_outline_rounded),
       _ => (Colors.blueGrey, Icons.schedule_rounded), // 'open'
     };
 
@@ -2074,8 +2074,8 @@ class _SupportRequestCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: isDark
-            ? WazyColors.slate.withOpacity(0.55)
-            : WazyColors.cloud,
+            ? FinavigColors.slate.withOpacity(0.55)
+            : FinavigColors.cloud,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isDark
@@ -2172,10 +2172,10 @@ class _SupportRequestCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: WazyColors.cyanSecondary.withOpacity(0.08),
+                color: FinavigColors.cyanSecondary.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: WazyColors.cyanSecondary.withOpacity(0.2),
+                  color: FinavigColors.cyanSecondary.withOpacity(0.2),
                 ),
               ),
               child: Row(
@@ -2184,14 +2184,14 @@ class _SupportRequestCard extends StatelessWidget {
                   const Icon(
                     Icons.admin_panel_settings_rounded,
                     size: 16,
-                    color: WazyColors.cyanSecondary,
+                    color: FinavigColors.cyanSecondary,
                   ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       item.adminNotes!,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: WazyColors.cyanSecondary,
+                        color: FinavigColors.cyanSecondary,
                         fontWeight: FontWeight.w500,
                       ),
                       maxLines: 3,

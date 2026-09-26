@@ -7,8 +7,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:wazy/screens/home_screen.dart';
-import 'package:wazy/theme/app_theme.dart';
+import 'package:finavig/screens/home_screen.dart';
+import 'package:finavig/theme/app_theme.dart';
 
 void main() {
   testWidgets('no phantom gap between categories grid and next renewals',
@@ -43,7 +43,7 @@ void main() {
     });
 
     await tester.pumpWidget(
-      MaterialApp(theme: WazyTheme.light(), home: const HomeScreen()),
+      MaterialApp(theme: FinavigTheme.light(), home: const HomeScreen()),
     );
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));

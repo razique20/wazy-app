@@ -20,35 +20,35 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           title: 'Upload your documents',
           body:
               'Drop a folder or zip of all your company documents. We\'ll sort them out — trade licences, Ejari, visas, insurance, contracts, domains, subscriptions.',
-          color: WazyColors.cyanAccent,
+          color: FinavigColors.cyanAccent,
         ),
         _OnboardingPage(
           icon: Icons.auto_awesome_rounded,
           title: 'AI identifies every expiry',
           body:
               'No manual entry. Our layered AI reads each document, finds the expiry date, and tells you: what expires, when, and what happens if you miss it.',
-          color: WazyColors.violetAccent,
+          color: FinavigColors.violetAccent,
         ),
         _OnboardingPage(
           icon: Icons.notifications_active_rounded,
           title: 'We remind you before it\'s too late',
           body:
               '90 days out → reminder. 60 days → task assigned. 30 days → escalation. 7 days → WhatsApp alert. You set the cadence; we enforce it.',
-          color: WazyColors.warning,
+          color: FinavigColors.warning,
         ),
         _OnboardingPage(
           icon: Icons.folder_special_rounded,
           title: 'One system for the whole company',
           body:
               'Trade licence, ejari, visas, Emirates IDs, labour documents, insurance, vehicles, contracts, domains, subscriptions, supplier agreements — in one place.',
-          color: WazyColors.emeraldAccent,
+          color: FinavigColors.emeraldAccent,
         ),
         _OnboardingPage(
           icon: Icons.check_circle_rounded,
           title: 'You\'re ready',
           body:
-              'Nothing to install. Nothing to sync. Just upload and we\'ll take it from there. Welcome to Wazy.',
-          color: WazyColors.safe,
+              'Nothing to install. Nothing to sync. Just upload and we\'ll take it from there. Welcome to Finavig.',
+          color: FinavigColors.safe,
           actionLabel: 'Get started',
           action: () {
             SharedPreferences.getInstance().then((prefs) {
@@ -69,7 +69,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       body: Container(
         decoration: BoxDecoration(
           gradient: isDark
-              ? WazyGradients.darkHeader
+              ? FinavigGradients.darkHeader
               : const LinearGradient(
                   colors: [Color(0xFFF8FAFC), Color(0xFFE2E8F0)],
                   begin: Alignment.topCenter,
@@ -83,7 +83,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 child: Center(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(horizontal: 28),
-                    child: WazyGlass(
+                    child: FinavigGlass(
                       borderRadius: BorderRadius.circular(24),
                       padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
                       child: Column(
@@ -125,7 +125,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                     style: TextStyle(
                                       fontSize: 22,
                                       fontWeight: FontWeight.w800,
-                                      color: isDark ? WazyColors.textPrimaryDark : WazyColors.textPrimaryLight,
+                                      color: isDark ? FinavigColors.textPrimaryDark : FinavigColors.textPrimaryLight,
                                       letterSpacing: -0.4,
                                     ),
                                   ),
@@ -136,7 +136,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                     style: TextStyle(
                                       fontSize: 14,
                                       height: 1.55,
-                                      color: isDark ? WazyColors.textSecondary : WazyColors.textMuted,
+                                      color: isDark ? FinavigColors.textSecondary : FinavigColors.textMuted,
                                     ),
                                   ),
                                 ],
@@ -167,8 +167,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(4),
                             color: i == _page
-                                ? WazyColors.cyanAccent
-                                : (isDark ? WazyColors.textMuted.withOpacity(0.3) : Colors.black12),
+                                ? FinavigColors.cyanAccent
+                                : (isDark ? FinavigColors.textMuted.withOpacity(0.3) : Colors.black12),
                           ),
                         ),
                       ),
@@ -178,7 +178,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       TextButton(
                         onPressed: () => setState(() => _page++),
                         style: TextButton.styleFrom(
-                          foregroundColor: WazyColors.cyanAccent,
+                          foregroundColor: FinavigColors.cyanAccent,
                         ),
                         child: Text(
                           _page == pages.length - 2 ? 'Next' : 'Skip',
@@ -194,7 +194,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         icon: const Icon(Icons.arrow_forward_rounded, size: 18),
                         label: const Text('Get started'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: WazyColors.cyanAccent,
+                          backgroundColor: FinavigColors.cyanAccent,
                           foregroundColor: const Color(0xFF0A0E1A),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 24,

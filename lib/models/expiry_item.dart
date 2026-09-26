@@ -21,25 +21,25 @@ class UrgencyLevel {
   static const low = UrgencyLevel(
     title: 'Low',
     icon: Icons.check_circle_rounded,
-    color: WazyColors.safe,
+    color: FinavigColors.safe,
     priority: 0,
   );
   static const medium = UrgencyLevel(
     title: 'Medium',
     icon: Icons.schedule_rounded,
-    color: WazyColors.caution,
+    color: FinavigColors.caution,
     priority: 1,
   );
   static const high = UrgencyLevel(
     title: 'High',
     icon: Icons.priority_high_rounded,
-    color: WazyColors.warning,
+    color: FinavigColors.warning,
     priority: 2,
   );
   static const critical = UrgencyLevel(
     title: 'Critical',
     icon: Icons.warning_amber_rounded,
-    color: WazyColors.danger,
+    color: FinavigColors.danger,
     priority: 3,
   );
 
@@ -59,28 +59,28 @@ class UrgencyLevel {
         return UrgencyLevel(
           title: 'Reminder active',
           icon: Icons.notifications_active_rounded,
-          color: WazyColors.violet,
+          color: FinavigColors.violet,
           priority: 0,
         );
       case 2:
         return UrgencyLevel(
           title: 'Task active',
           icon: Icons.assignment_turned_in_rounded,
-          color: WazyColors.caution,
+          color: FinavigColors.caution,
           priority: 1,
         );
       case 3:
         return UrgencyLevel(
           title: 'Escalation active',
           icon: Icons.priority_high_rounded,
-          color: WazyColors.warning,
+          color: FinavigColors.warning,
           priority: 2,
         );
       case 4:
         return UrgencyLevel(
           title: 'WhatsApp sent',
           icon: Icons.whatshot_rounded,
-          color: WazyColors.danger,
+          color: FinavigColors.danger,
           priority: 3,
         );
       default:

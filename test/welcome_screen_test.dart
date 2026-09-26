@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:wazy/screens/welcome_screen.dart';
+import 'package:finavig/screens/welcome_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -33,7 +33,7 @@ void main() {
 
     expect(find.text('Modern Fintech for\nPersonal Finance'), findsOneWidget);
     expect(find.text('Easy ways to manage your finances'), findsOneWidget);
-    expect(find.text('WAZY'), findsOneWidget);
+    expect(find.text('FINAVIG'), findsOneWidget);
     // Main CTA (the in-phone pill reads "Get Started  →").
     expect(find.widgetWithText(ElevatedButton, 'Get Started'), findsOneWidget);
   });

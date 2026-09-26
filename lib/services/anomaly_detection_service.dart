@@ -52,7 +52,7 @@ class BillAnomaly {
       'BillAnomaly("${transaction.title}", +${percentIncrease.toStringAsFixed(1)}%, severity: ${severity.name})';
 }
 
-/// Statistical Anomaly Detection Engine for Wazy expenses & recurring bills.
+/// Statistical Anomaly Detection Engine for Finavig expenses & recurring bills.
 class AnomalyDetectionService {
   static final AnomalyDetectionService instance = AnomalyDetectionService._();
   AnomalyDetectionService._();

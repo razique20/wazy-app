@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:wazy/models/document_collection.dart';
-import 'package:wazy/models/document_type.dart';
-import 'package:wazy/models/gcc_country.dart';
-import 'package:wazy/services/gcc_authority_catalog.dart';
+import 'package:finavig/models/document_collection.dart';
+import 'package:finavig/models/document_type.dart';
+import 'package:finavig/models/gcc_country.dart';
+import 'package:finavig/services/gcc_authority_catalog.dart';
 
 void main() {
   group('GccCountry Enum Tests', () {

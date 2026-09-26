@@ -7,13 +7,13 @@
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:wazy/app.dart';
+import 'package:finavig/app.dart';
 
 void main() {
   testWidgets('App smoke test', (WidgetTester tester) async {
-    await tester.pumpWidget(const WazyApp());
+    await tester.pumpWidget(const FinavigApp());
     await tester.pump();
     // Verify the app renders without errors
-    expect(find.byType(WazyApp), findsOneWidget);
+    expect(find.byType(FinavigApp), findsOneWidget);
   });
 }

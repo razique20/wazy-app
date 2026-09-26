@@ -78,7 +78,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               height: 1.15,
                               fontWeight: FontWeight.w800,
                               letterSpacing: -1.2,
-                              color: WazyColors.textPrimaryLight,
+                              color: FinavigColors.textPrimaryLight,
                             ),
                           ),
                         ),
@@ -97,7 +97,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                             child: ElevatedButton(
                               onPressed: _getStarted,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: WazyColors.navyPrimary,
+                                backgroundColor: FinavigColors.navyPrimary,
                                 foregroundColor: Colors.white,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
@@ -144,7 +144,7 @@ class _PhoneMockup extends StatelessWidget {
       child: Container(
         width: width,
         decoration: BoxDecoration(
-          color: WazyColors.navyPrimary,
+          color: FinavigColors.navyPrimary,
           borderRadius: BorderRadius.circular(width * 0.13),
         ),
         padding: EdgeInsets.all(width * 0.055),
@@ -196,7 +196,7 @@ class _PhoneMockup extends StatelessWidget {
                                   height: 1.2,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: -0.5,
-                                  color: WazyColors.textPrimaryLight,
+                                  color: FinavigColors.textPrimaryLight,
                                 ),
                               ),
                             ),
@@ -209,7 +209,7 @@ class _PhoneMockup extends StatelessWidget {
                         Container(
                           height: 34,
                           decoration: BoxDecoration(
-                            color: WazyColors.navyPrimary,
+                            color: FinavigColors.navyPrimary,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           alignment: Alignment.center,
@@ -310,12 +310,12 @@ class _BlobWithRings extends StatelessWidget {
             width: 108,
             height: 150,
             decoration: BoxDecoration(
-              color: WazyColors.navyPrimary,
+              color: FinavigColors.navyPrimary,
               borderRadius: BorderRadius.circular(60),
             ),
             alignment: Alignment.center,
             child: const Text(
-              'WAZY',
+              'FINAVIG',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,

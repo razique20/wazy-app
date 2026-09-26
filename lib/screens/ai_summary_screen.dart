@@ -48,7 +48,7 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: const Row(
               children: [
-                Icon(Icons.warning_amber_rounded, color: WazyColors.warning),
+                Icon(Icons.warning_amber_rounded, color: FinavigColors.warning),
                 SizedBox(width: 8),
                 Text('Monthly Quota Reached'),
               ],
@@ -67,7 +67,7 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
                 icon: const Icon(Icons.bolt_rounded, size: 16),
                 label: const Text('Upgrade Plan'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: WazyColors.caution,
+                  backgroundColor: FinavigColors.caution,
                   foregroundColor: Colors.black,
                 ),
               ),
@@ -117,7 +117,7 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Row(
           children: [
-            Icon(Icons.auto_awesome_rounded, color: WazyColors.cyanSecondary),
+            Icon(Icons.auto_awesome_rounded, color: FinavigColors.cyanSecondary),
             SizedBox(width: 8),
             Text('Confirm AI Quota Usage'),
           ],
@@ -136,7 +136,7 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
             icon: const Icon(Icons.bolt_rounded, size: 16),
             label: const Text('Confirm & Use 1 Credit'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: WazyColors.navyPrimary,
+              backgroundColor: FinavigColors.navyPrimary,
               foregroundColor: Colors.white,
             ),
           ),
@@ -157,7 +157,7 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Row(
           children: [
-            Icon(Icons.key_rounded, color: WazyColors.violetAccent),
+            Icon(Icons.key_rounded, color: FinavigColors.violetAccent),
             SizedBox(width: 8),
             Text('Groq API Settings'),
           ],
@@ -167,7 +167,7 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Wazy includes an in-app Groq API key by default. You can optional enter a custom key below.',
+              'Finavig includes an in-app Groq API key by default. You can optional enter a custom key below.',
               style: TextStyle(fontSize: 13, height: 1.4),
             ),
             const SizedBox(height: 14),
@@ -202,7 +202,7 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
               _loadSummary(forceRegenerate: true);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: WazyColors.navyPrimary,
+              backgroundColor: FinavigColors.navyPrimary,
               foregroundColor: Colors.white,
             ),
             child: const Text('Save Key'),
@@ -313,7 +313,7 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: WazyColors.violetAccent.withOpacity(0.25),
+                  color: FinavigColors.violetAccent.withOpacity(0.25),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Row(
@@ -322,7 +322,7 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
                     Icon(
                       Icons.auto_awesome_rounded,
                       size: 14,
-                      color: WazyColors.violetAccent,
+                      color: FinavigColors.violetAccent,
                     ),
                     SizedBox(width: 6),
                     Text(
@@ -330,7 +330,7 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: WazyColors.violetAccent,
+                        color: FinavigColors.violetAccent,
                       ),
                     ),
                   ],
@@ -383,7 +383,7 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
               minHeight: 6,
               backgroundColor: Colors.white24,
               valueColor: AlwaysStoppedAnimation<Color>(
-                usedPct >= 1.0 ? WazyColors.danger : WazyColors.emerald,
+                usedPct >= 1.0 ? FinavigColors.danger : FinavigColors.emerald,
               ),
             ),
           ),
@@ -396,7 +396,7 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
                 icon: const Icon(Icons.bolt_rounded, size: 16),
                 label: const Text('Upgrade Plan for More AI Summaries'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: WazyColors.caution,
+                  backgroundColor: FinavigColors.caution,
                   foregroundColor: Colors.black,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -430,13 +430,13 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: WazyColors.cyanSecondary.withOpacity(0.12),
+                  color: FinavigColors.cyanSecondary.withOpacity(0.12),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   Icons.auto_awesome_rounded,
                   size: 28,
-                  color: WazyColors.cyanSecondary,
+                  color: FinavigColors.cyanSecondary,
                 ),
               ),
               const SizedBox(height: 12),
@@ -470,7 +470,7 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
                       : const Icon(Icons.bolt_rounded, size: 18),
                   label: const Text('Generate AI Executive Summary (1 Credit)'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: WazyColors.navyPrimary,
+                    backgroundColor: FinavigColors.navyPrimary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -500,7 +500,7 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
               children: [
                 const Icon(
                   Icons.psychology_rounded,
-                  color: WazyColors.navyPrimary,
+                  color: FinavigColors.navyPrimary,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
@@ -528,7 +528,7 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: WazyColors.emerald.withOpacity(0.15),
+                      color: FinavigColors.emerald.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: const Text(
@@ -536,7 +536,7 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
-                        color: WazyColors.emerald,
+                        color: FinavigColors.emerald,
                       ),
                     ),
                   ),
@@ -554,13 +554,13 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  const Icon(Icons.info_outline_rounded, size: 14, color: WazyColors.warning),
+                  const Icon(Icons.info_outline_rounded, size: 14, color: FinavigColors.warning),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       'Monthly Groq AI quota reached. Showing offline template fallback.',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: WazyColors.warning,
+                        color: FinavigColors.warning,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -584,8 +584,8 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
                     : const Icon(Icons.refresh_rounded, size: 16),
                 label: const Text('Generate Fresh AI Summary (Uses 1 Credit)'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: WazyColors.navyPrimary,
-                  side: BorderSide(color: WazyColors.navyPrimary.withOpacity(0.5)),
+                  foregroundColor: FinavigColors.navyPrimary,
+                  side: BorderSide(color: FinavigColors.navyPrimary.withOpacity(0.5)),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -612,10 +612,10 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
     };
 
     final color = switch (insight.kind) {
-      MonthlyInsightKind.spendingMove => WazyColors.danger,
-      MonthlyInsightKind.budgetAlert => WazyColors.warning,
-      MonthlyInsightKind.savings => WazyColors.emerald,
-      MonthlyInsightKind.positive => WazyColors.emerald,
+      MonthlyInsightKind.spendingMove => FinavigColors.danger,
+      MonthlyInsightKind.budgetAlert => FinavigColors.warning,
+      MonthlyInsightKind.savings => FinavigColors.emerald,
+      MonthlyInsightKind.positive => FinavigColors.emerald,
     };
 
     return Container(

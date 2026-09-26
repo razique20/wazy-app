@@ -1,5 +1,5 @@
 -- ============================================================
--- Wazy — Subscription Tier (Track 1 monetization) Migration
+-- Finavig — Subscription Tier (Track 1 monetization) Migration
 -- Run this query in Supabase Dashboard → SQL Editor → New query
 --
 -- Pairs with lib/services/entitlement_service.dart, which reads:

@@ -22,7 +22,7 @@ class CategoryPrediction {
       'CategoryPrediction(${category.displayName}, confidence: ${(confidence * 100).toStringAsFixed(0)}%, source: $matchSource)';
 }
 
-/// Smart Auto-Categorization & Tagging Engine for Wazy.
+/// Smart Auto-Categorization & Tagging Engine for Finavig.
 /// Combines dictionary rules, fuzzy Levenshtein matching, and persistent user habit learning.
 class SmartCategoryEngine {
   static final SmartCategoryEngine instance = SmartCategoryEngine._();

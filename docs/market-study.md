@@ -1,4 +1,4 @@
-# Wazy — Market Study
+# Finavig — Market Study
 
 > UAE financial budgeting intelligence & document-expiry tracking · September 2026
 > Companion to [technical-documentation.md](technical-documentation.md) and [feasibility-study.md](feasibility-study.md)
@@ -28,7 +28,7 @@ The second half of the pain is **financial**: renewals arrive as lumpy, predicta
 
 ### 2.1 Segments (by fit)
 
-| Segment | Size signal | Willingness to pay | Wazy fit |
+| Segment | Size signal | Willingness to pay | Finavig fit |
 |---|---|---|---|
 | **Solo founders & freelancers** (free-zone licences) | Large and growing free-zone base (Dubai alone hosts tens of thousands of active free-zone entities) | Medium — will pay to avoid one fine | **Primary.** Tracks both personal (visa/EID) and company (licence/Ejari) docs; renewal-cost outlook is exactly their cash-flow anxiety |
 | **PRO / corporate services providers** (manage renewals for dozens of clients) | Meaningful niche with high concentration of pain | **High** — this is their operational software | **Expansion.** Multi-collection model already mirrors "one workspace per client" |
@@ -39,21 +39,21 @@ The second half of the pain is **financial**: renewals arrive as lumpy, predicta
 ### 2.2 Why the UAE specifically
 
 - **Expiry density:** residency (visa + EID) cycles every 1–2 years for nearly every resident, on top of business and vehicle documents — few markets stack this many government expiries per person.
-- **Digitized government rails (ICP/GDRFA/DED apps) handle the transaction, not the remembering.** None of them offer a unified "what do I owe renewal on, across my whole life, and when" view — that gap is Wazy's wedge.
+- **Digitized government rails (ICP/GDRFA/DED apps) handle the transaction, not the remembering.** None of them offer a unified "what do I owe renewal on, across my whole life, and when" view — that gap is Finavig's wedge.
 - **Fine schedules are public and steep**, which makes the app's core value proposition ("never pay an avoidable fine again") concrete and quantifiable.
 - **High smartphone payment culture**; consumers are habituated to paying for super-apps (Careem, Talabat Pro etc.), so a freemium utility is plausible.
 
 ## 3. Competitive landscape
 
-| Player (category) | What they do | Gap Wazy exploits |
+| Player (category) | What they do | Gap Finavig exploits |
 |---|---|---|
 | **Government super-apps** (ICP UAEICP, GDRFA Dubai, DED, RTA) | The authoritative way to renew *one* document, often with own notifications | Each silo only knows its own documents. No cross-document radar, no fees outlook, no finance layer |
 | **Calendar / reminders** (iOS/Google Calendar, Todoist) | Generic date reminders | Zero domain knowledge: no renewal windows, no urgency ladder, no fee tracking, no authority metadata |
-| **Generic expense trackers** (Money Manager, spends apps) | Budgets and categories | No documents. Wazy's wedge is that renewals are a *predictable expense stream* they don't model |
+| **Generic expense trackers** (Money Manager, spends apps) | Budgets and categories | No documents. Finavig's wedge is that renewals are a *predictable expense stream* they don't model |
 | **PRO agencies / hard-copy desk files** | Human-run renewal management for SMEs | High cost, no self-service dashboard, opaque fees |
 | **Regional SME admin tools** (Zoho etc.) | Broad ERP suites | Renewal expiry tracking is incidental, not the product; heavy for a solo founder |
 
-**Positioning statement:** *Wazy is the financial intelligence hub for life and business in the UAE — budgets, cash-flow forecasts and every licence, visa, ID and insurance countdown on one dashboard, with the money to renew it planned ahead.*
+**Positioning statement:** *Finavig is the financial intelligence hub for life and business in the UAE — budgets, cash-flow forecasts and every licence, visa, ID and insurance countdown on one dashboard, with the money to renew it planned ahead.*
 
 The defensible wedge is the **document↔finance join**: renewal fees feed a cash-flow forecast, and the forecast surfaces "you need AED 16,420 in renewal outflows in the next 90 days" — neither document trackers nor finance apps do both.
 
@@ -91,4 +91,4 @@ Adjacent revenue once trust exists: **renewal concierge** (partnered PRO filing 
 
 ## 8. Conclusion
 
-The UAE market has a dense, recurring, fine-backed set of expiry obligations and no incumbent that unifies them with the money to renew them. The pain is severe for solo founders and SMEs, chronic for expatriate households, and the current solutions (government silos, calendars, PRO agents) are all partial. Wazy's document+finance join is a credible wedge into a freemium utility with a clear expansion path into PRO/SME team workflows. The immediate next step is the validation loop described in the feasibility study (§6): a real-device pilot with 20–50 solo founders, measuring 30-day retention and the alert-to-renewal conversion rate.
+The UAE market has a dense, recurring, fine-backed set of expiry obligations and no incumbent that unifies them with the money to renew them. The pain is severe for solo founders and SMEs, chronic for expatriate households, and the current solutions (government silos, calendars, PRO agents) are all partial. Finavig's document+finance join is a credible wedge into a freemium utility with a clear expansion path into PRO/SME team workflows. The immediate next step is the validation loop described in the feasibility study (§6): a real-device pilot with 20–50 solo founders, measuring 30-day retention and the alert-to-renewal conversion rate.

@@ -1,6 +1,6 @@
-# Wazy — Feasibility Study
+# Finavig — Feasibility Study
 
-> Technical, operational, financial and legal feasibility of shipping Wazy as a product · September 2026
+> Technical, operational, financial and legal feasibility of shipping Finavig as a product · September 2026
 > Companion to [technical-documentation.md](technical-documentation.md) and [market-study.md](market-study.md)
 
 ---
@@ -110,4 +110,4 @@ The economics are dominated by the fact that the core alert engine is on-device.
 
 ## 8. Conclusion
 
-Wazy is feasible on every axis that matters at this stage: the hard software is written and tested, the operating costs are negligible, the regulatory envelope for a tracker is light as long as the product stays a tracker, and the market study identifies reachable early adopters whose pain is quantifiable in avoided fines. The single highest-leverage technical investment before scale is the server-side push path (the `reminders` table is already the ready data source) because on-device notifications are the one component the developer cannot fully control. Proceed to the §7 pilot.
+Finavig is feasible on every axis that matters at this stage: the hard software is written and tested, the operating costs are negligible, the regulatory envelope for a tracker is light as long as the product stays a tracker, and the market study identifies reachable early adopters whose pain is quantifiable in avoided fines. The single highest-leverage technical investment before scale is the server-side push path (the `reminders` table is already the ready data source) because on-device notifications are the one component the developer cannot fully control. Proceed to the §7 pilot.

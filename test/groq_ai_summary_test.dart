@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:wazy/models/subscription_tier.dart';
-import 'package:wazy/services/ai_executive_summary_service.dart';
-import 'package:wazy/services/entitlement_service.dart';
-import 'package:wazy/services/groq_api_service.dart';
+import 'package:finavig/models/subscription_tier.dart';
+import 'package:finavig/services/ai_executive_summary_service.dart';
+import 'package:finavig/services/entitlement_service.dart';
+import 'package:finavig/services/groq_api_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

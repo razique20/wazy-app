@@ -1,4 +1,4 @@
-# Wazy App — Full Flow Test Report
+# Finavig App — Full Flow Test Report
 
 **Date:** 2026-09-20 (latest) · previous run: 2026-09-19 (§6 below)
 **Branch:** `main` · **Head:** `9c4a3f7` + 2 uncommitted files (see §0.1)
@@ -21,7 +21,7 @@
 | 7 | **iOS Podfile.lock refresh** — speech_to_text 7.2.0 darwin pod + CwlCatchException | `ios/Podfile.lock` | `fac8206` pushed |
 | 8 | **Settings page reorganization** — 10 sections → 6; removed duplicate Account section, fake Danger Zone (demo-only snackbar), two dead "Coming soon" toggles, disabled WhatsApp timing row, Save button (all controls now auto-save + re-schedule OS reminders instantly) | `lib/screens/profile_screen.dart` | uncommitted |
 | 9 | **Plan-expiry fix (`expires_at`)** — app now reads the Admin Console's `expires_at` column (fallback to `plan_ends_at`) so admin-granted plan durations actually expire; previously the expiry check never fired and paid features would have lasted forever | `lib/services/entitlement_service.dart` | uncommitted |
-| 10 | **Admin console DB auto-expire trigger** — section 4 added to the console's schema: expired grants snap to Free (+ audit row) on next write | `../wazy-admin/supabase/user_tiers_schema.sql` (separate repo) | uncommitted in wazy-admin |
+| 10 | **Admin console DB auto-expire trigger** — section 4 added to the console's schema: expired grants snap to Free (+ audit row) on next write | `../wazy-admin/supabase/user_tiers_schema.sql` (separate repo) | uncommitted in finavig-admin |
 
 ### 0.2 Verification of this run
 
@@ -44,7 +44,7 @@
 
 ### 0.4 Known open items (non-blocking)
 
-1. **Trigger not yet applied to production DB** — the wazy-admin schema section 4 must be pasted once into Supabase Dashboard → SQL Editor (no DDL via API). Until then, the DB row keeps the expired tier until the next admin write; app + console already treat it as Free at read time.
+1. **Trigger not yet applied to production DB** — the finavig-admin schema section 4 must be pasted once into Supabase Dashboard → SQL Editor (no DDL via API). Until then, the DB row keeps the expired tier until the next admin write; app + console already treat it as Free at read time.
 2. **Edit Profile no longer edits the name** — the name is always derived from the sign-in email (pre-existing behavior: the sheet edit was overwritten on every load); role + phone remain editable.
 3. **WhatsApp / Email alert channels** remain unimplemented server-side; their dead UI toggles were removed from Settings.
 4. **Uncommitted work** — features #8 and #9 are still local; commit before the next pull.

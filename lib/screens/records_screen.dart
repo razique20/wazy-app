@@ -110,7 +110,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
             'Add Record',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          backgroundColor: WazyColors.violetAccent,
+          backgroundColor: FinavigColors.violetAccent,
           foregroundColor: Colors.white,
         ),
       ),

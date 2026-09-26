@@ -1,4 +1,4 @@
-// One-shot docs screenshotter for Wazy.
+// One-shot docs screenshotter for Finavig.
 // Serves build/web, seeds demo data via localStorage, captures each screen.
 // Run: node tool/capture_screens.mjs
 import http from 'node:http';

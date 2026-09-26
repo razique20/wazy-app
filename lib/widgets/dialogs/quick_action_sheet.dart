@@ -9,10 +9,9 @@ import 'natural_language_money_add_dialog.dart';
 import 'upgrade_dialog.dart';
 
 /// Universal Quick Action sheet — the "+" speed dial menu on the main nav
-/// shell. One tap from any tab reaches the four core creation flows:
+/// shell. One tap from any tab reaches the core creation flows:
 /// scan/add a document, log an expense or income (smart category matching
-/// built into [TransactionFormSheet]), the voice AI logger, and a new
-/// savings envelope.
+/// built into [TransactionFormSheet]), and the voice AI logger.
 ///
 /// Actions reuse the exact flows the individual tabs use, so quotas and
 /// entitlement gates (document limit, plan restrictions) stay enforced in
@@ -64,7 +63,7 @@ class _QuickActionSheet extends StatelessWidget {
         }
         break;
       case _QuickAction.voiceAiLog:
-        // "Talk to Wazy": type or speak natural language; the parser
+        // "Talk to Finavig": type or speak natural language; the parser
         // auto-categorizes and returns the created record, if any.
         if (!context.mounted) return;
         final created = await NaturalLanguageMoneyAddDialog.show(context);
@@ -72,30 +71,9 @@ class _QuickActionSheet extends StatelessWidget {
           await FinanceService.instance.addTransaction(created);
         }
         break;
-      case _QuickAction.createEnvelope:
-        // The EnvelopeFormSheet returns (name, target, monthly) and the
-        // caller persists — same contract as EnvelopesScreen.
-        if (!context.mounted) return;
-        final result = await showModalBottomSheet<(String, double, double)>(
-          context: context,
-          useRootNavigator: true,
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          builder: (_) => const EnvelopeFormSheet(),
-        );
-        if (result != null) {
-          await FinanceService.instance.addEnvelope(
-            result.$1,
-            result.$2,
-            result.$3,
-          );
-        }
-        break;
     }
 
-    // All four flows end by dismissing the quick menu (when it is still
+    // All flows end by dismissing the quick menu (when it is still
     // open — e.g. the scan flow pushed a route above it, leaving the sheet
     // mounted underneath).
     if (navigator.canPop()) navigator.pop();
@@ -105,7 +83,7 @@ class _QuickActionSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final sheetColor = isDark ? WazyColors.slate : Colors.white;
+    final sheetColor = isDark ? FinavigColors.slate : Colors.white;
 
     return SafeArea(
       top: false,
@@ -175,7 +153,6 @@ enum _QuickAction {
   scanDocument,
   logMoney,
   voiceAiLog,
-  createEnvelope,
 }
 
 extension _QuickActionX on _QuickAction {
@@ -187,8 +164,6 @@ extension _QuickActionX on _QuickAction {
         return Icons.receipt_long_rounded;
       case _QuickAction.voiceAiLog:
         return Icons.mic_rounded;
-      case _QuickAction.createEnvelope:
-        return Icons.savings_rounded;
     }
   }
 
@@ -200,8 +175,6 @@ extension _QuickActionX on _QuickAction {
         return 'Log Expense or Income';
       case _QuickAction.voiceAiLog:
         return 'Voice AI Log';
-      case _QuickAction.createEnvelope:
-        return 'Create Savings Envelope';
     }
   }
 
@@ -212,22 +185,18 @@ extension _QuickActionX on _QuickAction {
       case _QuickAction.logMoney:
         return 'Smart category matching included';
       case _QuickAction.voiceAiLog:
-        return 'Talk to Wazy — it does the typing';
-      case _QuickAction.createEnvelope:
-        return 'Set a target and monthly amount';
+        return 'Talk to Finavig — it does the typing';
     }
   }
 
   Color get color {
     switch (this) {
       case _QuickAction.scanDocument:
-        return WazyColors.violet;
+        return FinavigColors.violet;
       case _QuickAction.logMoney:
-        return WazyColors.violetAccent;
+        return FinavigColors.violetAccent;
       case _QuickAction.voiceAiLog:
-        return WazyColors.ink;
-      case _QuickAction.createEnvelope:
-        return WazyColors.safe;
+        return FinavigColors.ink;
     }
   }
 }

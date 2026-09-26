@@ -51,7 +51,7 @@ class _ShimmerSkeletonState extends State<ShimmerSkeleton>
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final baseColor = isDark
-        ? WazyColors.slate.withOpacity(0.4)
+        ? FinavigColors.slate.withOpacity(0.4)
         : Colors.grey.shade300;
 
     return AnimatedBuilder(
@@ -83,7 +83,7 @@ class TileSkeletonLoader extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDark ? WazyColors.slate.withOpacity(0.3) : Colors.white,
+        color: isDark ? FinavigColors.slate.withOpacity(0.3) : Colors.white,
         borderRadius: BorderRadius.circular(16),
       ),
       child: const Row(

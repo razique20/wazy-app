@@ -284,7 +284,7 @@ class _AppShellState extends State<_AppShell> {
           decoration: BoxDecoration(
             // Soft white pill on light mode, deep surface on dark — modern
             // floating dock with a diffuse shadow instead of a hard black bar.
-            color: isDark ? WazyColors.slate.withOpacity(0.92) : Colors.white,
+            color: isDark ? FinavigColors.slate.withOpacity(0.92) : Colors.white,
             borderRadius: BorderRadius.circular(30),
             boxShadow: isDark
                 ? [
@@ -294,7 +294,7 @@ class _AppShellState extends State<_AppShell> {
                       offset: const Offset(0, 8),
                     ),
                   ]
-                : WazyShadows.raised,
+                : FinavigShadows.raised,
           ),
           // Fixed height: the Center inside each item would otherwise
           // expand into the loose height constraints of the nav slot.
@@ -319,8 +319,8 @@ class _AppShellState extends State<_AppShell> {
                   showDot: _budgetStatus != null,
                   dotColor:
                       _budgetStatus?.status == BudgetAlertLevel.exceeded
-                          ? WazyColors.danger
-                          : WazyColors.warning,
+                          ? FinavigColors.danger
+                          : FinavigColors.warning,
                   onTap: () => _goBranch(1),
                 ),
                 // Universal quick action (+): scan a document, log money,
@@ -336,7 +336,7 @@ class _AppShellState extends State<_AppShell> {
                   active: widget.navigationShell.currentIndex == 2,
                   tooltip: 'Documents',
                   showDot: pendingDocs > 0,
-                  dotColor: WazyColors.danger,
+                  dotColor: FinavigColors.danger,
                   onTap: () => _goBranch(2),
                 ),
                 _NavPillItem(
@@ -392,11 +392,11 @@ class _QuickActionButton extends StatelessWidget {
                   gradient: const LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [WazyColors.violet, WazyColors.violetDark],
+                    colors: [FinavigColors.violet, FinavigColors.violetDark],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: WazyColors.violet.withOpacity(0.45),
+                      color: FinavigColors.violet.withOpacity(0.45),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -459,7 +459,7 @@ class _NavPillItem extends StatelessWidget {
                       color: active
                           ? (isDark
                               ? Colors.white.withOpacity(0.14)
-                              : WazyColors.ink)
+                              : FinavigColors.ink)
                           : Colors.transparent,
                     ),
                     child: Icon(
@@ -469,7 +469,7 @@ class _NavPillItem extends StatelessWidget {
                           ? Colors.white
                           : (isDark
                               ? Colors.white.withOpacity(0.5)
-                              : WazyColors.textMutedLight),
+                              : FinavigColors.textMutedLight),
                     ),
                   ),
                   if (showDot)
@@ -480,11 +480,11 @@ class _NavPillItem extends StatelessWidget {
                         width: 9,
                         height: 9,
                         decoration: BoxDecoration(
-                          color: dotColor ?? WazyColors.danger,
+                          color: dotColor ?? FinavigColors.danger,
                           shape: BoxShape.circle,
                           border: Border.all(
                             color: isDark
-                                ? WazyColors.slate
+                                ? FinavigColors.slate
                                 : Colors.white,
                             width: 1.5,
                           ),

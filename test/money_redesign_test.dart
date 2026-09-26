@@ -3,8 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:wazy/screens/money_screen.dart';
-import 'package:wazy/theme/app_theme.dart';
+import 'package:finavig/screens/money_screen.dart';
+import 'package:finavig/theme/app_theme.dart';
 
 void main() {
   setUp(() {
@@ -24,7 +24,7 @@ void main() {
       addTearDown(() => FlutterError.onError = original);
     }
     await tester.pumpWidget(
-      MaterialApp(theme: WazyTheme.light(), home: const MoneyScreen()),
+      MaterialApp(theme: FinavigTheme.light(), home: const MoneyScreen()),
     );
     await tester.pump(); // finance init
     await tester.pump(const Duration(seconds: 1));

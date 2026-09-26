@@ -2,7 +2,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
-/// Local reminder engine for Wazy.
+/// Local reminder engine for Finavig.
 ///
 /// Backed by [flutter_local_notifications] + `timezone`: reminders are
 /// scheduled as OS-level local notifications so they fire even when the app

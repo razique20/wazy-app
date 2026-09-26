@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:wazy/models/document_type.dart';
-import 'package:wazy/models/expiry_item.dart';
-import 'package:wazy/services/document_scanner_service.dart';
-import 'package:wazy/widgets/dialogs/renew_document_dialog.dart';
+import 'package:finavig/models/document_type.dart';
+import 'package:finavig/models/expiry_item.dart';
+import 'package:finavig/services/document_scanner_service.dart';
+import 'package:finavig/widgets/dialogs/renew_document_dialog.dart';
 
 ExpiryItem _item({
   String id = 'renew-1',

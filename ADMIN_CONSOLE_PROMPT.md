@@ -1,13 +1,13 @@
-# Wazy Admin Console — AI Generation Prompt
+# Finavig Admin Console — AI Generation Prompt
 
-> **Instructions**: Copy and paste the prompt below into ChatGPT, Claude 3.5 Sonnet, Cursor, v0, or Bolt.new to automatically generate a full-stack Web Admin Console for the **Wazy** platform.
+> **Instructions**: Copy and paste the prompt below into ChatGPT, Claude 3.5 Sonnet, Cursor, v0, or Bolt.new to automatically generate a full-stack Web Admin Console for the **Finavig** platform.
 
 ---
 
 ```markdown
 You are an expert full-stack Web Developer specializing in React, Next.js, Tailwind CSS, TypeScript, and Supabase.
 
-Build a modern, production-grade **Admin Console Dashboard** for the **Wazy** application (a personal and small-business financial budgeting & cash-flow intelligence app with document expiry tracking).
+Build a modern, production-grade **Admin Console Dashboard** for the **Finavig** application (a personal and small-business financial budgeting & cash-flow intelligence app with document expiry tracking).
 
 ---
 

@@ -529,7 +529,7 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
       if (_attachedFile?.path != null && File(_attachedFile!.path!).existsSync()) {
         try {
           final appDocDir = await getApplicationDocumentsDirectory();
-          final targetDir = Directory('${appDocDir.path}/wazy/documents/$docId');
+          final targetDir = Directory('${appDocDir.path}/finavig/documents/$docId');
           if (!targetDir.existsSync()) {
             targetDir.createSync(recursive: true);
           }

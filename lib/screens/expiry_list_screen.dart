@@ -892,7 +892,7 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
                                 avatar: Icon(
                                   isLocked ? Icons.lock_rounded : c.icon,
                                   size: 16,
-                                  color: isLocked ? WazyColors.warning : null,
+                                  color: isLocked ? FinavigColors.warning : null,
                                 ),
                                 label: Text(isLocked ? '${c.name} (Locked)' : c.name),
                                 selected: _spec.collectionId == c.id,
@@ -1029,7 +1029,7 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
       if (choice == 'csv') {
         final csv = ExpiryReport.toCsv(exportItems);
         final path = await FilePicker.platform.saveFile(
-          fileName: 'wazy-expiry-report-$stamp.csv',
+          fileName: 'finavig-expiry-report-$stamp.csv',
           bytes: Uint8List.fromList(csv.codeUnits),
         );
         if (!mounted) return;
@@ -1044,7 +1044,7 @@ class _ExpiryListScreenState extends State<ExpiryListScreen> {
         final bytes = await ExpiryReport.toPdf(exportItems);
         await Printing.sharePdf(
           bytes: Uint8List.fromList(bytes),
-          filename: 'wazy-expiry-report-$stamp.pdf',
+          filename: 'finavig-expiry-report-$stamp.pdf',
         );
       }
     } catch (_) {

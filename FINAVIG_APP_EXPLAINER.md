@@ -1,16 +1,16 @@
-# Wazy — Complete Application & Feature Guide 🚀
+# Finavig — Complete Application & Feature Guide 🚀
 
 > **AI-Powered Financial Intelligence, Cash-Flow Forecasting, and GCC Document Compliance Management.**
 
 ---
 
-## 📌 1. What is Wazy?
+## 📌 1. What is Finavig?
 
-**Wazy** is a comprehensive mobile and web application designed specifically for **personal users, freelancers, and businesses in the GCC (Gulf Cooperation Council)** region. It bridges the gap between **financial budgeting/cash-flow intelligence** and **document compliance management**.
+**Finavig** is a comprehensive mobile and web application designed specifically for **personal users, freelancers, and businesses in the GCC (Gulf Cooperation Council)** region. It bridges the gap between **financial budgeting/cash-flow intelligence** and **document compliance management**.
 
 In the GCC, unmanaged document expiries (such as trade licences, visas, Emirates IDs, or vehicle registrations) lead to immediate government fines, impoundment, or frozen bank accounts. At the same time, unpredictable renewal fees can destabilize cash flow if not planned in advance.
 
-Wazy solves this problem by combining:
+Finavig solves this problem by combining:
 1. **Document Expiry & Fine Prevention**: Tracking expiries, calculating estimated renewal costs, and forecasting government penalties.
 2. **Financial Ledger & Cash-Flow Intelligence**: Tracking income, expenses, category budgets, savings envelopes, and 90-day cash forecasts.
 3. **Groq AI Engine**: Generating unified executive summaries and goal-driven AI budget plans with tier quota controls.
@@ -20,7 +20,7 @@ Wazy solves this problem by combining:
 
 ## 🌐 2. Multi-GCC Currency & Regionalization
 
-Wazy natively supports all 6 GCC national currencies and adjusts all calculations, money parsing, and AI prompts dynamically based on the user's active country selection:
+Finavig natively supports all 6 GCC national currencies and adjusts all calculations, money parsing, and AI prompts dynamically based on the user's active country selection:
 
 | Country | Flag | Currency Code | Supported Authority Catalogs |
 | :--- | :---: | :---: | :--- |
@@ -56,7 +56,7 @@ Wazy natively supports all 6 GCC national currencies and adjusts all calculation
 
 ### 🧠 C. Groq AI Engine (AI Summary & AI Planner)
 
-Wazy includes an AI engine powered by **Groq** for high-speed financial analysis:
+Finavig includes an AI engine powered by **Groq** for high-speed financial analysis:
 
 1. **AI Executive Summary**:
    - Merges active document expiries, pending renewal fees, monthly spending patterns, and net cash position into a concise 2–3 sentence executive narrative.
@@ -77,7 +77,7 @@ Wazy includes an AI engine powered by **Groq** for high-speed financial analysis
 ---
 
 ### ⚡ D. Smart Automation & AI Helpers
-- **Natural Language Quick-Add (Text & Voice)**: Type or speak prompts (e.g. *"Paid 1,200 SAR for office rent today"*) and Wazy automatically parses the amount, currency, category, date, and transaction kind.
+- **Natural Language Quick-Add (Text & Voice)**: Type or speak prompts (e.g. *"Paid 1,200 SAR for office rent today"*) and Finavig automatically parses the amount, currency, category, date, and transaction kind.
 - **Smart Auto-Categorization**: Pure Dart engine combining fuzzy Levenshtein distance matching, GCC vendor dictionaries (*Talabat, Salik, DEWA, Etisalat, Aramenco*), and persistent user habit learning.
 - **Bill Spike & Anomaly Detection**: Moving average statistical engine that detects unusual expense spikes (e.g. *DEWA bill 35% higher than 3-month average*).
 
@@ -85,7 +85,7 @@ Wazy includes an AI engine powered by **Groq** for high-speed financial analysis
 
 ## 💳 4. Subscription Tiers & Entitlements
 
-Wazy enforces a 3-tier monetization framework (`EntitlementService`):
+Finavig enforces a 3-tier monetization framework (`EntitlementService`):
 
 | Feature | 🆓 Free Tier | ⚡ Plus Tier | 🏢 Business Tier |
 | :--- | :---: | :---: | :---: |
@@ -101,7 +101,7 @@ Wazy enforces a 3-tier monetization framework (`EntitlementService`):
 
 ```
    ┌─────────────────────────────────────────────────────────────┐
-   │                        Wazy UI Layer                        │
+   │                        Finavig UI Layer                        │
    │   (Home, Documents, Money Ledger, AI Summary, AI Planner)   │
    └──────────────────────────────┬──────────────────────────────┘
                                   │
@@ -162,4 +162,4 @@ Run the following idempotent scripts in Supabase SQL Editor:
 4. `supabase/ai_quota_schema.sql` (AI quota usage database table)
 
 ---
-*Document created for Wazy Release v1.0.0.*
+*Document created for Finavig Release v1.0.0.*

@@ -1,4 +1,4 @@
-# Wazy — Production Readiness Report
+# Finavig — Production Readiness Report
 
 _Generated: 2026-09-12 · Audit scope: full `lib/`, `android/`, `ios/`, `test/`, CI/config_
 
@@ -53,7 +53,7 @@ signing configured, and basic tests pass.
 | H4 | **`main.dart` pre-warms services with unhandled futures** | `lib/main.dart` `_prewarmServices()` | An init failure = crash or broken state with no surface |
 | H5 | **Untrusted external image host** (`picsum.photos`) hardcoded for company logo | `lib/screens/home_screen.dart:140`, `lib/widgets/indicators/company_header.dart:38` | Broken/random images in production; no `NSAppTransportSecurity`/Cleartext consideration |
 | H6 | **No CI/CD pipeline** (no `.github/workflows/`, no fastlane, no Codemagic) | — | Manual builds invite signing/config drift |
-| H7 | **Placeholder app name** `uae_business_radar` as `android:label` and `CFBundleDisplayName` | `AndroidManifest.xml`, `Info.plist` | Reviewers/users see an underscore-style internal name (resolved: app renamed to Wazy) |
+| H7 | **Placeholder app name** `uae_business_radar` as `android:label` and `CFBundleDisplayName` | `AndroidManifest.xml`, `Info.plist` | Reviewers/users see an underscore-style internal name (resolved: app renamed to Finavig) |
 
 ### 🟡 Medium priority (polish)
 

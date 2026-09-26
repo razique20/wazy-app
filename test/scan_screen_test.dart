@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:wazy/models/document_type.dart';
-import 'package:wazy/models/expiry_item.dart';
-import 'package:wazy/screens/document_scan_screen.dart';
+import 'package:finavig/models/document_type.dart';
+import 'package:finavig/models/expiry_item.dart';
+import 'package:finavig/screens/document_scan_screen.dart';
 
 void main() {
   testWidgets('DocumentScanScreen renders its form without throwing', (

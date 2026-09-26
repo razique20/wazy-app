@@ -37,12 +37,12 @@ class EmptyStateIllustration extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final ink = isDark ? WazyColors.textSecondary : WazyColors.textSecondaryLight;
+    final ink = isDark ? FinavigColors.textSecondary : FinavigColors.textSecondaryLight;
     final tint =
-        isDark ? WazyColors.cyanAccent.withOpacity(0.85) : WazyColors.navyPrimary;
+        isDark ? FinavigColors.cyanAccent.withOpacity(0.85) : FinavigColors.navyPrimary;
     final gold =
         isDark ? const Color(0xFFF6C453) : const Color(0xFFE0A82E);
-    final backdrop = isDark ? WazyColors.slate : WazyColors.cloud;
+    final backdrop = isDark ? FinavigColors.slate : FinavigColors.cloud;
 
     return Container(
       width: size,

@@ -1,5 +1,5 @@
 -- ============================================================
--- Wazy — Supabase schema (collections model)
+-- Finavig — Supabase schema (collections model)
 -- Run this whole file in Supabase Dashboard → SQL Editor → New query.
 --
 -- TWO OPTIONS:

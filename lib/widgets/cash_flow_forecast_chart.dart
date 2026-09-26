@@ -35,7 +35,7 @@ class _CashFlowForecastCardState extends State<CashFlowForecastCard> {
         : null;
 
     final netPositive = forecast.netChange >= 0;
-    final primaryLineColor = netPositive ? WazyColors.safe : WazyColors.warning;
+    final primaryLineColor = netPositive ? FinavigColors.safe : FinavigColors.warning;
 
     return Card(
       elevation: 0,
@@ -57,12 +57,12 @@ class _CashFlowForecastCardState extends State<CashFlowForecastCard> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: WazyColors.violetAccent.withAlpha(30),
+                    color: FinavigColors.violetAccent.withAlpha(30),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
                     Icons.show_chart_rounded,
-                    color: WazyColors.violetAccent,
+                    color: FinavigColors.violetAccent,
                     size: 20,
                   ),
                 ),
@@ -98,7 +98,7 @@ class _CashFlowForecastCardState extends State<CashFlowForecastCard> {
                     label: 'Projected Balance (90D)',
                     value: MoneyFormat.aed(forecast.projectedEndBalance),
                     badgeText: '${netPositive ? '+' : ''}${forecast.percentChange.toStringAsFixed(1)}%',
-                    badgeColor: netPositive ? WazyColors.safe : WazyColors.danger,
+                    badgeColor: netPositive ? FinavigColors.safe : FinavigColors.danger,
                     isPositive: netPositive,
                   ),
                 ),
@@ -108,7 +108,7 @@ class _CashFlowForecastCardState extends State<CashFlowForecastCard> {
                     label: 'Renewal Outflows',
                     value: MoneyFormat.aed(forecast.totalRenewalOutflow),
                     badgeText: forecast.totalRenewalOutflow > 0 ? 'Document Fees' : 'No Outflows',
-                    badgeColor: WazyColors.caution,
+                    badgeColor: FinavigColors.caution,
                   ),
                 ),
               ],
@@ -119,11 +119,11 @@ class _CashFlowForecastCardState extends State<CashFlowForecastCard> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: (forecast.lowestBalance < 0 ? WazyColors.danger : WazyColors.caution)
+                  color: (forecast.lowestBalance < 0 ? FinavigColors.danger : FinavigColors.caution)
                       .withAlpha(25),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: (forecast.lowestBalance < 0 ? WazyColors.danger : WazyColors.caution)
+                    color: (forecast.lowestBalance < 0 ? FinavigColors.danger : FinavigColors.caution)
                         .withAlpha(80),
                   ),
                 ),
@@ -133,7 +133,7 @@ class _CashFlowForecastCardState extends State<CashFlowForecastCard> {
                       forecast.lowestBalance < 0
                           ? Icons.warning_amber_rounded
                           : Icons.info_outline_rounded,
-                      color: forecast.lowestBalance < 0 ? WazyColors.danger : WazyColors.caution,
+                      color: forecast.lowestBalance < 0 ? FinavigColors.danger : FinavigColors.caution,
                       size: 18,
                     ),
                     const SizedBox(width: 8),
@@ -143,7 +143,7 @@ class _CashFlowForecastCardState extends State<CashFlowForecastCard> {
                             ? 'Warning: Projected negative balance of ${MoneyFormat.aed(forecast.lowestBalance)} on ${DateFormat('d MMM').format(forecast.lowestBalanceDate)}'
                             : 'Lowest projected point: ${MoneyFormat.aed(forecast.lowestBalance)} on ${DateFormat('d MMM').format(forecast.lowestBalanceDate)}',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: forecast.lowestBalance < 0 ? WazyColors.danger : theme.colorScheme.onSurface,
+                          color: forecast.lowestBalance < 0 ? FinavigColors.danger : theme.colorScheme.onSurface,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -247,7 +247,7 @@ class _CashFlowForecastCardState extends State<CashFlowForecastCard> {
                           MoneyFormat.aed(selectedPoint.balance),
                           style: theme.textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: selectedPoint.balance >= 0 ? WazyColors.safe : WazyColors.danger,
+                            color: selectedPoint.balance >= 0 ? FinavigColors.safe : FinavigColors.danger,
                           ),
                         ),
                       ],
@@ -275,8 +275,8 @@ class _CashFlowForecastCardState extends State<CashFlowForecastCard> {
                                         : Icons.arrow_outward_rounded),
                                 size: 14,
                                 color: ev.isDocumentRenewal
-                                    ? WazyColors.caution
-                                    : (ev.kind == FinanceKind.income ? WazyColors.safe : Colors.red),
+                                    ? FinavigColors.caution
+                                    : (ev.kind == FinanceKind.income ? FinavigColors.safe : Colors.red),
                               ),
                               const SizedBox(width: 6),
                               Expanded(
@@ -290,7 +290,7 @@ class _CashFlowForecastCardState extends State<CashFlowForecastCard> {
                                 '${ev.kind == FinanceKind.income ? '+' : '-'}${MoneyFormat.aed(ev.amount)}',
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   fontWeight: FontWeight.w600,
-                                  color: ev.kind == FinanceKind.income ? WazyColors.safe : Colors.red,
+                                  color: ev.kind == FinanceKind.income ? FinavigColors.safe : Colors.red,
                                 ),
                               ),
                             ],
@@ -500,7 +500,7 @@ class _CashFlowChartPainter extends CustomPainter {
 
     // Draw Renewal Event Dot Markers along line
     final renewalDotPaint = Paint()
-      ..color = WazyColors.caution
+      ..color = FinavigColors.caution
       ..style = PaintingStyle.fill;
     final renewalDotBorderPaint = Paint()
       ..color = Colors.white

@@ -18,7 +18,7 @@ class BentoIconTile extends StatelessWidget {
   const BentoIconTile({
     super.key,
     required this.icon,
-    this.color = WazyColors.indigo,
+    this.color = FinavigColors.indigo,
     this.tint,
     this.size = 44,
     this.iconSize = 21,

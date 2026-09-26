@@ -146,7 +146,7 @@ class _MonthlySummaryCardState extends State<MonthlySummaryCard> {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: WazyColors.violetAccent.withAlpha(25),
+                      color: FinavigColors.violetAccent.withAlpha(25),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: const Text(
@@ -154,7 +154,7 @@ class _MonthlySummaryCardState extends State<MonthlySummaryCard> {
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
-                        color: WazyColors.violetAccent,
+                        color: FinavigColors.violetAccent,
                       ),
                     ),
                   ),
@@ -234,11 +234,11 @@ class _MonthlySummaryCardState extends State<MonthlySummaryCard> {
                               size: 16,
                               color: switch (insight.kind) {
                                 MonthlyInsightKind.spendingMove =>
-                                  WazyColors.danger,
+                                  FinavigColors.danger,
                                 MonthlyInsightKind.budgetAlert =>
-                                  WazyColors.warning,
-                                MonthlyInsightKind.savings => WazyColors.safe,
-                                MonthlyInsightKind.positive => WazyColors.safe,
+                                  FinavigColors.warning,
+                                MonthlyInsightKind.savings => FinavigColors.safe,
+                                MonthlyInsightKind.positive => FinavigColors.safe,
                               },
                             ),
                             const SizedBox(width: 8),

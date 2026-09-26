@@ -79,7 +79,7 @@ class ParsedNaturalLanguageItem {
   }
 }
 
-/// Service that converts unstructured natural language text into structured Wazy document parameters.
+/// Service that converts unstructured natural language text into structured Finavig document parameters.
 class NaturalLanguageParserService {
   static final NaturalLanguageParserService instance =
       NaturalLanguageParserService._();

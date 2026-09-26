@@ -1,5 +1,5 @@
-name: wazy
-description: Wazy — AI-powered financial budgeting & cash-flow intelligence for personal and business use, with document expiry tracking and renewal alerts.
+name: finavig
+description: Finavig — AI-powered financial budgeting & cash-flow intelligence for personal and business use, with document expiry tracking and renewal alerts.
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -26,6 +26,7 @@ dependencies:
   speech_to_text: ^7.5.0
   http: ^1.2.0
   url_launcher: ^6.3.2
+  share_plus: ^12.0.2
 
 dev_dependencies:
   flutter_test:

@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 // ──────────────────────────────────────────────────────────────────────────────
-// WazyColors — the single source of truth for every color in the app.
+// FinavigColors — the single source of truth for every color in the app.
 //
 // Modern bento palette: a calm indigo accent, ink hero backdrops, a soft
 // off-white canvas in light mode and deep desaturated surfaces in dark mode.
@@ -13,8 +13,8 @@ import 'package:google_fonts/google_fonts.dart';
 // existing call site picks up the new look automatically.
 // ──────────────────────────────────────────────────────────────────────────────
 
-class WazyColors {
-  WazyColors._();
+class FinavigColors {
+  FinavigColors._();
 
   // ── Brand accents ───────────────────────────────────────────────────────
   static const Color accent = Color(0xFF4F46E5); // indigo-600
@@ -133,11 +133,11 @@ class WazyColors {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// WazyRadius — the corner-radius scale. Everything sits on a 16–28px grid.
+// FinavigRadius — the corner-radius scale. Everything sits on a 16–28px grid.
 // ──────────────────────────────────────────────────────────────────────────────
 
-class WazyRadius {
-  WazyRadius._();
+class FinavigRadius {
+  FinavigRadius._();
 
   static const double card = 20;
   static const double tile = 16;
@@ -148,13 +148,13 @@ class WazyRadius {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// WazyShadows — soft, diffuse elevation. Light mode lifts cards with a whisper
+// FinavigShadows — soft, diffuse elevation. Light mode lifts cards with a whisper
 // shadow; dark mode relies on hairline borders instead (shadow-on-dark reads
 // as noise).
 // ──────────────────────────────────────────────────────────────────────────────
 
-class WazyShadows {
-  WazyShadows._();
+class FinavigShadows {
+  FinavigShadows._();
 
   static const List<BoxShadow> soft = [
     BoxShadow(
@@ -178,11 +178,11 @@ class WazyShadows {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// WazyGradients — reusable gradient definitions.
+// FinavigGradients — reusable gradient definitions.
 // ──────────────────────────────────────────────────────────────────────────────
 
-class WazyGradients {
-  WazyGradients._();
+class FinavigGradients {
+  FinavigGradients._();
 
   static const LinearGradient primary = LinearGradient(
     colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
@@ -194,13 +194,13 @@ class WazyGradients {
   static const LinearGradient darkHeader = splash;
 
   static const LinearGradient surfaceDark = LinearGradient(
-    colors: [WazyColors.obsidian, WazyColors.charcoal],
+    colors: [FinavigColors.obsidian, FinavigColors.charcoal],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
 
   static const LinearGradient surfaceLight = LinearGradient(
-    colors: [WazyColors.snowWhite, WazyColors.cloud],
+    colors: [FinavigColors.snowWhite, FinavigColors.cloud],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
@@ -219,10 +219,10 @@ class WazyGradients {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// WazyGlass — a helper widget for frosted glass containers.
+// FinavigGlass — a helper widget for frosted glass containers.
 // ──────────────────────────────────────────────────────────────────────────────
 
-class WazyGlass extends StatelessWidget {
+class FinavigGlass extends StatelessWidget {
   final Widget child;
   final BorderRadius borderRadius;
   final EdgeInsetsGeometry? padding;
@@ -230,7 +230,7 @@ class WazyGlass extends StatelessWidget {
   final double blur;
   final Color? borderColor;
 
-  const WazyGlass({
+  const FinavigGlass({
     super.key,
     required this.child,
     this.borderRadius = const BorderRadius.all(Radius.circular(16)),
@@ -247,7 +247,7 @@ class WazyGlass extends StatelessWidget {
         ? Colors.white.withOpacity(opacity)
         : Colors.white.withOpacity(0.72);
     final border = borderColor ??
-        (isDark ? WazyColors.glassBorderWhite : WazyColors.glassBorderBlack);
+        (isDark ? FinavigColors.glassBorderWhite : FinavigColors.glassBorderBlack);
 
     return ClipRRect(
       borderRadius: borderRadius,
@@ -268,11 +268,11 @@ class WazyGlass extends StatelessWidget {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// WazyTheme — full ThemeData builders.
+// FinavigTheme — full ThemeData builders.
 // ──────────────────────────────────────────────────────────────────────────────
 
-class WazyTheme {
-  WazyTheme._();
+class FinavigTheme {
+  FinavigTheme._();
 
   // google_fonts hardcodes `fontFamilyFallback: ['Inter']` on
   // every style it returns, which blocks the engine's automatic fallback to
@@ -375,7 +375,7 @@ class WazyTheme {
   static ThemeData dark() {
     const scheme = ColorScheme(
       brightness: Brightness.dark,
-      primary: WazyColors.accentBright,
+      primary: FinavigColors.accentBright,
       onPrimary: Color(0xFF101223),
       primaryContainer: Color(0xFF312E81),
       onPrimaryContainer: Color(0xFFE0E7FF),
@@ -391,15 +391,15 @@ class WazyTheme {
       onError: Color(0xFF450A0A),
       errorContainer: Color(0xFF7F1D1D),
       onErrorContainer: Color(0xFFFECACA),
-      surface: WazyColors.obsidian,
-      onSurface: WazyColors.textPrimary,
-      surfaceContainerHighest: WazyColors.slate,
+      surface: FinavigColors.obsidian,
+      onSurface: FinavigColors.textPrimary,
+      surfaceContainerHighest: FinavigColors.slate,
       outline: Color(0xFF6B7280),
-      outlineVariant: WazyColors.slateLight,
+      outlineVariant: FinavigColors.slateLight,
       shadow: Colors.black,
       scrim: Colors.black,
-      inverseSurface: WazyColors.snowWhite,
-      onInverseSurface: WazyColors.obsidian,
+      inverseSurface: FinavigColors.snowWhite,
+      onInverseSurface: FinavigColors.obsidian,
     );
 
     return ThemeData(
@@ -407,28 +407,28 @@ class WazyTheme {
       brightness: Brightness.dark,
       colorScheme: scheme,
       textTheme: _textTheme(Brightness.dark),
-      scaffoldBackgroundColor: WazyColors.obsidian,
-      canvasColor: WazyColors.charcoal,
-      cardColor: WazyColors.charcoal,
+      scaffoldBackgroundColor: FinavigColors.obsidian,
+      canvasColor: FinavigColors.charcoal,
+      cardColor: FinavigColors.charcoal,
       dividerColor: Colors.white.withOpacity(0.06),
       splashColor: Colors.white.withOpacity(0.06),
       highlightColor: Colors.white.withOpacity(0.04),
       appBarTheme: AppBarTheme(
-        backgroundColor: WazyColors.obsidian,
-        foregroundColor: WazyColors.textPrimary,
+        backgroundColor: FinavigColors.obsidian,
+        foregroundColor: FinavigColors.textPrimary,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
         titleTextStyle: _withEmojiFallback(GoogleFonts.inter(
           fontSize: 18,
           fontWeight: FontWeight.w700,
-          color: WazyColors.textPrimary,
+          color: FinavigColors.textPrimary,
           letterSpacing: -0.4,
         )),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: WazyColors.obsidian.withOpacity(0.85),
-        indicatorColor: WazyColors.accentBright.withOpacity(0.16),
+        backgroundColor: FinavigColors.obsidian.withOpacity(0.85),
+        indicatorColor: FinavigColors.accentBright.withOpacity(0.16),
         labelTextStyle: WidgetStatePropertyAll(
           _withEmojiFallback(GoogleFonts.inter(
             fontSize: 11,
@@ -437,51 +437,51 @@ class WazyTheme {
         ),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return const IconThemeData(color: WazyColors.accentBright, size: 22);
+            return const IconThemeData(color: FinavigColors.accentBright, size: 22);
           }
-          return const IconThemeData(color: WazyColors.textMuted, size: 22);
+          return const IconThemeData(color: FinavigColors.textMuted, size: 22);
         }),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
       ),
       cardTheme: CardThemeData(
-        color: WazyColors.charcoal,
+        color: FinavigColors.charcoal,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(WazyRadius.card),
+          borderRadius: BorderRadius.circular(FinavigRadius.card),
         ),
       ),
       listTileTheme: ListTileThemeData(
-        iconColor: WazyColors.textSecondary,
+        iconColor: FinavigColors.textSecondary,
         titleTextStyle: _withEmojiFallback(GoogleFonts.inter(
           fontSize: 14,
           fontWeight: FontWeight.w600,
-          color: WazyColors.textPrimary,
+          color: FinavigColors.textPrimary,
         )),
         subtitleTextStyle: _withEmojiFallback(GoogleFonts.inter(
           fontSize: 12,
           fontWeight: FontWeight.w400,
-          color: WazyColors.textSecondary,
+          color: FinavigColors.textSecondary,
         )),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: WazyColors.slate.withOpacity(0.55),
+        fillColor: FinavigColors.slate.withOpacity(0.55),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(WazyRadius.field),
+          borderRadius: BorderRadius.circular(FinavigRadius.field),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(WazyRadius.field),
+          borderRadius: BorderRadius.circular(FinavigRadius.field),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(WazyRadius.field),
-          borderSide: const BorderSide(color: WazyColors.accentBright, width: 1.5),
+          borderRadius: BorderRadius.circular(FinavigRadius.field),
+          borderSide: const BorderSide(color: FinavigColors.accentBright, width: 1.5),
         ),
-        labelStyle: const TextStyle(color: WazyColors.textSecondary, fontSize: 13),
-        hintStyle: const TextStyle(color: WazyColors.textMuted, fontSize: 13),
+        labelStyle: const TextStyle(color: FinavigColors.textSecondary, fontSize: 13),
+        hintStyle: const TextStyle(color: FinavigColors.textMuted, fontSize: 13),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
@@ -493,7 +493,7 @@ class WazyTheme {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(WazyRadius.button),
+            borderRadius: BorderRadius.circular(FinavigRadius.button),
           ),
           textStyle: _withEmojiFallback(GoogleFonts.inter(
             fontWeight: FontWeight.w700,
@@ -503,13 +503,13 @@ class WazyTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: WazyColors.accent,
+          backgroundColor: FinavigColors.accent,
           foregroundColor: Colors.white,
           minimumSize: const Size(0, 48),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(WazyRadius.button),
+            borderRadius: BorderRadius.circular(FinavigRadius.button),
           ),
           textStyle: _withEmojiFallback(GoogleFonts.inter(
             fontWeight: FontWeight.w700,
@@ -532,40 +532,40 @@ class WazyTheme {
         elevation: 0,
         highlightElevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(WazyRadius.card),
+          borderRadius: BorderRadius.circular(FinavigRadius.card),
         ),
       ),
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: WazyColors.charcoal,
-        modalBackgroundColor: WazyColors.charcoal,
+        backgroundColor: FinavigColors.charcoal,
+        modalBackgroundColor: FinavigColors.charcoal,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(WazyRadius.sheet)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(FinavigRadius.sheet)),
         ),
         dragHandleColor: Colors.white.withOpacity(0.2),
         dragHandleSize: const Size(40, 4),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: WazyColors.slate,
+        backgroundColor: FinavigColors.slate,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(WazyRadius.dialog),
+          borderRadius: BorderRadius.circular(FinavigRadius.dialog),
         ),
         elevation: 0,
         titleTextStyle: _withEmojiFallback(GoogleFonts.inter(
           fontSize: 17,
           fontWeight: FontWeight.w700,
-          color: WazyColors.textPrimary,
+          color: FinavigColors.textPrimary,
         )),
         contentTextStyle: _withEmojiFallback(GoogleFonts.inter(
           fontSize: 13.5,
           height: 1.5,
-          color: WazyColors.textSecondary,
+          color: FinavigColors.textSecondary,
         )),
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: WazyColors.slateLight,
+        backgroundColor: FinavigColors.slateLight,
         contentTextStyle:
             _withEmojiFallback(GoogleFonts.inter(
-          color: WazyColors.textPrimary,
+          color: FinavigColors.textPrimary,
           fontSize: 13,
         )),
         shape: RoundedRectangleBorder(
@@ -574,11 +574,11 @@ class WazyTheme {
         behavior: SnackBarBehavior.floating,
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: WazyColors.slate,
-        selectedColor: WazyColors.accentBright.withOpacity(0.18),
+        backgroundColor: FinavigColors.slate,
+        selectedColor: FinavigColors.accentBright.withOpacity(0.18),
         checkmarkColor: scheme.secondary,
         labelStyle: _withEmojiFallback(
-            GoogleFonts.inter(fontSize: 12, color: WazyColors.textPrimary, fontWeight: FontWeight.w500)),
+            GoogleFonts.inter(fontSize: 12, color: FinavigColors.textPrimary, fontWeight: FontWeight.w500)),
         secondaryLabelStyle: _withEmojiFallback(GoogleFonts.inter(
             fontSize: 12, color: scheme.secondary, fontWeight: FontWeight.w600)),
         shape: RoundedRectangleBorder(
@@ -587,7 +587,7 @@ class WazyTheme {
         side: BorderSide(color: Colors.white.withOpacity(0.06)),
       ),
       progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: WazyColors.accentBright,
+        color: FinavigColors.accentBright,
       ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
@@ -603,32 +603,32 @@ class WazyTheme {
   static ThemeData light() {
     const scheme = ColorScheme(
       brightness: Brightness.light,
-      primary: WazyColors.accent,
+      primary: FinavigColors.accent,
       onPrimary: Colors.white,
-      primaryContainer: WazyColors.accentSoft,
+      primaryContainer: FinavigColors.accentSoft,
       onPrimaryContainer: Color(0xFF312E81),
       secondary: Color(0xFF6366F1),
       onSecondary: Colors.white,
-      secondaryContainer: WazyColors.accentSoft,
+      secondaryContainer: FinavigColors.accentSoft,
       onSecondaryContainer: Color(0xFF3730A3),
       tertiary: Color(0xFF0D9488),
       onTertiary: Colors.white,
       tertiaryContainer: Color(0xFFCCFBF1),
       onTertiaryContainer: Color(0xFF134E4A),
-      error: WazyColors.dangerDark,
+      error: FinavigColors.dangerDark,
       onError: Colors.white,
-      errorContainer: WazyColors.dangerBgLight,
+      errorContainer: FinavigColors.dangerBgLight,
       onErrorContainer: Color(0xFF7F1D1D),
       surface: Colors.white,
-      onSurface: WazyColors.textPrimaryLight,
-      onSurfaceVariant: WazyColors.textSecondaryLight,
-      surfaceContainerHighest: WazyColors.cloud,
+      onSurface: FinavigColors.textPrimaryLight,
+      onSurfaceVariant: FinavigColors.textSecondaryLight,
+      surfaceContainerHighest: FinavigColors.cloud,
       outline: Color(0xFF667085),
       outlineVariant: Color(0xFFE5E8EF),
       shadow: Color(0x1A000000),
       scrim: Colors.black,
-      inverseSurface: WazyColors.charcoal,
-      onInverseSurface: WazyColors.snowWhite,
+      inverseSurface: FinavigColors.charcoal,
+      onInverseSurface: FinavigColors.snowWhite,
     );
 
     return ThemeData(
@@ -636,28 +636,28 @@ class WazyTheme {
       brightness: Brightness.light,
       colorScheme: scheme,
       textTheme: _textTheme(Brightness.light),
-      scaffoldBackgroundColor: WazyColors.snowWhite,
+      scaffoldBackgroundColor: FinavigColors.snowWhite,
       canvasColor: Colors.white,
       cardColor: Colors.white,
-      dividerColor: WazyColors.mist,
+      dividerColor: FinavigColors.mist,
       splashColor: scheme.primary.withOpacity(0.05),
       highlightColor: scheme.primary.withOpacity(0.03),
       appBarTheme: AppBarTheme(
-        backgroundColor: WazyColors.snowWhite,
-        foregroundColor: WazyColors.textPrimaryLight,
+        backgroundColor: FinavigColors.snowWhite,
+        foregroundColor: FinavigColors.textPrimaryLight,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
         titleTextStyle: _withEmojiFallback(GoogleFonts.inter(
           fontSize: 18,
           fontWeight: FontWeight.w700,
-          color: WazyColors.textPrimaryLight,
+          color: FinavigColors.textPrimaryLight,
           letterSpacing: -0.4,
         )),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: Colors.white.withOpacity(0.92),
-        indicatorColor: WazyColors.accentSoft,
+        indicatorColor: FinavigColors.accentSoft,
         labelTextStyle: WidgetStatePropertyAll(
           _withEmojiFallback(GoogleFonts.inter(
             fontSize: 11,
@@ -668,7 +668,7 @@ class WazyTheme {
           if (states.contains(WidgetState.selected)) {
             return IconThemeData(color: scheme.primary, size: 22);
           }
-          return const IconThemeData(color: WazyColors.textMutedLight, size: 22);
+          return const IconThemeData(color: FinavigColors.textMutedLight, size: 22);
         }),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         elevation: 0,
@@ -678,39 +678,39 @@ class WazyTheme {
         color: Colors.white,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(WazyRadius.card),
+          borderRadius: BorderRadius.circular(FinavigRadius.card),
         ),
       ),
       listTileTheme: ListTileThemeData(
-        iconColor: WazyColors.textSecondaryLight,
+        iconColor: FinavigColors.textSecondaryLight,
         titleTextStyle: _withEmojiFallback(GoogleFonts.inter(
           fontSize: 14,
           fontWeight: FontWeight.w600,
-          color: WazyColors.textPrimaryLight,
+          color: FinavigColors.textPrimaryLight,
         )),
         subtitleTextStyle: _withEmojiFallback(GoogleFonts.inter(
           fontSize: 12,
           fontWeight: FontWeight.w400,
-          color: WazyColors.textSecondaryLight,
+          color: FinavigColors.textSecondaryLight,
         )),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: WazyColors.cloud,
+        fillColor: FinavigColors.cloud,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(WazyRadius.field),
+          borderRadius: BorderRadius.circular(FinavigRadius.field),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(WazyRadius.field),
+          borderRadius: BorderRadius.circular(FinavigRadius.field),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(WazyRadius.field),
+          borderRadius: BorderRadius.circular(FinavigRadius.field),
           borderSide: BorderSide(color: scheme.primary, width: 1.5),
         ),
-        labelStyle: const TextStyle(color: WazyColors.textSecondaryLight, fontSize: 13),
-        hintStyle: const TextStyle(color: WazyColors.textMutedLight, fontSize: 13),
+        labelStyle: const TextStyle(color: FinavigColors.textSecondaryLight, fontSize: 13),
+        hintStyle: const TextStyle(color: FinavigColors.textMutedLight, fontSize: 13),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
@@ -722,7 +722,7 @@ class WazyTheme {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(WazyRadius.button),
+            borderRadius: BorderRadius.circular(FinavigRadius.button),
           ),
           textStyle: _withEmojiFallback(GoogleFonts.inter(
             fontWeight: FontWeight.w700,
@@ -732,13 +732,13 @@ class WazyTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: WazyColors.ink,
+          backgroundColor: FinavigColors.ink,
           foregroundColor: Colors.white,
           minimumSize: const Size(0, 48),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(WazyRadius.button),
+            borderRadius: BorderRadius.circular(FinavigRadius.button),
           ),
           textStyle: _withEmojiFallback(GoogleFonts.inter(
             fontWeight: FontWeight.w700,
@@ -756,19 +756,19 @@ class WazyTheme {
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: WazyColors.ink,
+        backgroundColor: FinavigColors.ink,
         foregroundColor: Colors.white,
         elevation: 0,
         highlightElevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(WazyRadius.card),
+          borderRadius: BorderRadius.circular(FinavigRadius.card),
         ),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: Colors.white,
         modalBackgroundColor: Colors.white,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(WazyRadius.sheet)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(FinavigRadius.sheet)),
         ),
         dragHandleColor: Color(0xFFE2E5EC),
         dragHandleSize: Size(40, 4),
@@ -776,22 +776,22 @@ class WazyTheme {
       dialogTheme: DialogThemeData(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(WazyRadius.dialog),
+          borderRadius: BorderRadius.circular(FinavigRadius.dialog),
         ),
         elevation: 0,
         titleTextStyle: _withEmojiFallback(GoogleFonts.inter(
           fontSize: 17,
           fontWeight: FontWeight.w700,
-          color: WazyColors.textPrimaryLight,
+          color: FinavigColors.textPrimaryLight,
         )),
         contentTextStyle: _withEmojiFallback(GoogleFonts.inter(
           fontSize: 13.5,
           height: 1.5,
-          color: WazyColors.textSecondaryLight,
+          color: FinavigColors.textSecondaryLight,
         )),
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: WazyColors.ink,
+        backgroundColor: FinavigColors.ink,
         contentTextStyle:
             _withEmojiFallback(GoogleFonts.inter(
           color: Colors.white,
@@ -803,11 +803,11 @@ class WazyTheme {
         behavior: SnackBarBehavior.floating,
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: WazyColors.cloud,
-        selectedColor: WazyColors.accentSoft,
+        backgroundColor: FinavigColors.cloud,
+        selectedColor: FinavigColors.accentSoft,
         checkmarkColor: scheme.primary,
         labelStyle: _withEmojiFallback(GoogleFonts.inter(
-            fontSize: 12, color: WazyColors.textPrimaryLight, fontWeight: FontWeight.w500)),
+            fontSize: 12, color: FinavigColors.textPrimaryLight, fontWeight: FontWeight.w500)),
         secondaryLabelStyle: _withEmojiFallback(GoogleFonts.inter(
             fontSize: 12, color: scheme.primary, fontWeight: FontWeight.w600)),
         shape: RoundedRectangleBorder(

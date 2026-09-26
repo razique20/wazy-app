@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:wazy/models/document_type.dart';
-import 'package:wazy/models/expiry_item.dart';
-import 'package:wazy/services/doc_sync.dart';
-import 'package:wazy/services/expiry_report.dart';
+import 'package:finavig/models/document_type.dart';
+import 'package:finavig/models/expiry_item.dart';
+import 'package:finavig/services/doc_sync.dart';
+import 'package:finavig/services/expiry_report.dart';
 
 ExpiryItem _item({
   required String id,

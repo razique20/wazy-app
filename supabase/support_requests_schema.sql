@@ -1,5 +1,5 @@
 -- ============================================================
--- Wazy — Support & Tracking Requests Schema
+-- Finavig — Support & Tracking Requests Schema
 -- Run this script in Supabase Dashboard → SQL Editor → New query
 -- ============================================================
 

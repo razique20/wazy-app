@@ -4,14 +4,14 @@ import 'router.dart';
 import 'services/theme_service.dart';
 import 'theme/app_theme.dart';
 
-class WazyApp extends StatefulWidget {
-  const WazyApp({super.key});
+class FinavigApp extends StatefulWidget {
+  const FinavigApp({super.key});
 
   @override
-  State<WazyApp> createState() => _WazyAppState();
+  State<FinavigApp> createState() => _FinavigAppState();
 }
 
-class _WazyAppState extends State<WazyApp> {
+class _FinavigAppState extends State<FinavigApp> {
   @override
   void initState() {
     super.initState();
@@ -29,10 +29,10 @@ class _WazyAppState extends State<WazyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'Wazy',
+      title: 'Finavig',
       debugShowCheckedModeBanner: false,
-      theme: WazyTheme.light(),
-      darkTheme: WazyTheme.dark(),
+      theme: FinavigTheme.light(),
+      darkTheme: FinavigTheme.dark(),
       themeMode: ThemeService.instance.mode,
       routerConfig: router,
     );

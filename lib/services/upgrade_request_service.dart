@@ -9,7 +9,7 @@ import 'auth_service.dart';
 import 'entitlement_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// Sends tier-upgrade requests to the Wazy team by email.
+/// Sends tier-upgrade requests to the Finavig team by email.
 ///
 /// The one-button paywall flow: builds a pre-filled mailto: URI addressed to
 /// [supportEmail] containing the user id, account email, current tier,
@@ -76,12 +76,12 @@ class UpgradeRequestService {
     final now = DateTime.now().toUtc();
 
     final subject =
-        'Wazy upgrade request — ${target.name} (${duration.id}) — user $userId';
+        'Finavig upgrade request — ${target.name} (${duration.id}) — user $userId';
 
     final body = StringBuffer()
-      ..writeln('Hello Wazy team,')
+      ..writeln('Hello Finavig team,')
       ..writeln()
-      ..writeln('I would like to upgrade my Wazy subscription.')
+      ..writeln('I would like to upgrade my Finavig subscription.')
       ..writeln()
       ..writeln('— Request —')
       ..writeln('Requested tier: ${target.name}')
@@ -100,7 +100,7 @@ class UpgradeRequestService {
       ..writeln('Platform: $platform')
       ..writeln('Requested at: ${now.toIso8601String()}')
       ..writeln()
-      ..writeln('(Sent from the Wazy app upgrade dialog.)');
+      ..writeln('(Sent from the Finavig app upgrade dialog.)');
 
     final uri = Uri(
       scheme: 'mailto',

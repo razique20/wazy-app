@@ -11,7 +11,7 @@
     <!-- Voice-to-Record: microphone access + system speech recognition service -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <application
-        android:label="Wazy"
+        android:label="Finavig"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

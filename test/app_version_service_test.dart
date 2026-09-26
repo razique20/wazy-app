@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:wazy/services/app_version_service.dart';
+import 'package:finavig/services/app_version_service.dart';
 
 void main() {
   group('AppVersionService Unit Tests', () {

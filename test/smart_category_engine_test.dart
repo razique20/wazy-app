@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:wazy/models/finance.dart';
-import 'package:wazy/services/smart_category_engine.dart';
+import 'package:finavig/models/finance.dart';
+import 'package:finavig/services/smart_category_engine.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

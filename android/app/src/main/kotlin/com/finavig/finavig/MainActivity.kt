@@ -1,4 +1,4 @@
-package com.wazy.wazy
+package com.finavig.finavig
 
 import io.flutter.embedding.android.FlutterActivity
 

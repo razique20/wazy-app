@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:wazy/models/document_type.dart';
-import 'package:wazy/models/expiry_item.dart';
-import 'package:wazy/models/finance.dart';
+import 'package:finavig/models/document_type.dart';
+import 'package:finavig/models/expiry_item.dart';
+import 'package:finavig/models/finance.dart';
 
 void main() {
   final testNow = DateTime(2026, 9, 16);

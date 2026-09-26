@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:wazy/models/document_type.dart';
-import 'package:wazy/screens/document_scan_screen.dart';
-import 'package:wazy/services/uae_document_ocr_service.dart';
+import 'package:finavig/models/document_type.dart';
+import 'package:finavig/screens/document_scan_screen.dart';
+import 'package:finavig/services/uae_document_ocr_service.dart';
 
 void main() {
   group('UaeDocumentOcrService Text Parsing Tests', () {

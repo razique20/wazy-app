@@ -18,7 +18,7 @@ class DocumentListTile extends StatelessWidget {
   });
 
   Color _color() {
-    return WazyColors.urgencyColor(item.daysRemaining, isActive: item.isActive);
+    return FinavigColors.urgencyColor(item.daysRemaining, isActive: item.isActive);
   }
 
   String _label() {

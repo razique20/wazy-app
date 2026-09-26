@@ -1,5 +1,5 @@
 -- ============================================================
--- Wazy — Finance module schema (Tier 1 + 2 budget tracking)
+-- Finavig — Finance module schema (Tier 1 + 2 budget tracking)
 -- Adds: finance_transactions, category_budgets, savings_envelopes.
 --
 -- Safe to re-run: every statement is idempotent.

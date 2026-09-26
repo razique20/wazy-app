@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:wazy/screens/documents_screen.dart';
-import 'package:wazy/services/document_scanner_service.dart';
-import 'package:wazy/theme/app_theme.dart';
+import 'package:finavig/screens/documents_screen.dart';
+import 'package:finavig/services/document_scanner_service.dart';
+import 'package:finavig/theme/app_theme.dart';
 
 void main() {
   setUp(() {
@@ -17,7 +17,7 @@ void main() {
 
   Future<void> pumpDocuments(WidgetTester tester) async {
     await tester.pumpWidget(
-      MaterialApp(theme: WazyTheme.light(), home: const DocumentsScreen()),
+      MaterialApp(theme: FinavigTheme.light(), home: const DocumentsScreen()),
     );
     // _loadData: collection + items from the (empty) local cache.
     await tester.pump();

@@ -25,12 +25,12 @@ Future<void> showAiBudgetPlanSheet(BuildContext context) {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: WazyColors.violetAccent.withAlpha(28),
+                    color: FinavigColors.violetAccent.withAlpha(28),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(
                     Icons.auto_awesome_rounded,
-                    color: WazyColors.violetAccent,
+                    color: FinavigColors.violetAccent,
                     size: 22,
                   ),
                 ),
@@ -45,7 +45,7 @@ Future<void> showAiBudgetPlanSheet(BuildContext context) {
             ),
             const SizedBox(height: 10),
             Text(
-              'Tell Wazy what you want to buy or save for and Groq AI builds a '
+              'Tell Finavig what you want to buy or save for and Groq AI builds a '
               'month-by-month plan from your real budgets, envelopes and '
               'spending history.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -63,7 +63,7 @@ Future<void> showAiBudgetPlanSheet(BuildContext context) {
                 icon: const Icon(Icons.arrow_forward_rounded, size: 18),
                 label: const Text('Open AI Budget Planner'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: WazyColors.navyPrimary,
+                  backgroundColor: FinavigColors.navyPrimary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(

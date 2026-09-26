@@ -94,10 +94,10 @@ class _AlertsRemindersScreenState extends State<AlertsRemindersScreen> {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: WazyColors.indigo.withOpacity(isDark ? 0.18 : 0.08),
+                    color: FinavigColors.indigo.withOpacity(isDark ? 0.18 : 0.08),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: WazyColors.indigo.withOpacity(0.25),
+                      color: FinavigColors.indigo.withOpacity(0.25),
                     ),
                   ),
                   child: Row(
@@ -105,12 +105,12 @@ class _AlertsRemindersScreenState extends State<AlertsRemindersScreen> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: WazyColors.indigo.withOpacity(0.2),
+                          color: FinavigColors.indigo.withOpacity(0.2),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
                           Icons.notifications_active_rounded,
-                          color: WazyColors.indigo,
+                          color: FinavigColors.indigo,
                           size: 20,
                         ),
                       ),
@@ -137,7 +137,7 @@ class _AlertsRemindersScreenState extends State<AlertsRemindersScreen> {
                     _buildSwitchTile(
                       theme: theme,
                       icon: Icons.notifications_rounded,
-                      iconColor: WazyColors.indigo,
+                      iconColor: FinavigColors.indigo,
                       title: 'Renewal notifications',
                       subtitle: 'Remind me before documents expire',
                       value: _notificationsEnabled,
@@ -164,7 +164,7 @@ class _AlertsRemindersScreenState extends State<AlertsRemindersScreen> {
                     _buildSwitchTile(
                       theme: theme,
                       icon: Icons.account_balance_wallet_rounded,
-                      iconColor: WazyColors.emerald,
+                      iconColor: FinavigColors.emerald,
                       title: 'Budget alerts',
                       subtitle: 'Warn when spending nears a category budget',
                       value: _budgetAlertsEnabled,
@@ -256,7 +256,7 @@ class _AlertsRemindersScreenState extends State<AlertsRemindersScreen> {
     required List<Widget> children,
   }) {
     return Material(
-      color: isDark ? WazyColors.slate.withOpacity(0.5) : Colors.white,
+      color: isDark ? FinavigColors.slate.withOpacity(0.5) : Colors.white,
       borderRadius: BorderRadius.circular(16),
       clipBehavior: Clip.antiAlias,
       child: Column(children: children),

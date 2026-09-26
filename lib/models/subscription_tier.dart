@@ -1,4 +1,4 @@
-/// Wazy Track 1 monetization tiers (see MONETIZATION.md — Freemium SaaS).
+/// Finavig Track 1 monetization tiers (see MONETIZATION.md — Freemium SaaS).
 ///
 /// The tier is granted server-side by the admin (via the `user_tiers` table
 /// managed with the service-role key in the Admin Console). The app only

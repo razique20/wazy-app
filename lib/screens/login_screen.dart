@@ -12,7 +12,7 @@ import '../services/finance_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/dialogs/legal_info_dialogs.dart';
 
-/// Redesigned Login & Sign-up screen adhering to Wazy's Bento Design System.
+/// Redesigned Login & Sign-up screen adhering to Finavig's Bento Design System.
 ///
 /// Features a dark navy hero header with logo & GCC capabilities, over a smooth
 /// rounded surface sheet containing the sign-in / sign-up mode switcher,
@@ -147,13 +147,13 @@ class _LoginScreenState extends State<LoginScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(WazyRadius.dialog),
+          borderRadius: BorderRadius.circular(FinavigRadius.dialog),
         ),
-        backgroundColor: isDark ? WazyColors.charcoal : Colors.white,
+        backgroundColor: isDark ? FinavigColors.charcoal : Colors.white,
         title: Text(
           'Reset Password',
           style: TextStyle(
-            color: isDark ? WazyColors.textPrimary : WazyColors.textPrimaryLight,
+            color: isDark ? FinavigColors.textPrimary : FinavigColors.textPrimaryLight,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -165,7 +165,7 @@ class _LoginScreenState extends State<LoginScreen> {
               'Enter your email address and we\'ll send you a link to reset your password.',
               style: TextStyle(
                 fontSize: 13.5,
-                color: isDark ? WazyColors.textSecondary : WazyColors.textSecondaryLight,
+                color: isDark ? FinavigColors.textSecondary : FinavigColors.textSecondaryLight,
               ),
             ),
             const SizedBox(height: 16),
@@ -173,7 +173,7 @@ class _LoginScreenState extends State<LoginScreen> {
               controller: resetEmailController,
               keyboardType: TextInputType.emailAddress,
               style: TextStyle(
-                color: isDark ? WazyColors.textPrimary : WazyColors.textPrimaryLight,
+                color: isDark ? FinavigColors.textPrimary : FinavigColors.textPrimaryLight,
               ),
               decoration: _fieldDecoration(
                 isDark,
@@ -189,16 +189,16 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Text(
               'Cancel',
               style: TextStyle(
-                color: isDark ? WazyColors.textSecondary : WazyColors.textSecondaryLight,
+                color: isDark ? FinavigColors.textSecondary : FinavigColors.textSecondaryLight,
               ),
             ),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(
-              backgroundColor: WazyColors.violet,
+              backgroundColor: FinavigColors.violet,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(WazyRadius.button),
+                borderRadius: BorderRadius.circular(FinavigRadius.button),
               ),
             ),
             child: const Text('Send Reset Link'),
@@ -238,7 +238,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(_friendlyError(e.toString())),
-            backgroundColor: WazyColors.danger,
+            backgroundColor: FinavigColors.danger,
           ),
         );
       }
@@ -249,14 +249,14 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final surface = isDark ? WazyColors.charcoal : Colors.white;
+    final surface = isDark ? FinavigColors.charcoal : Colors.white;
     final subColor =
-        isDark ? WazyColors.textSecondary : WazyColors.textSecondaryLight;
-    final ctaColor = WazyColors.violet;
-    final primaryAccent = isDark ? WazyColors.textPrimary : WazyColors.ink;
+        isDark ? FinavigColors.textSecondary : FinavigColors.textSecondaryLight;
+    final ctaColor = FinavigColors.violet;
+    final primaryAccent = isDark ? FinavigColors.textPrimary : FinavigColors.ink;
 
     return Scaffold(
-      backgroundColor: isDark ? WazyColors.obsidian : WazyColors.ink,
+      backgroundColor: isDark ? FinavigColors.obsidian : FinavigColors.ink,
       body: Column(
         children: [
           // ── Brand hero header ──────────────────────────────────────────
@@ -277,7 +277,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Row(
                         children: [
                           const Text(
-                            'Wazy',
+                            'Finavig',
                             style: TextStyle(
                               fontSize: 30,
                               fontWeight: FontWeight.w800,
@@ -292,10 +292,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: WazyColors.accentBright.withOpacity(0.18),
-                              borderRadius: BorderRadius.circular(WazyRadius.tile),
+                              color: FinavigColors.accentBright.withOpacity(0.18),
+                              borderRadius: BorderRadius.circular(FinavigRadius.tile),
                               border: Border.all(
-                                color: WazyColors.accentBright.withOpacity(0.35),
+                                color: FinavigColors.accentBright.withOpacity(0.35),
                               ),
                             ),
                             child: const Text(
@@ -303,7 +303,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                color: WazyColors.accentBright,
+                                color: FinavigColors.accentBright,
                               ),
                             ),
                           ),
@@ -341,9 +341,9 @@ class _LoginScreenState extends State<LoginScreen> {
               decoration: BoxDecoration(
                 color: surface,
                 borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(WazyRadius.sheet),
+                  top: Radius.circular(FinavigRadius.sheet),
                 ),
-                boxShadow: WazyShadows.adaptive(isDark),
+                boxShadow: FinavigShadows.adaptive(isDark),
               ),
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -417,8 +417,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   : Icons.visibility_rounded,
                               size: 20,
                               color: isDark
-                                  ? WazyColors.textSecondary
-                                  : WazyColors.textSecondaryLight,
+                                  ? FinavigColors.textSecondary
+                                  : FinavigColors.textSecondaryLight,
                             ),
                             onPressed: () {
                               setState(() {
@@ -465,7 +465,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           initialValue: _selectedCountry,
                           isExpanded: true,
                           dropdownColor:
-                              isDark ? WazyColors.slate : Colors.white,
+                              isDark ? FinavigColors.slate : Colors.white,
                           style: TextStyle(color: _fieldTextColor(isDark)),
                           decoration: _fieldDecoration(
                             isDark,
@@ -541,11 +541,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: isDark
-                                ? WazyColors.dangerBg
-                                : WazyColors.dangerBgLight,
-                            borderRadius: BorderRadius.circular(WazyRadius.tile),
+                                ? FinavigColors.dangerBg
+                                : FinavigColors.dangerBgLight,
+                            borderRadius: BorderRadius.circular(FinavigRadius.tile),
                             border: Border.all(
-                              color: WazyColors.danger.withOpacity(0.3),
+                              color: FinavigColors.danger.withOpacity(0.3),
                             ),
                           ),
                           child: Row(
@@ -553,7 +553,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               const Icon(
                                 Icons.error_outline_rounded,
                                 size: 18,
-                                color: WazyColors.danger,
+                                color: FinavigColors.danger,
                               ),
                               const SizedBox(width: 8),
                               Expanded(
@@ -561,7 +561,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   _error!,
                                   style: const TextStyle(
                                     fontSize: 13,
-                                    color: WazyColors.danger,
+                                    color: FinavigColors.danger,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -578,8 +578,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         height: 52,
                         child: DecoratedBox(
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(WazyRadius.button),
-                            boxShadow: WazyShadows.adaptive(isDark),
+                            borderRadius: BorderRadius.circular(FinavigRadius.button),
+                            boxShadow: FinavigShadows.adaptive(isDark),
                           ),
                           child: FilledButton(
                             onPressed: _busy ? null : _submit,
@@ -589,7 +589,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               elevation: 0,
                               shape: RoundedRectangleBorder(
                                 borderRadius:
-                                    BorderRadius.circular(WazyRadius.button),
+                                    BorderRadius.circular(FinavigRadius.button),
                               ),
                             ),
                             child: _busy
@@ -688,8 +688,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: TextStyle(
                           fontSize: 11.5,
                           color: isDark
-                              ? WazyColors.textMuted
-                              : WazyColors.textMutedLight,
+                              ? FinavigColors.textMuted
+                              : FinavigColors.textMutedLight,
                         ),
                       ),
                     ],
@@ -704,7 +704,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Color _fieldTextColor(bool isDark) =>
-      isDark ? WazyColors.textPrimary : WazyColors.textPrimaryLight;
+      isDark ? FinavigColors.textPrimary : FinavigColors.textPrimaryLight;
 
   InputDecoration _fieldDecoration(
     bool isDark, {
@@ -713,7 +713,7 @@ class _LoginScreenState extends State<LoginScreen> {
     String? helperText,
     Widget? suffixIcon,
   }) {
-    final accent = isDark ? WazyColors.textPrimary : WazyColors.ink;
+    final accent = isDark ? FinavigColors.textPrimary : FinavigColors.ink;
     return InputDecoration(
       labelText: label,
       helperText: helperText,
@@ -722,18 +722,18 @@ class _LoginScreenState extends State<LoginScreen> {
       filled: true,
       fillColor: isDark
           ? Colors.white.withOpacity(0.06)
-          : WazyColors.cloud,
+          : FinavigColors.cloud,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(WazyRadius.field),
+        borderRadius: BorderRadius.circular(FinavigRadius.field),
         borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(WazyRadius.field),
+        borderRadius: BorderRadius.circular(FinavigRadius.field),
         borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(WazyRadius.field),
+        borderRadius: BorderRadius.circular(FinavigRadius.field),
         borderSide: BorderSide(color: accent, width: 1.5),
       ),
     );
@@ -770,7 +770,7 @@ class _HeaderDecor extends StatelessWidget {
           const Positioned(
             left: 0,
             top: 0,
-            child: _Sparkle(size: 13, color: WazyColors.accentBright),
+            child: _Sparkle(size: 13, color: FinavigColors.accentBright),
           ),
           Positioned(
             right: 34,
@@ -856,9 +856,9 @@ class _ModeToggle extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final trackColor = isDark
         ? Colors.white.withOpacity(0.06)
-        : WazyColors.cloud;
+        : FinavigColors.cloud;
     final inactiveColor =
-        isDark ? WazyColors.textSecondary : WazyColors.textSecondaryLight;
+        isDark ? FinavigColors.textSecondary : FinavigColors.textSecondaryLight;
 
     Widget segment(String label, bool value, IconData icon) {
       final selected = isSignUp == value;
@@ -873,8 +873,8 @@ class _ModeToggle extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: selected ? activeColor : Colors.transparent,
-              borderRadius: BorderRadius.circular(WazyRadius.tile),
-              boxShadow: selected ? WazyShadows.soft : null,
+              borderRadius: BorderRadius.circular(FinavigRadius.tile),
+              boxShadow: selected ? FinavigShadows.soft : null,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -905,7 +905,7 @@ class _ModeToggle extends StatelessWidget {
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: trackColor,
-        borderRadius: BorderRadius.circular(WazyRadius.tile + 2),
+        borderRadius: BorderRadius.circular(FinavigRadius.tile + 2),
       ),
       child: Row(
         children: [

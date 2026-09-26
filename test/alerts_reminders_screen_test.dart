@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:wazy/screens/alerts_reminders_screen.dart';
-import 'package:wazy/theme/app_theme.dart';
+import 'package:finavig/screens/alerts_reminders_screen.dart';
+import 'package:finavig/theme/app_theme.dart';
 
 void main() {
   setUp(() {
@@ -12,7 +12,7 @@ void main() {
   Future<void> pumpAlertsReminders(WidgetTester tester) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: WazyTheme.light(),
+        theme: FinavigTheme.light(),
         home: const AlertsRemindersScreen(),
       ),
     );

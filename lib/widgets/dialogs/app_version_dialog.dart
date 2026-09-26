@@ -110,8 +110,8 @@ class AppVersionDialog extends StatelessWidget {
         children: [
           Text(
             isForce
-                ? 'Your installed version (v${result.currentVersion}) is no longer supported. Please update to v${result.latestVersion} to continue using Wazy.'
-                : 'A new version of Wazy (v${result.latestVersion}) is available. Your installed version is v${result.currentVersion}.',
+                ? 'Your installed version (v${result.currentVersion}) is no longer supported. Please update to v${result.latestVersion} to continue using Finavig.'
+                : 'A new version of Finavig (v${result.latestVersion}) is available. Your installed version is v${result.currentVersion}.',
             style: theme.textTheme.bodyMedium,
           ),
           if (result.releaseNotes != null && result.releaseNotes!.isNotEmpty) ...[

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:wazy/widgets/dialogs/faq_sheet.dart';
+import 'package:finavig/widgets/dialogs/faq_sheet.dart';
 
 void main() {
   testWidgets('showFaqSheet renders header, search, category chips and FAQ questions', (tester) async {
@@ -28,7 +28,7 @@ void main() {
 
     // Verify Title and Subtitle
     expect(find.text('Frequently Asked Questions'), findsOneWidget);
-    expect(find.text('Everything you need to know about Wazy'), findsOneWidget);
+    expect(find.text('Everything you need to know about Finavig'), findsOneWidget);
 
     // Verify Search Bar hint
     expect(find.text('Search questions, features, or keywords...'), findsOneWidget);
@@ -40,14 +40,14 @@ void main() {
     expect(find.widgetWithText(ChoiceChip, 'AI & Voice'), findsOneWidget);
 
     // Verify FAQ items present
-    expect(find.text('How does Wazy track document expiries?'), findsOneWidget);
+    expect(find.text('How does Finavig track document expiries?'), findsOneWidget);
 
     // Filter by category 'Money'
     await tester.tap(find.widgetWithText(ChoiceChip, 'Money'));
     await tester.pumpAndSettle();
 
     expect(find.text('How does Smart Category matching work?'), findsOneWidget);
-    expect(find.text('How does Wazy track document expiries?'), findsNothing);
+    expect(find.text('How does Finavig track document expiries?'), findsNothing);
 
     // Search query filtering
     await tester.enterText(find.byType(TextField), 'spike');

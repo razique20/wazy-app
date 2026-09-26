@@ -1,6 +1,6 @@
-# Wazy App — UI/UX & Performance Optimization Roadmap
+# Finavig App — UI/UX & Performance Optimization Roadmap
 
-This document outlines key architectural, visual, and interaction enhancements designed to make **Wazy** feel **frictionless, lightning-fast, and premium** across all devices.
+This document outlines key architectural, visual, and interaction enhancements designed to make **Finavig** feel **frictionless, lightning-fast, and premium** across all devices.
 
 ---
 
@@ -16,18 +16,18 @@ This document outlines key architectural, visual, and interaction enhancements d
 * **Implemented:** A violet **Universal Action Button (`+`)** sits at the center of the floating nav pill (`_QuickActionButton` in `lib/router.dart`). It opens `showQuickActionSheet` (`lib/widgets/dialogs/quick_action_sheet.dart`), a 1-tap quick menu:
   * 📄 **Scan / Add Document** — Free-tier quota enforced, then the full-screen scanner.
   * 💸 **Log Expense or Income** — `TransactionFormSheet` with smart category matching.
-  * 🎙️ **Voice AI Log (Talk to Wazy)** — Natural language + voice input, auto-categorized.
+  * 🎙️ **Voice AI Log (Talk to Finavig)** — Natural language + voice input, auto-categorized.
   * ✉️ **Create Savings Envelope** — Instant target allocation via `EnvelopeFormSheet`.
 * **Impact:** 1-tap access to every core feature from anywhere in the app; entitlement gates stay enforced by reusing the same flows as the tabs.
 
 ---
 
-## 3. 📄 Document Details: Full-Screen Pinch-to-Zoom & Quick Share
-* **Current Experience:** Uploaded document scans and PDF receipts render inside a fixed rectangular preview box in `DocumentDetailScreen`.
-* **Optimization:**
-  * **Interactive Full-Screen Viewer:** Tapping the preview opens a full-screen pinch-to-zoom modal with double-tap zoom.
-  * **One-Tap Export & Share:** Add a direct "Share Document File" button so users can instantly send their scanned Emirates ID / Ejari / Mulkiya via WhatsApp or Mail.
-* **Impact:** Turns Wazy into a true professional document scanner & manager.
+## 3. 📄 Document Details: Full-Screen Pinch-to-Zoom & Quick Share *(implemented)*
+* **Was:** Uploaded document scans and PDF receipts rendered inside a fixed rectangular preview box in `DocumentDetailScreen`.
+* **Implemented:**
+  * **Interactive Full-Screen Viewer:** Tapping *View* (or *Details*) opens `_FullScreenImageViewer` (`lib/screens/document_detail_screen.dart`) — a black-out full-screen modal with pinch-to-zoom (1×–5×), double-tap-to-zoom at the tapped point, and smooth fade-in.
+  * **One-Tap Export & Share:** A *Share* action on the attachment card, the viewer's app bar, and the non-image info sheet calls `SharePlus.instance.share` (`share_plus`) so users can instantly send their scanned Emirates ID / Ejari / Mulkiya via WhatsApp or Mail. Cloud (URL) attachments share the link; missing local files show a helpful "re-upload on this device" sheet.
+* **Impact:** Turns Finavig into a true professional document scanner & manager.
 
 ---
 
@@ -38,7 +38,7 @@ This document outlines key architectural, visual, and interaction enhancements d
 
 ---
 
-## 5. 🎙️ Unified "Ask Wazy AI" Universal Voice Assistant
+## 5. 🎙️ Unified "Ask Finavig AI" Universal Voice Assistant
 * **Current Experience:** Separate dialogs exist for Document Natural Language add and Money Natural Language add.
 * **Optimization:** Merge into one **Universal AI Voice Sheet**. Users can speak naturally:
   * *"Log DEWA bill of 450 AED"* $\rightarrow$ auto-categorized into Utilities.
@@ -52,5 +52,5 @@ This document outlines key architectural, visual, and interaction enhancements d
 Select an optimization to implement:
 1. **Shimmer Skeleton Loaders** for Home, Documents, and Money tabs.
 2. ~~**Universal Quick Action Speed Dial (`+`)** button.~~ ✅ Done — see feature #2 above.
-3. **Full-Screen Pinch-to-Zoom Viewer & Quick Share** in Document Details.
+3. ~~**Full-Screen Pinch-to-Zoom Viewer & Quick Share** in Document Details.~~ ✅ Done — see feature #3 above.
 4. **Money Tab Performance Modularization**.

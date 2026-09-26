@@ -1,8 +1,8 @@
-# Wazy — Documentation
+# Finavig — Documentation
 
-Everything you need to understand, run, and evaluate Wazy.
+Everything you need to understand, run, and evaluate Finavig.
 
-> **Wazy** is an AI-powered financial budgeting & cash-flow intelligence app with built-in document expiry tracking, built for the UAE: plan budgets, forecast cash, and keep every trade licence, visa, Emirates ID, insurance and subscription countdown — and the money to renew it — on one dashboard.
+> **Finavig** is an AI-powered financial budgeting & cash-flow intelligence app with built-in document expiry tracking, built for the UAE: plan budgets, forecast cash, and keep every trade licence, visa, Emirates ID, insurance and subscription countdown — and the money to renew it — on one dashboard.
 
 ## 📚 Documents
 

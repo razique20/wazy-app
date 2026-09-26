@@ -3,14 +3,14 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:wazy/models/document_collection.dart';
-import 'package:wazy/models/document_type.dart';
-import 'package:wazy/models/expiry_item.dart';
-import 'package:wazy/screens/expiry_list_screen.dart';
-import 'package:wazy/screens/global_search_screen.dart';
-import 'package:wazy/services/document_scanner_service.dart';
-import 'package:wazy/services/entitlement_service.dart';
-import 'package:wazy/services/expiry_report.dart';
+import 'package:finavig/models/document_collection.dart';
+import 'package:finavig/models/document_type.dart';
+import 'package:finavig/models/expiry_item.dart';
+import 'package:finavig/screens/expiry_list_screen.dart';
+import 'package:finavig/screens/global_search_screen.dart';
+import 'package:finavig/services/document_scanner_service.dart';
+import 'package:finavig/services/entitlement_service.dart';
+import 'package:finavig/services/expiry_report.dart';
 
 ExpiryItem _item({
   required String id,

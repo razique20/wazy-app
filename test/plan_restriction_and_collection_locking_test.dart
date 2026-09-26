@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:wazy/models/document_collection.dart';
-import 'package:wazy/models/subscription_tier.dart';
-import 'package:wazy/screens/home_screen.dart';
-import 'package:wazy/screens/profile_screen.dart';
-import 'package:wazy/services/collection_service.dart';
-import 'package:wazy/services/entitlement_service.dart';
-import 'package:wazy/theme/app_theme.dart';
-import 'package:wazy/widgets/dialogs/upgrade_dialog.dart';
+import 'package:finavig/models/document_collection.dart';
+import 'package:finavig/models/subscription_tier.dart';
+import 'package:finavig/screens/home_screen.dart';
+import 'package:finavig/screens/profile_screen.dart';
+import 'package:finavig/services/collection_service.dart';
+import 'package:finavig/services/entitlement_service.dart';
+import 'package:finavig/theme/app_theme.dart';
+import 'package:finavig/widgets/dialogs/upgrade_dialog.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -133,7 +133,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          theme: WazyTheme.light(),
+          theme: FinavigTheme.light(),
           home: const ProfileScreen(),
         ),
       );
@@ -151,7 +151,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          theme: WazyTheme.light(),
+          theme: FinavigTheme.light(),
           home: const HomeScreen(),
         ),
       );

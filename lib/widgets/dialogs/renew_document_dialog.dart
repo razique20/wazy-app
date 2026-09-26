@@ -254,7 +254,7 @@ Future<String?> saveRenewalReplacementFile(
 
   try {
     final appDocDir = await getApplicationDocumentsDirectory();
-    final targetDir = Directory('${appDocDir.path}/wazy/documents/${item.id}');
+    final targetDir = Directory('${appDocDir.path}/finavig/documents/${item.id}');
     if (!targetDir.existsSync()) {
       targetDir.createSync(recursive: true);
     }

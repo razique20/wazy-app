@@ -15,7 +15,7 @@ extension FinanceKindX on FinanceKind {
   Color get color => this == FinanceKind.expense ? Colors.red : Colors.green;
 }
 
-/// Spending categories. `renewals` is the category Wazy auto-uses when a
+/// Spending categories. `renewals` is the category Finavig auto-uses when a
 /// renewal payment is logged from the outlook section.
 enum FinanceCategory {
   renewals,

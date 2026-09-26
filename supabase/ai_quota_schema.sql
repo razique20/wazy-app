@@ -1,5 +1,5 @@
 -- ============================================================
--- Wazy — AI Quota Usage Schema (Supabase Database Tracking)
+-- Finavig — AI Quota Usage Schema (Supabase Database Tracking)
 -- Run this script in Supabase Dashboard → SQL Editor → New query
 -- ============================================================
 

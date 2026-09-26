@@ -202,8 +202,8 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       // Ink backdrop behind the hero; the content sheet covers the rest.
       // Same backdrop colors as the redesigned Home tab.
       backgroundColor: isDark
-          ? WazyColors.obsidian
-          : WazyColors.ink,
+          ? FinavigColors.obsidian
+          : FinavigColors.ink,
       body: SafeArea(
         bottom: false,
         child: RefreshIndicator(
@@ -392,7 +392,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       child: TextField(
         onChanged: (v) => setState(() => _query = v),
         style: TextStyle(
-          color: isDark ? WazyColors.textPrimary : WazyColors.textPrimaryLight,
+          color: isDark ? FinavigColors.textPrimary : FinavigColors.textPrimaryLight,
           fontSize: 14,
           fontWeight: FontWeight.w500,
         ),
@@ -400,7 +400,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
           isDense: true,
           hintText: 'Search documents…',
           hintStyle: TextStyle(
-            color: isDark ? WazyColors.textMuted : WazyColors.textMutedLight,
+            color: isDark ? FinavigColors.textMuted : FinavigColors.textMutedLight,
             fontSize: 14,
             fontWeight: FontWeight.w400,
           ),
@@ -408,8 +408,8 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
             Icons.search_rounded,
             size: 20,
             color: isDark
-                ? WazyColors.textSecondary
-                : WazyColors.textSecondaryLight,
+                ? FinavigColors.textSecondary
+                : FinavigColors.textSecondaryLight,
           ),
           suffixIcon: _query.isEmpty
               ? null
@@ -418,18 +418,18 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                     Icons.close_rounded,
                     size: 18,
                     color: isDark
-                        ? WazyColors.textSecondary
-                        : WazyColors.textSecondaryLight,
+                        ? FinavigColors.textSecondary
+                        : FinavigColors.textSecondaryLight,
                   ),
                   onPressed: () => setState(() => _query = ''),
                 ),
           filled: true,
           fillColor: isDark
-              ? WazyColors.slate.withOpacity(0.55)
-              : WazyColors.cloud,
+              ? FinavigColors.slate.withOpacity(0.55)
+              : FinavigColors.cloud,
           contentPadding: EdgeInsets.zero,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(WazyRadius.field),
+            borderRadius: BorderRadius.circular(FinavigRadius.field),
             borderSide: BorderSide.none,
           ),
         ),
@@ -539,7 +539,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
   ) {
     final isDark = theme.brightness == Brightness.dark;
     final tileBg = isDark
-        ? WazyColors.slate.withOpacity(0.5)
+        ? FinavigColors.slate.withOpacity(0.5)
         : Colors.white;
     final pending = urgency.pendingActions.length;
     final nextDue = _nextDue;
@@ -557,8 +557,8 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
               value: nextDue == null
                   ? '—'
                   : '${nextDue.displayName} · ${nextDue.daysRemaining}d',
-              iconColor: WazyColors.orange,
-              tint: WazyColors.orangeTint,
+              iconColor: FinavigColors.orange,
+              tint: FinavigColors.orangeTint,
               onDark: isDark,
             ),
           ),
@@ -572,8 +572,8 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
               value: _totalUpcomingFees > 0
                   ? MoneyFormat.aed(_totalUpcomingFees)
                   : '—',
-              iconColor: WazyColors.teal,
-              tint: WazyColors.tealTint,
+              iconColor: FinavigColors.teal,
+              tint: FinavigColors.tealTint,
               onDark: isDark,
             ),
           ),
@@ -596,7 +596,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: tileBg,
-        borderRadius: BorderRadius.circular(WazyRadius.card),
+        borderRadius: BorderRadius.circular(FinavigRadius.card),
       ),
       child: Row(
         children: [
@@ -882,10 +882,10 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
           '$label ($count)',
           style: TextStyle(
             color: selected
-                ? (isDark ? WazyColors.cyanSecondary : WazyColors.navyPrimary)
+                ? (isDark ? FinavigColors.cyanSecondary : FinavigColors.navyPrimary)
                 : (isDark
-                      ? WazyColors.textSecondary
-                      : WazyColors.textPrimaryLight),
+                      ? FinavigColors.textSecondary
+                      : FinavigColors.textPrimaryLight),
             fontWeight: selected ? FontWeight.bold : FontWeight.w500,
             fontSize: 12,
           ),
@@ -894,16 +894,16 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
         onSelected: (_) => setState(() => _filter = filter),
         showCheckmark: false,
         labelPadding: const EdgeInsets.symmetric(horizontal: 4),
-        backgroundColor: isDark ? WazyColors.slate : WazyColors.cloud,
+        backgroundColor: isDark ? FinavigColors.slate : FinavigColors.cloud,
         selectedColor: isDark
-            ? WazyColors.navyPrimary.withOpacity(0.4)
-            : WazyColors.navyPrimary.withOpacity(0.12),
+            ? FinavigColors.navyPrimary.withOpacity(0.4)
+            : FinavigColors.navyPrimary.withOpacity(0.12),
         side: BorderSide(
           color: selected
-              ? (isDark ? WazyColors.cyanSecondary : WazyColors.navyPrimary)
+              ? (isDark ? FinavigColors.cyanSecondary : FinavigColors.navyPrimary)
               : (isDark
-                    ? WazyColors.slateLight.withOpacity(0.3)
-                    : WazyColors.fog),
+                    ? FinavigColors.slateLight.withOpacity(0.3)
+                    : FinavigColors.fog),
         ),
       ),
     );
@@ -1218,7 +1218,7 @@ class _HeroActionPill extends StatelessWidget {
     final BorderSide side;
     if (filled) {
       bg = Colors.white;
-      fg = WazyColors.ink;
+      fg = FinavigColors.ink;
       side = BorderSide.none;
     } else {
       bg = Colors.white.withOpacity(0.10);
@@ -1278,10 +1278,10 @@ class _DocumentCard extends StatelessWidget {
   Color _accentColor(bool isDark) {
     final days = item.daysRemaining;
     if (isDark) {
-      if (days <= 7) return WazyColors.danger;
-      if (days <= 30) return WazyColors.warning;
-      if (days <= 60) return WazyColors.caution;
-      return WazyColors.safe;
+      if (days <= 7) return FinavigColors.danger;
+      if (days <= 30) return FinavigColors.warning;
+      if (days <= 60) return FinavigColors.caution;
+      return FinavigColors.safe;
     } else {
       if (days <= 7) return const Color(0xFFDC2626); // Dark red
       if (days <= 30) return const Color(0xFFD97706); // Dark amber
@@ -1293,7 +1293,7 @@ class _DocumentCard extends StatelessWidget {
   /// Accent used for the left edge tint. Expired documents keep the danger
   /// accent even when `daysRemaining` reaches other bands.
   Color _edgeAccent(bool isDark) =>
-      item.daysRemaining < 0 ? WazyColors.danger : _accentColor(isDark);
+      item.daysRemaining < 0 ? FinavigColors.danger : _accentColor(isDark);
 
   String get _statusLabel {
     final days = item.daysRemaining;
@@ -1350,8 +1350,8 @@ class _DocumentCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: isDark
-                  ? WazyColors.slateLight.withOpacity(0.3)
-                  : WazyColors.fog.withOpacity(0.5),
+                  ? FinavigColors.slateLight.withOpacity(0.3)
+                  : FinavigColors.fog.withOpacity(0.5),
             ),
           ),
           // IntrinsicHeight: the colored edge must stretch to the card's
@@ -1384,8 +1384,8 @@ class _DocumentCard extends StatelessWidget {
                                       fontWeight: FontWeight.w600,
                                       fontSize: 14,
                                       color: isDark
-                                          ? WazyColors.textPrimary
-                                          : WazyColors.textPrimaryLight,
+                                          ? FinavigColors.textPrimary
+                                          : FinavigColors.textPrimaryLight,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -1396,8 +1396,8 @@ class _DocumentCard extends StatelessWidget {
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: isDark
-                                          ? WazyColors.textMuted
-                                          : WazyColors.textSecondaryLight,
+                                          ? FinavigColors.textMuted
+                                          : FinavigColors.textSecondaryLight,
                                     ),
                                   ),
                                 ],
@@ -1450,7 +1450,7 @@ class _DocumentCard extends StatelessWidget {
                             minHeight: 5,
                             backgroundColor: isDark
                                 ? theme.colorScheme.surfaceContainerHighest
-                                : WazyColors.mist,
+                                : FinavigColors.mist,
                             valueColor: AlwaysStoppedAnimation<Color>(accent),
                           ),
                         ),
@@ -1461,8 +1461,8 @@ class _DocumentCard extends StatelessWidget {
                               : '${(100 - _timeProgress * 100).toStringAsFixed(0)}% of the renewal window left',
                           style: TextStyle(
                             color: isDark
-                                ? WazyColors.textMuted
-                                : WazyColors.textMutedLight,
+                                ? FinavigColors.textMuted
+                                : FinavigColors.textMutedLight,
                             fontSize: 10,
                           ),
                         ),
@@ -1471,8 +1471,8 @@ class _DocumentCard extends StatelessWidget {
                         Divider(
                           height: 1,
                           color: isDark
-                              ? WazyColors.slateLight.withOpacity(0.3)
-                              : WazyColors.fog.withOpacity(0.5),
+                              ? FinavigColors.slateLight.withOpacity(0.3)
+                              : FinavigColors.fog.withOpacity(0.5),
                         ),
                         const SizedBox(height: 8),
                         Wrap(
@@ -1540,15 +1540,15 @@ class _DocumentCard extends StatelessWidget {
                                   Icons.more_horiz_rounded,
                                   size: 16,
                                   color: isDark
-                                      ? WazyColors.cyanSecondary
-                                      : WazyColors.navyPrimary,
+                                      ? FinavigColors.cyanSecondary
+                                      : FinavigColors.navyPrimary,
                                 ),
                                 label: Text(
                                   'Actions',
                                   style: TextStyle(
                                     color: isDark
-                                        ? WazyColors.cyanSecondary
-                                        : WazyColors.navyPrimary,
+                                        ? FinavigColors.cyanSecondary
+                                        : FinavigColors.navyPrimary,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -1559,10 +1559,10 @@ class _DocumentCard extends StatelessWidget {
                                   ),
                                   side: BorderSide(
                                     color: isDark
-                                        ? WazyColors.cyanSecondary.withOpacity(
+                                        ? FinavigColors.cyanSecondary.withOpacity(
                                             0.4,
                                           )
-                                        : WazyColors.navyPrimary.withOpacity(
+                                        : FinavigColors.navyPrimary.withOpacity(
                                             0.3,
                                           ),
                                   ),
@@ -1591,15 +1591,15 @@ class _DocumentCard extends StatelessWidget {
         Icon(
           icon,
           size: 13,
-          color: isDark ? WazyColors.textMuted : WazyColors.textSecondaryLight,
+          color: isDark ? FinavigColors.textMuted : FinavigColors.textSecondaryLight,
         ),
         const SizedBox(width: 4),
         Text(
           text,
           style: TextStyle(
             color: isDark
-                ? WazyColors.textSecondary
-                : WazyColors.textPrimaryLight,
+                ? FinavigColors.textSecondary
+                : FinavigColors.textPrimaryLight,
             fontSize: 12,
           ),
         ),

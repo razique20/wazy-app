@@ -90,7 +90,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
         content: Text('${event.title}\n${event.body}'),
         backgroundColor: event.isExceeded
             ? Theme.of(context).colorScheme.error
-            : WazyColors.warning,
+            : FinavigColors.warning,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 4),
       ),
@@ -125,7 +125,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
       // Ink backdrop behind the hero; the content sheet covers the rest.
       // Same backdrop colors as the redesigned Home and Documents tabs.
       backgroundColor:
-          isDark ? WazyColors.obsidian : WazyColors.ink,
+          isDark ? FinavigColors.obsidian : FinavigColors.ink,
       body: SafeArea(
         bottom: false,
         child: RefreshIndicator(
@@ -417,11 +417,11 @@ class _MoneyScreenState extends State<MoneyScreen> {
         Card(
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(WazyRadius.card),
+            borderRadius: BorderRadius.circular(FinavigRadius.card),
           ),
           color: isDark
               ? const Color(0xFF2A2110)
-              : WazyColors.amberTint,
+              : FinavigColors.amberTint,
           child: Padding(
             padding: const EdgeInsets.all(14),
             child: Column(
@@ -433,12 +433,12 @@ class _MoneyScreenState extends State<MoneyScreen> {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: WazyColors.warning.withOpacity(isDark ? 0.2 : 0.14),
+                        color: FinavigColors.warning.withOpacity(isDark ? 0.2 : 0.14),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
                         Icons.trending_up_rounded,
-                        color: WazyColors.warning,
+                        color: FinavigColors.warning,
                         size: 18,
                       ),
                     ),
@@ -460,7 +460,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: WazyColors.warning.withOpacity(0.2),
+                        color: FinavigColors.warning.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -468,7 +468,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
                         style: const TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: WazyColors.warning,
+                          color: FinavigColors.warning,
                         ),
                       ),
                     ),
@@ -569,12 +569,12 @@ class _MoneyScreenState extends State<MoneyScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: WazyColors.caution.withAlpha(25),
+                color: FinavigColors.caution.withAlpha(25),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
                 Icons.event_repeat_rounded,
-                color: WazyColors.caution,
+                color: FinavigColors.caution,
                 size: 20,
               ),
             ),
@@ -605,8 +605,8 @@ class _MoneyScreenState extends State<MoneyScreen> {
               decoration: BoxDecoration(
                 color:
                     (_renewalOutlook90 > 0
-                            ? WazyColors.warning
-                            : WazyColors.safe)
+                            ? FinavigColors.warning
+                            : FinavigColors.safe)
                         .withAlpha(20),
                 borderRadius: BorderRadius.circular(6),
               ),
@@ -616,8 +616,8 @@ class _MoneyScreenState extends State<MoneyScreen> {
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   color: _renewalOutlook90 > 0
-                      ? WazyColors.warning
-                      : WazyColors.safe,
+                      ? FinavigColors.warning
+                      : FinavigColors.safe,
                 ),
               ),
             ),
@@ -667,12 +667,12 @@ class _MoneyScreenState extends State<MoneyScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: WazyColors.violetAccent.withAlpha(30),
+                  color: FinavigColors.violetAccent.withAlpha(30),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   Icons.candlestick_chart_rounded,
-                  color: WazyColors.violetAccent,
+                  color: FinavigColors.violetAccent,
                   size: 24,
                 ),
               ),
@@ -709,8 +709,8 @@ class _MoneyScreenState extends State<MoneyScreen> {
                             decoration: BoxDecoration(
                               color:
                                   (netPositive
-                                          ? WazyColors.safe
-                                          : WazyColors.danger)
+                                          ? FinavigColors.safe
+                                          : FinavigColors.danger)
                                       .withAlpha(25),
                               borderRadius: BorderRadius.circular(6),
                             ),
@@ -720,8 +720,8 @@ class _MoneyScreenState extends State<MoneyScreen> {
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
                                 color: netPositive
-                                    ? WazyColors.safe
-                                    : WazyColors.danger,
+                                    ? FinavigColors.safe
+                                    : FinavigColors.danger,
                               ),
                             ),
                           ),
@@ -1738,7 +1738,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
               : 'All transactions are already accurately categorized! ✓',
         ),
         backgroundColor: updatedCount > 0
-            ? WazyColors.violetAccent
+            ? FinavigColors.violetAccent
             : Colors.green,
       ),
     );
@@ -1760,7 +1760,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
     try {
       final path = await FilePicker.platform.saveFile(
         fileName:
-            'wazy-finance-${DateTime.now().toIso8601String().split('T').first}.csv',
+            'finavig-finance-${DateTime.now().toIso8601String().split('T').first}.csv',
         bytes: Uint8List.fromList(csv.codeUnits),
       );
       if (!mounted) return;
@@ -2301,10 +2301,10 @@ class _TransactionFormSheetState extends State<TransactionFormSheet> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: WazyColors.cyanAccent.withOpacity(0.12),
+                      color: FinavigColors.cyanAccent.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: WazyColors.cyanAccent.withOpacity(0.4),
+                        color: FinavigColors.cyanAccent.withOpacity(0.4),
                       ),
                     ),
                     child: Row(
@@ -2313,7 +2313,7 @@ class _TransactionFormSheetState extends State<TransactionFormSheet> {
                         const Icon(
                           Icons.auto_awesome_rounded,
                           size: 14,
-                          color: WazyColors.cyanAccent,
+                          color: FinavigColors.cyanAccent,
                         ),
                         const SizedBox(width: 6),
                         Text(
@@ -2321,7 +2321,7 @@ class _TransactionFormSheetState extends State<TransactionFormSheet> {
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            color: WazyColors.cyanAccent,
+                            color: FinavigColors.cyanAccent,
                           ),
                         ),
                       ],
@@ -2630,7 +2630,7 @@ class _RecurringFormSheetState extends State<_RecurringFormSheet> {
               ),
               const SizedBox(height: 4),
               Text(
-                'Wazy auto-logs this amount on the chosen day — rent, salaries, subscriptions.',
+                'Finavig auto-logs this amount on the chosen day — rent, salaries, subscriptions.',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -3232,14 +3232,14 @@ class _MoneyAddCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 17, color: WazyColors.ink),
+              Icon(icon, size: 17, color: FinavigColors.ink),
               const SizedBox(width: 7),
               Flexible(
                 child: Text(
                   label,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: WazyColors.ink,
+                    color: FinavigColors.ink,
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
                   ),

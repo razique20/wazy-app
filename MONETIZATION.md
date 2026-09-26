@@ -1,6 +1,6 @@
-# Wazy — Monetization Plans
+# Finavig — Monetization Plans
 
-> Consolidated view of how Wazy makes money. Sources: [`docs/market-study.md`](docs/market-study.md) §6,
+> Consolidated view of how Finavig makes money. Sources: [`docs/market-study.md`](docs/market-study.md) §6,
 > [`FINTECH_ROADMAP.md`](FINTECH_ROADMAP.md), [`docs/feasibility-study.md`](docs/feasibility-study.md) §4.2, and the app's Terms & Conditions (§7 Fees).
 
 ## Current state
@@ -51,7 +51,7 @@ Revenue plausibility at pilot scale:
 
 ## Track 2 — Fintech layers (phased, partner-first)
 
-The strategic evolution: Wazy already owns the deadline; monetize the money that meets it. Every tracked document is a guaranteed, recurring payment intent with a known amount — trust peaks exactly when money must move.
+The strategic evolution: Finavig already owns the deadline; monetize the money that meets it. Every tracked document is a guaranteed, recurring payment intent with a known amount — trust peaks exactly when money must move.
 
 ### Phase 1 — Embedded payments (first fintech revenue)
 
@@ -66,7 +66,7 @@ The strategic evolution: Wazy already owns the deadline; monetize the money that
 
 - **Renewal Wallet ("set aside")** — round-ups/micro-deposits pre-funding renewals. Start tracking-only (no custody = no licence), then partner-bank escrow.
 - **Multi-document auto-pay rules** — "never miss a renewal" subscription tier on top of Business.
-- **Invoicing / get paid** — SMEs invoice clients; Wazy takes a cut. Adds AR data feeding lending.
+- **Invoicing / get paid** — SMEs invoice clients; Finavig takes a cut. Adds AR data feeding lending.
 - **Corporate expense cards** via BIN sponsor (e.g., Nymcard) — interchange share + completes the financial picture.
 - Regulatory note: holding client money in the UAE = CBUAE Stored Value Facility / Retail Payment Services licence, or partner-bank escrow.
 

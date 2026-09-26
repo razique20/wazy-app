@@ -1,6 +1,6 @@
-# Wazy AI Features Roadmap & Backlog
+# Finavig AI Features Roadmap & Backlog
 
-A curated roadmap of **Basic to Hard AI Features** tailored for **Wazy** (UAE SME Document Operations & Money Tracking App).
+A curated roadmap of **Basic to Hard AI Features** tailored for **Finavig** (UAE SME Document Operations & Money Tracking App).
 
 ---
 
@@ -38,7 +38,7 @@ A curated roadmap of **Basic to Hard AI Features** tailored for **Wazy** (UAE SM
 
 ## 🟠 Level 3: Advanced AI Features (Generative AI & LLMs)
 
-- [ ] **Wazy AI Copilot (UAE SME Compliance & Renewal Advisor)** `[Advanced]`
+- [ ] **Finavig AI Copilot (UAE SME Compliance & Renewal Advisor)** `[Advanced]`
   - *Description*: In-app AI chat assistant that answers UAE business compliance questions (e.g., *"What documents do I need to renew a Dubai DED Trade License?"*, *"What is the penalty for late Ejari renewal?"*).
   - *Tech/Implementation*: Gemini 1.5 Flash API integration + RAG (Retrieval-Augmented Generation) on UAE business guidelines.
 
@@ -72,5 +72,5 @@ A curated roadmap of **Basic to Hard AI Features** tailored for **Wazy** (UAE SM
 
 1. ✅ **Quick Win**: Smart Auto-Categorization & Tagging Engine `[Basic]`
 2. **High Value**: Smart Camera Receipt & Invoice Scanner `[Intermediate]`
-3. **Huge WOW Factor**: Wazy AI Copilot (UAE SME Compliance Advisor) `[Advanced]`
+3. **Huge WOW Factor**: Finavig AI Copilot (UAE SME Compliance Advisor) `[Advanced]`
 4. **Cutting Edge**: Autonomous Document Renewal Agent `[Hard]`

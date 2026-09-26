@@ -103,7 +103,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Row(
             children: [
-              Icon(Icons.warning_amber_rounded, color: WazyColors.warning),
+              Icon(Icons.warning_amber_rounded, color: FinavigColors.warning),
               SizedBox(width: 8),
               Text('Monthly Quota Reached'),
             ],
@@ -122,7 +122,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
               icon: const Icon(Icons.bolt_rounded, size: 16),
               label: const Text('Upgrade Plan'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: WazyColors.caution,
+                backgroundColor: FinavigColors.caution,
                 foregroundColor: Colors.black,
               ),
             ),
@@ -178,7 +178,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Row(
           children: [
-            Icon(Icons.auto_awesome_rounded, color: WazyColors.cyanSecondary),
+            Icon(Icons.auto_awesome_rounded, color: FinavigColors.cyanSecondary),
             SizedBox(width: 8),
             Text('Confirm AI Quota Usage'),
           ],
@@ -197,7 +197,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
             icon: const Icon(Icons.bolt_rounded, size: 16),
             label: const Text('Confirm & Use 1 Credit'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: WazyColors.navyPrimary,
+              backgroundColor: FinavigColors.navyPrimary,
               foregroundColor: Colors.white,
             ),
           ),
@@ -234,7 +234,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: WazyColors.navyPrimary,
+              backgroundColor: FinavigColors.navyPrimary,
               foregroundColor: Colors.white,
             ),
             child: const Text('Create'),
@@ -257,7 +257,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Envelope "$name" created — see the Envelopes tab.'),
-        backgroundColor: WazyColors.emerald,
+        backgroundColor: FinavigColors.emerald,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -280,7 +280,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
         title: Text('Set ${category.displayName} budget'),
         content: Text(
           'Cap ${category.displayName} at $_cur ${limit.toStringAsFixed(0)} '
-          'per month? Wazy will track it in the Budgets tab and warn you '
+          'per month? Finavig will track it in the Budgets tab and warn you '
           'when you get close.',
         ),
         actions: [
@@ -291,7 +291,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: WazyColors.navyPrimary,
+              backgroundColor: FinavigColors.navyPrimary,
               foregroundColor: Colors.white,
             ),
             child: const Text('Set budget'),
@@ -310,7 +310,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
         content: Text(
           '${category.displayName} budget set to $_cur ${limit.toStringAsFixed(0)}/month.',
         ),
-        backgroundColor: WazyColors.emerald,
+        backgroundColor: FinavigColors.emerald,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -332,14 +332,14 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
     final (String label, Color color) = switch (action.type) {
       AiBudgetPlanActionType.envelope => (
         '$_cur ${amt.toStringAsFixed(0)}/mo',
-        WazyColors.emerald,
+        FinavigColors.emerald,
       ),
       AiBudgetPlanActionType.budget => (
         'cap $_cur ${amt.toStringAsFixed(0)}/mo',
-        WazyColors.navyPrimary,
+        FinavigColors.navyPrimary,
       ),
       AiBudgetPlanActionType.tip => amt >= 0
-          ? ('frees $_cur ${amt.toStringAsFixed(0)}/mo', WazyColors.emerald)
+          ? ('frees $_cur ${amt.toStringAsFixed(0)}/mo', FinavigColors.emerald)
           : (
             'needs $_cur ${amt.abs().toStringAsFixed(0)}/mo',
             Colors.orangeAccent,
@@ -404,9 +404,9 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
             label: Text(d.label),
             style: OutlinedButton.styleFrom(
               foregroundColor:
-                  applied ? WazyColors.emerald : WazyColors.navyPrimary,
+                  applied ? FinavigColors.emerald : FinavigColors.navyPrimary,
               side: BorderSide(
-                color: (applied ? WazyColors.emerald : WazyColors.navyPrimary)
+                color: (applied ? FinavigColors.emerald : FinavigColors.navyPrimary)
                     .withOpacity(0.4),
               ),
               padding: const EdgeInsets.symmetric(
@@ -518,7 +518,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: WazyColors.violetAccent.withOpacity(0.25),
+                  color: FinavigColors.violetAccent.withOpacity(0.25),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Row(
@@ -527,7 +527,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
                     Icon(
                       Icons.auto_awesome_rounded,
                       size: 14,
-                      color: WazyColors.violetAccent,
+                      color: FinavigColors.violetAccent,
                     ),
                     SizedBox(width: 6),
                     Text(
@@ -535,7 +535,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: WazyColors.violetAccent,
+                        color: FinavigColors.violetAccent,
                       ),
                     ),
                   ],
@@ -588,7 +588,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
               minHeight: 6,
               backgroundColor: Colors.white24,
               valueColor: AlwaysStoppedAnimation<Color>(
-                usedPct >= 1.0 ? WazyColors.danger : WazyColors.emerald,
+                usedPct >= 1.0 ? FinavigColors.danger : FinavigColors.emerald,
               ),
             ),
           ),
@@ -602,7 +602,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
                 icon: const Icon(Icons.bolt_rounded, size: 16),
                 label: const Text('Upgrade Plan for More AI Plans'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: WazyColors.caution,
+                  backgroundColor: FinavigColors.caution,
                   foregroundColor: Colors.black,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -638,7 +638,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
               children: [
                 const Icon(
                   Icons.flag_rounded,
-                  color: WazyColors.navyPrimary,
+                  color: FinavigColors.navyPrimary,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
@@ -703,16 +703,16 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
                       label: Text('$m mo'),
                       selected: _targetMonths == m,
                       onSelected: (_) => setState(() => _targetMonths = m),
-                      selectedColor: WazyColors.navyPrimary.withAlpha(46),
+                      selectedColor: FinavigColors.navyPrimary.withAlpha(46),
                       labelStyle: TextStyle(
                         fontWeight: FontWeight.w600,
                         color: _targetMonths == m
-                            ? WazyColors.navyPrimary
+                            ? FinavigColors.navyPrimary
                             : theme.colorScheme.onSurfaceVariant,
                       ),
                       side: BorderSide(
                         color: _targetMonths == m
-                            ? WazyColors.navyPrimary
+                            ? FinavigColors.navyPrimary
                             : theme.colorScheme.outlineVariant,
                       ),
                       showCheckmark: false,
@@ -737,7 +737,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
                       : 'Generate AI Budget Plan (Uses 1 Credit)',
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: WazyColors.navyPrimary,
+                  backgroundColor: FinavigColors.navyPrimary,
                   foregroundColor: Colors.white,
                   disabledBackgroundColor:
                       theme.colorScheme.outlineVariant.withOpacity(0.4),
@@ -818,7 +818,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: WazyColors.emerald.withOpacity(0.2),
+                    color: FinavigColors.emerald.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: const Text(
@@ -826,7 +826,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: WazyColors.emerald,
+                      color: FinavigColors.emerald,
                     ),
                   ),
                 ),
@@ -839,7 +839,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
                 plan.feasible
                     ? Icons.check_circle_rounded
                     : Icons.error_outline_rounded,
-                color: plan.feasible ? WazyColors.emerald : WazyColors.caution,
+                color: plan.feasible ? FinavigColors.emerald : FinavigColors.caution,
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -871,17 +871,17 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
             children: [
               _planChip(
                 plan.feasible ? 'Achievable' : 'Challenging',
-                plan.feasible ? WazyColors.emerald : WazyColors.caution,
+                plan.feasible ? FinavigColors.emerald : FinavigColors.caution,
               ),
               if (plan.monthlySavingTargetAed > 0)
                 _planChip(
                   'Save $_cur ${plan.monthlySavingTargetAed.toStringAsFixed(0)}/mo',
-                  WazyColors.cyanSecondary,
+                  FinavigColors.cyanSecondary,
                 ),
               if (plan.monthsToGoal != null)
                 _planChip(
                   '~${plan.monthsToGoal} months',
-                  WazyColors.violetAccent,
+                  FinavigColors.violetAccent,
                 ),
             ],
           ),
@@ -890,13 +890,13 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
             Row(
               children: [
                 const Icon(Icons.info_outline_rounded,
-                    size: 14, color: WazyColors.warning),
+                    size: 14, color: FinavigColors.warning),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     'Monthly Groq AI quota reached. Showing offline plan template.',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: WazyColors.warning,
+                      color: FinavigColors.warning,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -950,13 +950,13 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: WazyColors.navyPrimary.withOpacity(0.1),
+              color: FinavigColors.navyPrimary.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
               _actionIcon(action),
               size: 18,
-              color: WazyColors.navyPrimary,
+              color: FinavigColors.navyPrimary,
             ),
           ),
           const SizedBox(width: 12),
@@ -1034,7 +1034,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
 
     final Color moodColor;
     if (mood.score >= 80) {
-      moodColor = WazyColors.emerald;
+      moodColor = FinavigColors.emerald;
     } else if (mood.score >= 55) {
       moodColor = Colors.amber.shade700;
     } else {
@@ -1067,7 +1067,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
           Row(
             children: [
               const Icon(Icons.tune_rounded,
-                  size: 18, color: WazyColors.navyPrimary),
+                  size: 18, color: FinavigColors.navyPrimary),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -1175,7 +1175,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
                         t.icon,
                         size: 16,
                         color: _activeTemplateId == t.id
-                            ? WazyColors.navyPrimary
+                            ? FinavigColors.navyPrimary
                             : theme.colorScheme.onSurfaceVariant,
                       ),
                       label: Text(t.label),
@@ -1237,7 +1237,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
                         : 'Apply ${changed.length} budget${changed.length == 1 ? '' : 's'}',
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: WazyColors.navyPrimary,
+                backgroundColor: FinavigColors.navyPrimary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
@@ -1265,10 +1265,10 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
             Container(
               padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
-                color: WazyColors.navyPrimary.withOpacity(0.1),
+                color: FinavigColors.navyPrimary.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(entry.key.icon, size: 15, color: WazyColors.navyPrimary),
+              child: Icon(entry.key.icon, size: 15, color: FinavigColors.navyPrimary),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -1293,7 +1293,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
               '$_cur ${value.toStringAsFixed(0)}',
               style: theme.textTheme.labelMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: trimmed > 0.5 ? WazyColors.emerald : null,
+                color: trimmed > 0.5 ? FinavigColors.emerald : null,
               ),
             ),
           ],
@@ -1337,7 +1337,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: WazyColors.navyPrimary,
+              backgroundColor: FinavigColors.navyPrimary,
               foregroundColor: Colors.white,
             ),
             child: const Text('Apply'),
@@ -1363,7 +1363,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
           '${changed.length} budget${changed.length == 1 ? '' : 's'} updated '
           '— see Money → Budgets.',
         ),
-        backgroundColor: WazyColors.emerald,
+        backgroundColor: FinavigColors.emerald,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -1373,7 +1373,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: WazyColors.navyPrimary.withOpacity(0.08),
+        color: FinavigColors.navyPrimary.withOpacity(0.08),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
@@ -1399,7 +1399,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Row(
           children: [
-            Icon(Icons.key_rounded, color: WazyColors.violetAccent),
+            Icon(Icons.key_rounded, color: FinavigColors.violetAccent),
             SizedBox(width: 8),
             Text('Groq API Settings'),
           ],
@@ -1409,7 +1409,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Wazy includes an in-app Groq API key by default. You can optional enter a custom key below.',
+              'Finavig includes an in-app Groq API key by default. You can optional enter a custom key below.',
               style: TextStyle(fontSize: 13, height: 1.4),
             ),
             const SizedBox(height: 14),
@@ -1443,7 +1443,7 @@ class _AiBudgetPlanScreenState extends State<AiBudgetPlanScreen> {
               if (ctx.mounted) Navigator.pop(ctx);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: WazyColors.navyPrimary,
+              backgroundColor: FinavigColors.navyPrimary,
               foregroundColor: Colors.white,
             ),
             child: const Text('Save Key'),

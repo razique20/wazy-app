@@ -447,7 +447,7 @@ class AiBudgetPlanService {
     );
 
     final systemPrompt =
-        'You are Wazy\'s AI Budget Planner for a GCC user. '
+        'You are Finavig\'s AI Budget Planner for a GCC user. '
         'Create a realistic, concrete plan to reach the user\'s stated goal '
         'using ONLY the financial facts provided — never invent numbers. '
         'Respond with STRICT JSON only (no markdown fences, no commentary) '

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:wazy/models/finance.dart';
-import 'package:wazy/services/monthly_summary_service.dart';
+import 'package:finavig/models/finance.dart';
+import 'package:finavig/services/monthly_summary_service.dart';
 
 FinanceTransaction _tx({
   required String id,

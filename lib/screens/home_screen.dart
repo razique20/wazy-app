@@ -160,7 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                         return ListTile(
                           leading: isLocked
-                              ? const Icon(Icons.lock_rounded, color: WazyColors.warning)
+                              ? const Icon(Icons.lock_rounded, color: FinavigColors.warning)
                               : Icon(collection.icon),
                           title: Row(
                             children: [
@@ -170,10 +170,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                   margin: const EdgeInsets.only(left: 6),
                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: WazyColors.warning.withAlpha(35),
+                                    color: FinavigColors.warning.withAlpha(35),
                                     borderRadius: BorderRadius.circular(4),
                                     border: Border.all(
-                                      color: WazyColors.warning.withAlpha(120),
+                                      color: FinavigColors.warning.withAlpha(120),
                                       width: 0.8,
                                     ),
                                   ),
@@ -182,7 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
-                                      color: WazyColors.warning,
+                                      color: FinavigColors.warning,
                                     ),
                                   ),
                                 ),
@@ -197,7 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 : null,
                           ),
                           trailing: isLocked
-                              ? const Icon(Icons.lock_outline_rounded, size: 18, color: WazyColors.warning)
+                              ? const Icon(Icons.lock_outline_rounded, size: 18, color: FinavigColors.warning)
                               : (collection.id == service.activeCollectionId
                                   ? const Icon(Icons.check_circle, color: Colors.green)
                                   : null),
@@ -221,7 +221,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 canCreateMore
                     ? Icons.add_circle_outline
                     : Icons.lock_outline_rounded,
-                color: canCreateMore ? null : WazyColors.warning,
+                color: canCreateMore ? null : FinavigColors.warning,
               ),
               title: const Text('New collection'),
               trailing: !canCreateMore
@@ -278,7 +278,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       // Ink backdrop behind the hero; the content sheet covers the rest.
-      backgroundColor: isDark ? WazyColors.obsidian : WazyColors.ink,
+      backgroundColor: isDark ? FinavigColors.obsidian : FinavigColors.ink,
       body: SafeArea(
         bottom: false,
         child: RefreshIndicator(
@@ -371,13 +371,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildCategoriesGrid(ThemeData theme, UrgencySnapshot urgency) {
     final pending = urgency.pendingActions.length;
     final isDark = theme.brightness == Brightness.dark;
-    final tileBg = isDark ? WazyColors.slate.withOpacity(0.5) : Colors.white;
-    final labelColor = isDark ? WazyColors.textSecondary : WazyColors.textPrimaryLight;
+    final tileBg = isDark ? FinavigColors.slate.withOpacity(0.5) : Colors.white;
+    final labelColor = isDark ? FinavigColors.textSecondary : FinavigColors.textPrimaryLight;
 
     Widget tile(BentoIconTile iconTile, String label, VoidCallback onTap) =>
         Material(
           color: tileBg,
-          borderRadius: BorderRadius.circular(WazyRadius.tile),
+          borderRadius: BorderRadius.circular(FinavigRadius.tile),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: onTap,
@@ -423,7 +423,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   '$pending need attention',
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: WazyColors.danger,
+                    color: FinavigColors.danger,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -443,42 +443,42 @@ class _HomeScreenState extends State<HomeScreen> {
             childAspectRatio: 0.95,
             children: [
               tile(
-                const BentoIconTile(icon: Icons.description_rounded, color: WazyColors.violet),
+                const BentoIconTile(icon: Icons.description_rounded, color: FinavigColors.violet),
                 'Documents',
                 () => context.go('/documents'),
               ),
               tile(
-                const BentoIconTile(icon: Icons.calendar_month_rounded, color: WazyColors.violet),
+                const BentoIconTile(icon: Icons.calendar_month_rounded, color: FinavigColors.violet),
                 'Renewals',
                 () => context.push('/expiry-list'),
               ),
               tile(
-                const BentoIconTile(icon: Icons.savings_rounded, color: WazyColors.violet),
+                const BentoIconTile(icon: Icons.savings_rounded, color: FinavigColors.violet),
                 'Envelopes',
                 () => context.push('/envelopes'),
               ),
               tile(
-                const BentoIconTile(icon: Icons.receipt_long_rounded, color: WazyColors.violet),
+                const BentoIconTile(icon: Icons.receipt_long_rounded, color: FinavigColors.violet),
                 'Records',
                 () => context.push('/records'),
               ),
               tile(
-                const BentoIconTile(icon: Icons.trending_up_rounded, color: WazyColors.violet),
+                const BentoIconTile(icon: Icons.trending_up_rounded, color: FinavigColors.violet),
                 'Forecast',
                 () => context.push('/cash-flow-forecast'),
               ),
               tile(
-                const BentoIconTile(icon: Icons.auto_awesome_rounded, color: WazyColors.violet),
+                const BentoIconTile(icon: Icons.auto_awesome_rounded, color: FinavigColors.violet),
                 'AI Summary',
                 () => context.push('/ai-summary'),
               ),
               tile(
-                const BentoIconTile(icon: Icons.flag_rounded, color: WazyColors.violet),
+                const BentoIconTile(icon: Icons.flag_rounded, color: FinavigColors.violet),
                 'AI Planner',
                 () => context.push('/ai-budget-plan'),
               ),
               tile(
-                const BentoIconTile(icon: Icons.document_scanner_rounded, color: WazyColors.violet),
+                const BentoIconTile(icon: Icons.document_scanner_rounded, color: FinavigColors.violet),
                 'Scan',
                 () {
                   // Free plan document limit — paywall when the quota is full.
@@ -759,9 +759,9 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Container(
               padding: const EdgeInsets.all(3),
               decoration: BoxDecoration(
-                color: WazyColors.danger,
+                color: FinavigColors.danger,
                 shape: BoxShape.circle,
-                border: Border.all(color: WazyColors.ink, width: 1.5),
+                border: Border.all(color: FinavigColors.ink, width: 1.5),
               ),
               constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
               child: Text(
@@ -796,8 +796,8 @@ class _HomeScreenState extends State<HomeScreen> {
         _NotificationRow(
           icon: Icons.hourglass_top_rounded,
           color: item.daysRemaining <= 7
-              ? WazyColors.danger
-              : WazyColors.warning,
+              ? FinavigColors.danger
+              : FinavigColors.warning,
           title: item.displayName,
           subtitle:
               'Expires in ${item.daysRemaining} day${item.daysRemaining == 1 ? '' : 's'} — renew soon',
@@ -812,7 +812,7 @@ class _HomeScreenState extends State<HomeScreen> {
       rows.add(
         _NotificationRow(
           icon: Icons.error_outline_rounded,
-          color: WazyColors.danger,
+          color: FinavigColors.danger,
           title: item.displayName,
           subtitle:
               'Expired ${days <= 0 ? 'today' : '$days day${days == 1 ? '' : 's'} ago'} — act now',
@@ -830,7 +830,7 @@ class _HomeScreenState extends State<HomeScreen> {
         rows.add(
           _NotificationRow(
             icon: Icons.trending_up_rounded,
-            color: WazyColors.warning,
+            color: FinavigColors.warning,
             title: 'Bill spike: ${anomaly.transaction.title}',
             subtitle: anomaly.message,
             onTap: () => context.go('/money'),
@@ -856,7 +856,7 @@ class _HomeScreenState extends State<HomeScreen> {
           rows.add(
             _NotificationRow(
               icon: Icons.account_balance_wallet_rounded,
-              color: exceeded ? WazyColors.danger : WazyColors.warning,
+              color: exceeded ? FinavigColors.danger : FinavigColors.warning,
               title:
                   '${exceeded ? "Budget exceeded" : "Close to budget"} — ${s.budget.category.displayName}',
               subtitle: '$pct% of the monthly budget used this month.',
@@ -959,8 +959,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     final isDark = theme.brightness == Brightness.dark;
-    final bannerBg = isDark ? const Color(0xFF2A2110) : WazyColors.amberTint;
-    const iconColor = WazyColors.amber;
+    final bannerBg = isDark ? const Color(0xFF2A2110) : FinavigColors.amberTint;
+    const iconColor = FinavigColors.amber;
     final textColor = isDark ? Colors.white : const Color(0xFF92400E);
     final subtitleColor = isDark
         ? const Color(0xFFFDE68A)
@@ -977,13 +977,13 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
       child: InkWell(
         onTap: () => showTierRequestSheet(context),
-        borderRadius: BorderRadius.circular(WazyRadius.card),
+        borderRadius: BorderRadius.circular(FinavigRadius.card),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: bannerBg,
-            borderRadius: BorderRadius.circular(WazyRadius.card),
+            borderRadius: BorderRadius.circular(FinavigRadius.card),
           ),
           child: Row(
             children: [
@@ -1026,8 +1026,8 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(width: 8),
               FilledButton(
                 style: FilledButton.styleFrom(
-                  backgroundColor: isDark ? Colors.white : WazyColors.ink,
-                  foregroundColor: isDark ? WazyColors.ink : Colors.white,
+                  backgroundColor: isDark ? Colors.white : FinavigColors.ink,
+                  foregroundColor: isDark ? FinavigColors.ink : Colors.white,
                   visualDensity: VisualDensity.compact,
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1167,13 +1167,13 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: InkWell(
         onTap: () => context.push('/document/${worst.id}'),
-        borderRadius: BorderRadius.circular(WazyRadius.card),
+        borderRadius: BorderRadius.circular(FinavigRadius.card),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: WazyColors.redTint,
-            borderRadius: BorderRadius.circular(WazyRadius.card),
+            color: FinavigColors.redTint,
+            borderRadius: BorderRadius.circular(FinavigRadius.card),
           ),
           child: Row(
             children: [
@@ -1181,12 +1181,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: WazyColors.red.withOpacity(0.12),
+                  color: FinavigColors.red.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(13),
                 ),
                 child: const Icon(
                   Icons.event_busy_rounded,
-                  color: WazyColors.red,
+                  color: FinavigColors.red,
                   size: 20,
                 ),
               ),
@@ -1199,7 +1199,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       '${expired.length} document${expired.length == 1 ? '' : 's'} already expired',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: WazyColors.red,
+                        color: FinavigColors.red,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -1216,7 +1216,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: WazyColors.red),
+              const Icon(Icons.chevron_right_rounded, color: FinavigColors.red),
             ],
           ),
         ),
@@ -1371,10 +1371,10 @@ class _UpcomingTile extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                   color: isCritical
-                      ? WazyColors.danger
+                      ? FinavigColors.danger
                       : item.daysRemaining <= 30
-                      ? WazyColors.warning
-                      : WazyColors.safe,
+                      ? FinavigColors.warning
+                      : FinavigColors.safe,
                 ),
               ),
             ],
@@ -1435,7 +1435,7 @@ class _HeroActionPill extends StatelessWidget {
     final BorderSide side;
     if (filled) {
       bg = Colors.white;
-      fg = WazyColors.ink;
+      fg = FinavigColors.ink;
       side = BorderSide.none;
     } else {
       bg = Colors.white.withOpacity(0.10);

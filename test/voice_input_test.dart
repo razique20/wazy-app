@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:wazy/models/finance.dart';
-import 'package:wazy/services/natural_language_parser_service.dart';
-import 'package:wazy/services/voice_input_service.dart';
+import 'package:finavig/models/finance.dart';
+import 'package:finavig/services/natural_language_parser_service.dart';
+import 'package:finavig/services/voice_input_service.dart';
 
 void main() {
   group('VoiceInputService.parseWordNumber', () {

@@ -85,7 +85,7 @@ class _EnvelopesScreenState extends State<EnvelopesScreen> {
           'New envelope',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: WazyColors.violetAccent,
+        backgroundColor: FinavigColors.violetAccent,
         foregroundColor: Colors.white,
       ),
       body: _loading

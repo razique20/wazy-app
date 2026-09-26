@@ -3,8 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:wazy/screens/profile_screen.dart';
-import 'package:wazy/theme/app_theme.dart';
+import 'package:finavig/screens/profile_screen.dart';
+import 'package:finavig/theme/app_theme.dart';
 
 void main() {
   setUp(() {
@@ -13,7 +13,7 @@ void main() {
 
   Future<void> pumpSettings(WidgetTester tester) async {
     await tester.pumpWidget(
-      MaterialApp(theme: WazyTheme.light(), home: const ProfileScreen()),
+      MaterialApp(theme: FinavigTheme.light(), home: const ProfileScreen()),
     );
     await tester.pump(); // collections load
     await tester.pump(const Duration(seconds: 1)); // settings load

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../models/expiry_item.dart';
 import '../models/finance.dart';
@@ -411,7 +412,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                 ),
                 const SizedBox(width: 8),
                 OutlinedButton.icon(
-                  onPressed: () => _showFilePreview(context, item),
+                  onPressed: () => _openAttachmentViewer(context, item),
                   icon: const Icon(Icons.info_outline, size: 16),
                   label: const Text('Details'),
                   style: OutlinedButton.styleFrom(
@@ -505,9 +506,18 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
           ),
           const SizedBox(width: 8),
           OutlinedButton.icon(
-            onPressed: () => _showFilePreview(context, item),
+            onPressed: () => _openAttachmentViewer(context, item),
             icon: const Icon(Icons.remove_red_eye_outlined, size: 16),
             label: const Text('View'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            ),
+          ),
+          const SizedBox(width: 6),
+          OutlinedButton.icon(
+            onPressed: () => _shareDocumentFile(context, item),
+            icon: const Icon(Icons.ios_share_rounded, size: 16),
+            label: const Text('Share'),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             ),
@@ -517,7 +527,10 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
     );
   }
 
-  void _showFilePreview(BuildContext context, ExpiryItem item) {
+  /// Opens the attachment in the full-screen interactive viewer (images get
+  /// pinch-to-zoom + double-tap zoom). Non-image files get an info sheet
+  /// with a Share action instead.
+  void _openAttachmentViewer(BuildContext context, ExpiryItem item) {
     final path = item.filePath;
     final name = item.fileName ?? 'Attached Document';
     final isNetwork =
@@ -528,132 +541,194 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
         : null;
     final exists = isNetwork || (file != null && file.existsSync());
 
+    if (!exists) {
+      _showMissingFileInfoSheet(context, item, path, name);
+      return;
+    }
+
     final lowerPath = (path ?? '').toLowerCase();
     final isImage =
-        exists &&
-        (lowerPath.contains('.png') ||
-            lowerPath.contains('.jpg') ||
-            lowerPath.contains('.jpeg') ||
-            lowerPath.contains('.webp') ||
-            lowerPath.contains('.gif') ||
-            lowerPath.contains('.heic'));
+        lowerPath.contains('.png') ||
+        lowerPath.contains('.jpg') ||
+        lowerPath.contains('.jpeg') ||
+        lowerPath.contains('.webp') ||
+        lowerPath.contains('.gif') ||
+        lowerPath.contains('.heic');
 
-    showDialog(
+    if (isImage) {
+      Navigator.of(context, rootNavigator: true).push(
+        PageRouteBuilder<void>(
+          opaque: false,
+          barrierColor: Colors.black,
+          transitionDuration: const Duration(milliseconds: 220),
+          pageBuilder: (_, __, ___) => _FullScreenImageViewer(
+            name: name,
+            path: path!,
+            isNetwork: isNetwork,
+            localFile: file,
+            onShare: () => _shareDocumentFile(context, item),
+          ),
+          transitionsBuilder: (_, animation, __, child) =>
+              FadeTransition(opacity: animation, child: child),
+        ),
+      );
+    } else {
+      _showFileInfoSheet(context, item, path, name, exists);
+    }
+  }
+
+  /// Info sheet for non-image attachments (e.g. PDFs) that do exist.
+  void _showFileInfoSheet(
+    BuildContext context,
+    ExpiryItem item,
+    String? path,
+    String name,
+    bool exists,
+  ) {
+    showModalBottomSheet<void>(
       context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              child: Row(
-                children: [
-                  const Icon(Icons.attach_file, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      name,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+      useRootNavigator: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final theme = Theme.of(sheetContext);
+        return SafeArea(
+          top: false,
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.insert_drive_file_outlined,
+                      size: 28,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        name,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                if (item.fileSize != null)
+                  Text(
+                    'Size: ${(item.fileSize! / 1024).toStringAsFixed(1)} KB',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.outline,
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(ctx).pop(),
+                const SizedBox(height: 4),
+                Text(
+                  'File path: $path',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.outline,
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      Navigator.of(sheetContext).pop();
+                      _shareDocumentFile(context, item);
+                    },
+                    icon: const Icon(Icons.ios_share_rounded, size: 18),
+                    label: const Text('Share Document File'),
+                  ),
+                ),
+              ],
             ),
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.65,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: isImage
-                    ? InteractiveViewer(
-                        clipBehavior: Clip.none,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: isNetwork
-                              ? Image.network(
-                                  path!,
-                                  fit: BoxFit.contain,
-                                  loadingBuilder: (_, child, progress) {
-                                    if (progress == null) return child;
-                                    return const Center(
-                                      child: CircularProgressIndicator(),
-                                    );
-                                  },
-                                  errorBuilder: (_, __, ___) => const Center(
-                                    child: Text('Error loading cloud image.'),
-                                  ),
-                                )
-                              : Image.file(
-                                  file!,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (_, __, ___) => const Center(
-                                    child: Text(
-                                      'Error loading local image file.',
-                                    ),
-                                  ),
-                                ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Info sheet shown when the attachment was stored on another device
+  /// or no file path is recorded.
+  void _showMissingFileInfoSheet(
+    BuildContext context,
+    ExpiryItem item,
+    String? path,
+    String name,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      useRootNavigator: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final theme = Theme.of(sheetContext);
+        return SafeArea(
+          top: false,
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.find_in_page_outlined,
+                      size: 28,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        name,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
                         ),
-                      )
-                    : Column(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            exists
-                                ? Icons.insert_drive_file_outlined
-                                : Icons.find_in_page_outlined,
-                            size: 64,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            name,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          if (item.fileSize != null)
-                            Text(
-                              'Size: ${(item.fileSize! / 1024).toStringAsFixed(1)} KB',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Theme.of(context).colorScheme.outline,
-                              ),
-                            ),
-                          const SizedBox(height: 12),
-                          Text(
-                            exists
-                                ? 'File path: $path'
-                                : path != null && path.isNotEmpty
-                                ? 'File was uploaded on another device ($path).'
-                                : 'No file path stored for this document.',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Theme.of(context).colorScheme.outline,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-              ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  path != null && path.isNotEmpty
+                      ? 'File was uploaded on another device ($path).'
+                      : 'No file path stored for this document.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.outline,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => Navigator.of(sheetContext).pop(),
+                    icon: const Icon(Icons.close_rounded, size: 18),
+                    label: const Text('Close'),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -680,7 +755,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
 
       final appDocDir = await getApplicationDocumentsDirectory();
       final targetDir = Directory(
-        '${appDocDir.path}/wazy/documents/${item.id}',
+        '${appDocDir.path}/finavig/documents/${item.id}',
       );
       if (!targetDir.existsSync()) {
         targetDir.createSync(recursive: true);
@@ -1677,9 +1752,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
         _markAsRenewed(context, item);
         break;
       case 'share':
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Share link copied (demo)')),
-        );
+        _shareDocumentFile(context, item);
         break;
       case 'export':
         ScaffoldMessenger.of(
@@ -1689,6 +1762,62 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
       case 'delete':
         _confirmDelete(context, item);
         break;
+    }
+  }
+
+  /// Shares the attached document file via the platform share sheet
+  /// (WhatsApp, Mail, etc.). Falls back to a helpful message when the file
+  /// lives on another device or can't be reached.
+  Future<void> _shareDocumentFile(
+    BuildContext context,
+    ExpiryItem item,
+  ) async {
+    final path = item.filePath;
+    if (path == null || path.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No attachment stored for this document yet.'),
+        ),
+      );
+      return;
+    }
+
+    final isNetwork =
+        path.startsWith('http://') || path.startsWith('https://');
+    final file = isNetwork ? null : File(path);
+    if (!isNetwork && (file == null || !file.existsSync())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'The attachment is only on another device — re-upload it first.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final result = await SharePlus.instance.share(
+        ShareParams(
+          title: item.fileName ?? item.displayName,
+          subject: '${item.displayName} — shared from Finavig',
+          files: isNetwork ? null : [XFile(path)],
+          text: isNetwork ? path : null,
+        ),
+      );
+      if (result.status == ShareResultStatus.success) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Shared ✓'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not share file: $e')),
+      );
     }
   }
 
@@ -1875,3 +2004,136 @@ class _TimelineStep extends StatelessWidget {
     );
   }
 }
+
+/// Full-screen black-out image viewer with pinch-to-zoom, double-tap zoom,
+/// and a one-tap Share action. Opened from the document attachment card.
+class _FullScreenImageViewer extends StatefulWidget {
+  final String name;
+  final String path;
+  final bool isNetwork;
+  final File? localFile;
+  final VoidCallback onShare;
+
+  const _FullScreenImageViewer({
+    required this.name,
+    required this.path,
+    required this.isNetwork,
+    required this.onShare,
+    this.localFile,
+  });
+
+  @override
+  State<_FullScreenImageViewer> createState() =>
+      _FullScreenImageViewerState();
+}
+
+class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
+  final TransformationController _transform =
+      TransformationController(Matrix4.identity());
+  TapDownDetails? _doubleTapDetails;
+
+  @override
+  void dispose() {
+    _transform.dispose();
+    super.dispose();
+  }
+
+  /// Zoom into the double-tapped point (or back out if already zoomed).
+  void _handleDoubleTap(TapDownDetails details) {
+    const double tapScale = 2.5;
+    final position = details.localPosition;
+
+    if (_transform.value.getMaxScaleOnAxis() > 1.0) {
+      _transform.value = Matrix4.identity();
+    } else {
+      _transform.value = Matrix4(
+        tapScale, 0, 0, 0,
+        0, tapScale, 0, 0,
+        0, 0, 1, 0,
+        tapScale - tapScale * position.dx,
+        tapScale - tapScale * position.dy,
+        0, 1,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: Text(
+          widget.name,
+          style: const TextStyle(color: Colors.white),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        actions: [
+          IconButton(
+            tooltip: 'Share document file',
+            icon: const Icon(Icons.ios_share_rounded),
+            onPressed: () {
+              Navigator.of(context).pop();
+              widget.onShare();
+            },
+          ),
+        ],
+      ),
+      body: InteractiveViewer(
+        clipBehavior: Clip.none,
+        transformationController: _transform,
+        minScale: 1.0,
+        maxScale: 5.0,
+        panEnabled: true,
+        onInteractionStart: (_) => _doubleTapDetails = null,
+        child: Center(
+          child: GestureDetector(
+            onDoubleTapDown: (details) => _doubleTapDetails = details,
+            onDoubleTap: () {
+              if (_doubleTapDetails != null) {
+                _handleDoubleTap(_doubleTapDetails!);
+              }
+            },
+            child: widget.isNetwork
+                ? Image.network(
+                    widget.path,
+                    fit: BoxFit.contain,
+                    loadingBuilder: (_, child, progress) {
+                      if (progress == null) return child;
+                      return Center(
+                        child: CircularProgressIndicator(
+                          value: progress.expectedTotalBytes != null
+                              ? progress.cumulativeBytesLoaded /
+                                  progress.expectedTotalBytes!
+                              : null,
+                        ),
+                      );
+                    },
+                    errorBuilder: (_, __, ___) => const Center(
+                      child: Text(
+                        'Error loading cloud image.',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    ),
+                  )
+                : Image.file(
+                    widget.localFile!,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => const Center(
+                      child: Text(
+                        'Error loading local image file.',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    ),
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+

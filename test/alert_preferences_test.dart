@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:wazy/models/finance.dart';
-import 'package:wazy/services/alert_preferences_service.dart';
-import 'package:wazy/services/anomaly_detection_service.dart';
+import 'package:finavig/models/finance.dart';
+import 'package:finavig/services/alert_preferences_service.dart';
+import 'package:finavig/services/anomaly_detection_service.dart';
 
 FinanceTransaction _tx({
   required String id,

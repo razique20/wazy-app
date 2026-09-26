@@ -1,9 +1,9 @@
-# Wazy — Technical Documentation
+# Finavig — Technical Documentation
 
 > Version 1.0.0 · Flutter 3.x / Dart ^3.11 · Backend: Supabase (PostgreSQL + Auth)
 > Audience: developers joining the project. Read this top-to-bottom once; keep [docs/README.md](README.md) bookmarked.
 
-Wazy is an AI-powered financial budgeting & cash-flow intelligence app with integrated personal/company document expiry tracking, built for the UAE market. One Flutter codebase ships to Android and iOS; a web build exists for the demo/docs flow.
+Finavig is an AI-powered financial budgeting & cash-flow intelligence app with integrated personal/company document expiry tracking, built for the UAE market. One Flutter codebase ships to Android and iOS; a web build exists for the demo/docs flow.
 
 ---
 
@@ -55,7 +55,7 @@ Wazy is an AI-powered financial budgeting & cash-flow intelligence app with inte
 | Application services | `lib/services/` | `ChangeNotifier` singletons (`X.instance`); own loading, caching, and remote sync |
 | Domain models | `lib/models/` | Immutable data classes with `fromJson`/`toJson` + pure computation helpers (`FinanceMath`, `RecurrenceMath`, `DocSync`, `UrgencyLevel`) |
 | Persistence | Supabase tables + `SharedPreferences` | Remote-first when configured, local-first otherwise |
-| Cross-cutting | `lib/theme/`, `lib/config/` | `WazyTheme` light/dark; credentials constants |
+| Cross-cutting | `lib/theme/`, `lib/config/` | `FinavigTheme` light/dark; credentials constants |
 
 ### 2.2 Key services
 
@@ -279,7 +279,7 @@ lib/
   screens/                12 screens (splash, onboarding, login, home, documents,
                           scan, detail, expiry list, search, money, cash flow, profile)
   widgets/                shared components + dialogs (renew, urgency, legal, version…)
-  theme/app_theme.dart    WazyColors + light/dark themes
+  theme/app_theme.dart    FinavigColors + light/dark themes
 supabase/
   schema.sql              documents/collections/reminders/custom types + RLS + cron
   finance_schema.sql      finance tables + RLS

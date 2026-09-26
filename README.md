@@ -1,7 +1,7 @@
-# Wazy 🚀
+# Finavig 🚀
 
 > **AI-powered budgeting & cash-flow intelligence — with every document expiry tracked and every renewal fee forecast.**  
-> **Wazy** is a financial budgeting & intelligence platform for personal & small-business use, with built-in document expiry tracking and renewal alerts. Built for mobile and web.
+> **Finavig** is a financial budgeting & intelligence platform for personal & small-business use, with built-in document expiry tracking and renewal alerts. Built for mobile and web.
 
 📚 **Project documentation** lives in [`docs/`](docs/): [technical documentation](docs/technical-documentation.md), [market study](docs/market-study.md), [feasibility study](docs/feasibility-study.md), and a [screenshot gallery](docs/README.md#-screenshot-gallery) of every feature.
 
@@ -71,7 +71,7 @@ The backend uses a multi-tenant, collection-based model in Supabase:
 Clone the repository and install dependencies:
 ```bash
 git clone https://github.com/razique20/wazy-app.git
-cd wazy
+cd finavig
 flutter pub get
 ```
 
@@ -106,7 +106,7 @@ flutter test
 
 ## 💻 Web Admin Console
 
-To build or deploy the companion web admin dashboard, refer to the self-contained prompt generator in [`ADMIN_CONSOLE_PROMPT.md`](file:///Users/raziquemk/Desktop/wazy/ADMIN_CONSOLE_PROMPT.md).
+To build or deploy the companion web admin dashboard, refer to the self-contained prompt generator in [`ADMIN_CONSOLE_PROMPT.md`](file:///Users/raziquemk/Desktop/finavig/ADMIN_CONSOLE_PROMPT.md).
 
 
 For help getting started with Flutter development, view the

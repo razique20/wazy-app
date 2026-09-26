@@ -110,7 +110,7 @@ class _TierRequestSheetState extends State<_TierRequestSheet> {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: launched ? Colors.green : WazyColors.navyPrimary,
+        backgroundColor: launched ? Colors.green : FinavigColors.navyPrimary,
         content: Text(
           launched
               ? 'Upgrade request opened in your mail app — just press send. '
@@ -169,16 +169,16 @@ class _TierRequestSheetState extends State<_TierRequestSheet> {
                     label: Text(d.label),
                     selected: _duration == d,
                     onSelected: (_) => setState(() => _duration = d),
-                    selectedColor: WazyColors.navyPrimary.withAlpha(46),
+                    selectedColor: FinavigColors.navyPrimary.withAlpha(46),
                     labelStyle: TextStyle(
                       fontWeight: FontWeight.w600,
                       color: _duration == d
-                          ? WazyColors.navyPrimary
+                          ? FinavigColors.navyPrimary
                           : Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     side: BorderSide(
                       color: _duration == d
-                          ? WazyColors.navyPrimary
+                          ? FinavigColors.navyPrimary
                           : Theme.of(context).colorScheme.outlineVariant,
                     ),
                     showCheckmark: false,
@@ -246,14 +246,14 @@ class _TierOptionCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: WazyColors.navyPrimary.withAlpha(25),
+                color: FinavigColors.navyPrimary.withAlpha(25),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 info.tier == SubscriptionTier.business
                     ? Icons.business_center_rounded
                     : Icons.workspace_premium_rounded,
-                color: WazyColors.navyPrimary,
+                color: FinavigColors.navyPrimary,
                 size: 20,
               ),
             ),
@@ -310,7 +310,7 @@ class UpgradeDialog extends StatelessWidget {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: launched ? Colors.green : WazyColors.navyPrimary,
+        backgroundColor: launched ? Colors.green : FinavigColors.navyPrimary,
         content: Text(
           launched
               ? 'Upgrade request opened in your mail app — just press send. '
@@ -338,12 +338,12 @@ class UpgradeDialog extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: WazyColors.navyPrimary.withAlpha(25),
+              color: FinavigColors.navyPrimary.withAlpha(25),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(
               Icons.lock_outline_rounded,
-              color: WazyColors.navyPrimary,
+              color: FinavigColors.navyPrimary,
               size: 22,
             ),
           ),
@@ -367,7 +367,7 @@ class UpgradeDialog extends StatelessWidget {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [WazyColors.navyPrimary, WazyColors.navyPrimaryDark],
+                  colors: [FinavigColors.navyPrimary, FinavigColors.navyPrimaryDark],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -393,13 +393,13 @@ class UpgradeDialog extends StatelessWidget {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: WazyColors.cyanSecondary.withAlpha(46),
+                          color: FinavigColors.cyanSecondary.withAlpha(46),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
                           info.priceLabel,
                           style: const TextStyle(
-                            color: WazyColors.cyanSecondary,
+                            color: FinavigColors.cyanSecondary,
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                           ),
@@ -416,7 +416,7 @@ class UpgradeDialog extends StatelessWidget {
                         children: [
                           const Icon(
                             Icons.check_circle_rounded,
-                            color: WazyColors.cyanSecondary,
+                            color: FinavigColors.cyanSecondary,
                             size: 15,
                           ),
                           const SizedBox(width: 6),
@@ -460,7 +460,7 @@ class UpgradeDialog extends StatelessWidget {
           icon: const Icon(Icons.upgrade_rounded, size: 18),
           label: const Text('Request Upgrade'),
           style: FilledButton.styleFrom(
-            backgroundColor: WazyColors.navyPrimary,
+            backgroundColor: FinavigColors.navyPrimary,
             foregroundColor: Colors.white,
           ),
         ),
@@ -482,8 +482,8 @@ class TierBadge extends StatelessWidget {
     final info = TierInfo.all[resolved]!;
     final color = switch (resolved) {
       SubscriptionTier.free => Colors.white.withAlpha(230),
-      SubscriptionTier.plus => WazyColors.cyanSecondary,
-      SubscriptionTier.business => WazyColors.emerald,
+      SubscriptionTier.plus => FinavigColors.cyanSecondary,
+      SubscriptionTier.business => FinavigColors.emerald,
     };
 
     return Container(

@@ -11,7 +11,7 @@ import '../../theme/app_theme.dart';
 import '../dialogs/app_guide_dialog.dart';
 
 /// A sleek, interactive "Getting Started" checklist card rendered on the Home dashboard
-/// for new users, guiding them step-by-step through Wazy's core capabilities.
+/// for new users, guiding them step-by-step through Finavig's core capabilities.
 class GettingStartedChecklistCard extends StatefulWidget {
   final VoidCallback? onOpenCollectionSwitcher;
 
@@ -112,7 +112,7 @@ class _GettingStartedChecklistCardState
           color: isDark ? const Color(0xFF1E293B) : Colors.white,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: isDark ? WazyColors.slateLight : WazyColors.mist,
+            color: isDark ? FinavigColors.slateLight : FinavigColors.mist,
             width: 1.1,
           ),
           boxShadow: [
@@ -138,12 +138,12 @@ class _GettingStartedChecklistCardState
                       Container(
                         padding: const EdgeInsets.all(7),
                         decoration: BoxDecoration(
-                          color: WazyColors.navyPrimary.withOpacity(0.12),
+                          color: FinavigColors.navyPrimary.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Icon(
                           Icons.checklist_rounded,
-                          color: WazyColors.navyPrimary,
+                          color: FinavigColors.navyPrimary,
                           size: 18,
                         ),
                       ),
@@ -165,7 +165,7 @@ class _GettingStartedChecklistCardState
                             Text(
                               allDone
                                   ? 'All initial steps completed — you are ready to roll!'
-                                  : 'Follow these 4 steps to set up your Wazy cockpit',
+                                  : 'Follow these 4 steps to set up your Finavig cockpit',
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: theme.colorScheme.outline,
                                 fontSize: 11,
@@ -205,7 +205,7 @@ class _GettingStartedChecklistCardState
                         ? Colors.white.withOpacity(0.08)
                         : Colors.black.withOpacity(0.06),
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      allDone ? WazyColors.emerald : WazyColors.navyPrimary,
+                      allDone ? FinavigColors.emerald : FinavigColors.navyPrimary,
                     ),
                   ),
                 ),
@@ -265,7 +265,7 @@ class _GettingStartedChecklistCardState
                           style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                         ),
                         style: TextButton.styleFrom(
-                          foregroundColor: WazyColors.navyPrimary,
+                          foregroundColor: FinavigColors.navyPrimary,
                           visualDensity: VisualDensity.compact,
                         ),
                       ),
@@ -308,8 +308,8 @@ class _GettingStartedChecklistCardState
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: done
-                    ? WazyColors.emerald
-                    : (isDark ? WazyColors.slateLight : WazyColors.mist),
+                    ? FinavigColors.emerald
+                    : (isDark ? FinavigColors.slateLight : FinavigColors.mist),
               ),
               child: Icon(
                 done ? Icons.check_rounded : Icons.circle_outlined,
@@ -330,7 +330,7 @@ class _GettingStartedChecklistCardState
                       decoration: done ? TextDecoration.lineThrough : null,
                       color: done
                           ? theme.colorScheme.outline
-                          : (isDark ? WazyColors.textPrimary : WazyColors.textPrimaryLight),
+                          : (isDark ? FinavigColors.textPrimary : FinavigColors.textPrimaryLight),
                     ),
                   ),
                   Text(
@@ -349,7 +349,7 @@ class _GettingStartedChecklistCardState
               decoration: BoxDecoration(
                 color: done
                     ? Colors.transparent
-                    : WazyColors.navyPrimary.withOpacity(0.08),
+                    : FinavigColors.navyPrimary.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
@@ -358,8 +358,8 @@ class _GettingStartedChecklistCardState
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   color: done
-                      ? WazyColors.emerald
-                      : WazyColors.navyPrimary,
+                      ? FinavigColors.emerald
+                      : FinavigColors.navyPrimary,
                 ),
               ),
             ),

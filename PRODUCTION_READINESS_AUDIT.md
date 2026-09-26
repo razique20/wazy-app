@@ -1,4 +1,4 @@
-# Wazy App — Production Readiness & Pre-Deployment Audit Report
+# Finavig App — Production Readiness & Pre-Deployment Audit Report
 
 **Audit Date:** September 23, 2026  
 **Application Version:** `1.0.0+1`  
@@ -8,7 +8,7 @@
 
 ## 1. Executive Summary
 
-Wazy is an AI-powered financial budgeting, cash-flow intelligence, and document compliance platform designed for GCC personal and business users. A comprehensive technical audit was conducted across the codebase, backend database schemas, security architecture, unit test suites, and UI features.
+Finavig is an AI-powered financial budgeting, cash-flow intelligence, and document compliance platform designed for GCC personal and business users. A comprehensive technical audit was conducted across the codebase, backend database schemas, security architecture, unit test suites, and UI features.
 
 ### Key Highlights:
 - **Test Suite Pass Rate:** **100% (236 / 236 unit & widget tests passed)**.
@@ -45,12 +45,12 @@ Wazy is an AI-powered financial budgeting, cash-flow intelligence, and document 
 
 ## 4. Pre-Deployment Action Items Checklist
 
-Before submitting Wazy to the Apple App Store and Google Play Store, complete the following pre-flight tasks:
+Before submitting Finavig to the Apple App Store and Google Play Store, complete the following pre-flight tasks:
 
 ### 🔴 Critical (Must Complete Before Release)
 - [ ] **Android Signing Config:** Update `android/app/build.gradle.kts` to use production keystore instead of `signingConfigs.getByName("debug")`.
 - [ ] **Supabase Production Execution:** Run `supabase/ai_quota_schema.sql` in your production Supabase SQL Editor.
-- [ ] **App Store Bundle IDs & Metadata:** Ensure `applicationId = "com.wazy.wazy"` matches your registered Apple App Store & Google Play Developer Console App IDs.
+- [ ] **App Store Bundle IDs & Metadata:** Ensure `applicationId = "com.finavig.finavig"` matches your registered Apple App Store & Google Play Developer Console App IDs.
 - [ ] **Privacy Policy & Terms URL:** Update the legal dialog links in `lib/widgets/dialogs/legal_info_dialogs.dart` to point to your live hosted privacy policy domain.
 
 ### 🟡 Recommended Post-Launch Enhancements

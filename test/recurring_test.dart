@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:wazy/models/document_type.dart';
-import 'package:wazy/models/expiry_item.dart';
-import 'package:wazy/models/finance.dart';
-import 'package:wazy/screens/money_screen.dart';
-import 'package:wazy/services/finance_service.dart';
-import 'package:wazy/services/document_scanner_service.dart';
+import 'package:finavig/models/document_type.dart';
+import 'package:finavig/models/expiry_item.dart';
+import 'package:finavig/models/finance.dart';
+import 'package:finavig/screens/money_screen.dart';
+import 'package:finavig/services/finance_service.dart';
+import 'package:finavig/services/document_scanner_service.dart';
 
 RecurringTransaction _template({
   required int dayOfMonth,

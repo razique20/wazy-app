@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Wazy</string>
+	<string>Finavig</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>wazy</string>
+	<string>finavig</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -25,9 +25,9 @@
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>    <!-- Voice-to-Record: microphone access + on-device speech recognition -->
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Wazy uses the microphone so you can add expenses and document renewals hands-free by speaking (e.g. "Paid 450 AED for DEWA yesterday").</string>
+	<string>Finavig uses the microphone so you can add expenses and document renewals hands-free by speaking (e.g. "Paid 450 AED for DEWA yesterday").</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Wazy uses speech recognition to transcribe your spoken expenses and document details into the quick-add form.</string>
+	<string>Finavig uses speech recognition to transcribe your spoken expenses and document details into the quick-add form.</string>
 	<!-- AI Executive Summary: allow HTTPS call to Google Gemini API -->
 	<key>NSAppTransportSecurity</key>
 	<dict>

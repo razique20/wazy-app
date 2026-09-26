@@ -1,6 +1,6 @@
-# Wazy Admin Console — Tier Management Prompt
+# Finavig Admin Console — Tier Management Prompt
 
-> **Instructions**: Copy the prompt below into the AI agent working on the **Wazy Admin Console**
+> **Instructions**: Copy the prompt below into the AI agent working on the **Finavig Admin Console**
 > codebase (the React/Next.js/Tailwind/TypeScript/Supabase project generated from
 > [`ADMIN_CONSOLE_PROMPT.md`](ADMIN_CONSOLE_PROMPT.md)). It adds the Track 1 subscription
 > tier-management feature that pairs with the paywall already shipped in the Flutter app
@@ -10,15 +10,15 @@
 
 ```markdown
 You are an expert full-stack Web Developer specializing in React, Next.js, Tailwind CSS,
-TypeScript, and Supabase. The Wazy Admin Console already exists — ADD a new feature to it:
+TypeScript, and Supabase. The Finavig Admin Console already exists — ADD a new feature to it:
 **Subscription tier management for users**.
 
 ## Background
 
-The Wazy Flutter app now ships a freemium paywall. The app resolves each signed-in user's
+The Finavig Flutter app now ships a freemium paywall. The app resolves each signed-in user's
 tier by reading the Supabase table `public.user_tiers`; the Admin Console is the only place
 that grants tiers. Upgrade requests arrive by email at aethylglobal@gmail.com with the
-subject `Wazy upgrade request — {tier} — user {userId}` and a body containing the user's ID,
+subject `Finavig upgrade request — {tier} — user {userId}` and a body containing the user's ID,
 account email, current tier, requested tier, the gated feature, app version and platform.
 The admin's workflow is: read the email → look the user up in the console → set the tier.
 
@@ -46,7 +46,7 @@ once against the production Supabase project — Dashboard → SQL Editor → Ne
   service key to the browser). Validate the tier value server-side against the
   allowed set. Insert an audit row when `user_tier_audit` exists.
 * Quick action: a "Paste user ID from upgrade email" box that accepts the raw user ID
-  (or the whole email subject line `Wazy upgrade request — plus — user <ID>`, parse
+  (or the whole email subject line `Finavig upgrade request — plus — user <ID>`, parse
   out the ID) and jumps straight to that user with the requested tier preselected.
 
 ## 3. Contract with the Flutter app (must match exactly — do not change)

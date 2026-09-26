@@ -1,6 +1,6 @@
 # Fintech Transformation Roadmap
 
-**From:** Wazy (financial budgeting & intelligence with document expiry tracking)
+**From:** Finavig (financial budgeting & intelligence with document expiry tracking)
 **To:** Financial operating system for UAE SMEs — where deadlines become transactions.
 
 ---

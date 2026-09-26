@@ -64,11 +64,11 @@ class _ProgressRingState extends State<ProgressRing>
 
   Color _fillColor() {
     final days = _remaining.inDays;
-    if (days < 0) return WazyColors.textMuted;
-    if (days <= 7) return WazyColors.danger;
-    if (days <= 30) return WazyColors.warning;
-    if (days <= 60) return WazyColors.caution;
-    return widget.color ?? WazyColors.safe;
+    if (days < 0) return FinavigColors.textMuted;
+    if (days <= 7) return FinavigColors.danger;
+    if (days <= 30) return FinavigColors.warning;
+    if (days <= 60) return FinavigColors.caution;
+    return widget.color ?? FinavigColors.safe;
   }
 
   @override

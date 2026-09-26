@@ -305,7 +305,7 @@ class AiExecutiveSummaryService {
 
     // Prepare Groq API system & user prompts.
     final systemPrompt =
-        'You are Wazy\'s AI Financial & Document Executive Advisor for GCC businesses. '
+        'You are Finavig\'s AI Financial & Document Executive Advisor for GCC businesses. '
         'Provide a concise 2-3 sentence executive summary combining document compliance/expiries and financial payments. '
         'Use only the factual metrics provided. Keep tone professional, encouraging, and clear. Money values in local GCC currency.';
 

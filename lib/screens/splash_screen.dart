@@ -79,7 +79,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: WazyColors.navyPrimary,
+      backgroundColor: FinavigColors.navyPrimary,
       body: Stack(
         children: [
           Center(
@@ -87,7 +87,7 @@ class _SplashScreenState extends State<SplashScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
-                  'WAZY',
+                  'FINAVIG',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 44,
@@ -104,7 +104,7 @@ class _SplashScreenState extends State<SplashScreen>
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 2.5,
-                    color: WazyColors.cyanAccent.withOpacity(0.9),
+                    color: FinavigColors.cyanAccent.withOpacity(0.9),
                   ),
                 ),
                 const SizedBox(height: 48),
@@ -114,7 +114,7 @@ class _SplashScreenState extends State<SplashScreen>
                     height: 22,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(WazyColors.cyanAccent),
+                      valueColor: AlwaysStoppedAnimation<Color>(FinavigColors.cyanAccent),
                     ),
                   ),
               ],

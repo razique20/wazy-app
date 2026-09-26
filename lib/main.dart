@@ -17,6 +17,7 @@ import 'services/supabase_service.dart';
 import 'services/theme_service.dart';
 import 'services/urgency_engine.dart';
 import 'services/notification_service.dart';
+import 'services/storage_migration_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,12 +45,16 @@ void main() async {
   await BudgetAlertService.instance.init();
   unawaited(GeminiApiService.instance.load()); // optional LLM key for AI features
 
+  // One-time rebrand migration: move locally stored documents from the
+  // legacy Wazy folder (/wazy/documents) to the Finavig folder.
+  await StorageMigrationService.migrate();
+
   // Prewarm services. Auth session is restored from secure storage by
   // supabase_flutter during Supabase.initialize, so by this point
   // AuthService.isSignedIn is already correct on cold start.
   await _prewarmServices();
 
-  runApp(const WazyApp());
+  runApp(const FinavigApp());
 }
 
 /// Initialise the services that don't depend on auth first, then the

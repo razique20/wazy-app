@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:wazy/models/finance.dart';
-import 'package:wazy/models/subscription_tier.dart';
-import 'package:wazy/services/ai_budget_plan_service.dart';
-import 'package:wazy/services/entitlement_service.dart';
+import 'package:finavig/models/finance.dart';
+import 'package:finavig/models/subscription_tier.dart';
+import 'package:finavig/services/ai_budget_plan_service.dart';
+import 'package:finavig/services/entitlement_service.dart';
 
 FinanceTransaction _tx(
   FinanceCategory category,

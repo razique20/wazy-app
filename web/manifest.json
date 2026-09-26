@@ -1,11 +1,11 @@
 {
-    "name": "wazy",
-    "short_name": "wazy",
+    "name": "finavig",
+    "short_name": "finavig",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "Wazy — AI-powered financial budgeting & cash-flow intelligence with document expiry tracking and renewal alerts.",
+    "background_color": "#10234E",
+    "theme_color": "#10234E",
+    "description": "Finavig — AI-powered financial budgeting & cash-flow intelligence with document expiry tracking and renewal alerts.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

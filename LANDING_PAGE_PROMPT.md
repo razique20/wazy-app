@@ -1,6 +1,6 @@
-# Wazy Landing Page — AI Generation Prompt
+# Finavig Landing Page — AI Generation Prompt
 
-> **Instructions**: Copy and paste the prompt below into ChatGPT, Claude, Cursor, v0, Bolt.new, or Lovable to automatically generate a production-grade marketing **Landing Page** (with Terms & Conditions and Privacy Policy pages) for the **Wazy** application.
+> **Instructions**: Copy and paste the prompt below into ChatGPT, Claude, Cursor, v0, Bolt.new, or Lovable to automatically generate a production-grade marketing **Landing Page** (with Terms & Conditions and Privacy Policy pages) for the **Finavig** application.
 >
 > **Screenshots**: App screenshots live in [`docs/images/`](docs/images/) (`01_splash.png` … `11_profile.png`). Copy them into the generated project's `public/screenshots/` folder before building, or drop in your own — the prompt references them by filename with ready-made captions.
 
@@ -9,7 +9,7 @@
 ```markdown
 You are an expert Frontend Web Developer specializing in Next.js (App Router), TypeScript, Tailwind CSS, and modern conversion-focused landing page design.
 
-Build a modern, production-grade **marketing website** for the **Wazy** application — an AI-powered financial budgeting & cash-flow intelligence app with document expiry tracking and renewal alerts, built for personal and small-business use in the UAE.
+Build a modern, production-grade **marketing website** for the **Finavig** application — an AI-powered financial budgeting & cash-flow intelligence app with document expiry tracking and renewal alerts, built for personal and small-business use in the UAE.
 
 The site must include **three routes**:
 1. `/` — the landing page
@@ -20,7 +20,7 @@ The site must include **three routes**:
 
 ## 1. Product Story (use this for all copy)
 
-**Wazy** turns paperwork into clarity. Users upload company and personal documents (trade licences, visas, Emirates ID, tenancy contracts, insurance, subscriptions) — AI extracts the dates, amounts and vendors automatically. Wazy tracks spending, budgets and 90-day cash-flow forecasts in one place, and sends renewal alerts 30/60/90 days before every deadline — so the money is always ready when the renewal is due.
+**Finavig** turns paperwork into clarity. Users upload company and personal documents (trade licences, visas, Emirates ID, tenancy contracts, insurance, subscriptions) — AI extracts the dates, amounts and vendors automatically. Finavig tracks spending, budgets and 90-day cash-flow forecasts in one place, and sends renewal alerts 30/60/90 days before every deadline — so the money is always ready when the renewal is due.
 
 **Three feature pillars:**
 
@@ -30,7 +30,7 @@ The site must include **three routes**:
 
 **Hero headline (use this or improve it):**
 "Every renewal. Every dirham. One dashboard."
-Subheadline: "Wazy forecasts your cash flow and tracks every document expiry — trade licences, visas, Emirates ID, insurance — with alerts 30/60/90 days before they're due."
+Subheadline: "Finavig forecasts your cash flow and tracks every document expiry — trade licences, visas, Emirates ID, insurance — with alerts 30/60/90 days before they're due."
 
 **CTA buttons:** "Download on iOS" / "Get it on Android" (placeholder `#` store links) and a secondary "See how it works" that scrolls to the features/screens section.
 
@@ -105,7 +105,7 @@ Render as a tabbed or horizontally scrollable gallery with device frames; lazy-l
 7. **Built for the UAE** — mention Emirates ID, Ejari/tenancy, trade licences, RTA vehicle registration, DEWA/Etisalat vendor recognition, AED-first.
 8. **FAQ** — accordion with 6–8 questions (What platforms? Is my data safe? Does AI train on my documents? (No.) Can I export data? (CSV/PDF.) Is it free?).
 9. **Final CTA** — big gradient band with store badges.
-10. **Footer** — logo, tagline, links to `/terms`, `/privacy`, `mailto:support@wazy.app`, WhatsApp, socials (placeholders). Include "© 2026 Wazy. All rights reserved." and "Made in the UAE 🇦🇪".
+10. **Footer** — logo, tagline, links to `/terms`, `/privacy`, `mailto:support@wazy.app`, WhatsApp, socials (placeholders). Include "© 2026 Finavig. All rights reserved." and "Made in the UAE 🇦🇪".
 
 ---
 
@@ -113,17 +113,17 @@ Render as a tabbed or horizontally scrollable gallery with device frames; lazy-l
 
 **Title:** Terms & Conditions — **Last updated: September 2026**
 
-These terms govern your use of Wazy — the financial and document intelligence platform for UAE businesses and individuals. By creating an account, downloading, or using the app or website, you agree to these terms.
+These terms govern your use of Finavig — the financial and document intelligence platform for UAE businesses and individuals. By creating an account, downloading, or using the app or website, you agree to these terms.
 
-1. **The service.** Wazy lets you upload company and personal documents (trade licences, visas, invoices, receipts, tenancy agreements and more), automatically extracts dates, amounts and vendors with AI, tracks spending, budgets and cash-flow forecasts, and sends renewal reminders. Features may evolve; material changes will be communicated in-app or on this site.
-2. **Your account.** You are responsible for the accuracy of the email you register and for keeping your password secure. One account per person; company data belongs to the registering organisation. You must be at least 16 years old to use Wazy.
+1. **The service.** Finavig lets you upload company and personal documents (trade licences, visas, invoices, receipts, tenancy agreements and more), automatically extracts dates, amounts and vendors with AI, tracks spending, budgets and cash-flow forecasts, and sends renewal reminders. Features may evolve; material changes will be communicated in-app or on this site.
+2. **Your account.** You are responsible for the accuracy of the email you register and for keeping your password secure. One account per person; company data belongs to the registering organisation. You must be at least 16 years old to use Finavig.
 3. **Your documents & data.** You keep full ownership of everything you upload. We process your documents only to provide the service — expiry extraction, reminders, renewal tracking — and never sell your data.
 4. **Acceptable use.** Do not upload documents you are not authorised to handle, attempt to access other users' data, reverse-engineer or abuse the service, or use it to store unlawful content. We may suspend accounts that violate these terms.
-5. **Insights are assistance, not professional advice.** Wazy highlights upcoming deadlines, spending patterns and cash projections, but it does not replace professional legal, PRO, accounting, tax or compliance advice. Always confirm deadlines with the issuing authority and figures with your accountant. Wazy is not liable for fines, penalties or losses arising from missed deadlines where reminders were delivered as configured.
+5. **Insights are assistance, not professional advice.** Finavig highlights upcoming deadlines, spending patterns and cash projections, but it does not replace professional legal, PRO, accounting, tax or compliance advice. Always confirm deadlines with the issuing authority and figures with your accountant. Finavig is not liable for fines, penalties or losses arising from missed deadlines where reminders were delivered as configured.
 6. **Availability & changes.** The service is provided "as is" and we aim for high availability but do not guarantee uninterrupted access. We may add, change, or discontinue features; material changes to these terms will be communicated in advance.
 7. **Fees.** Core tracking features are provided free of charge; optional premium features or payment services may be introduced with clear pricing disclosed before purchase.
 8. **Termination.** You can delete your account at any time from the profile screen. We may suspend or terminate accounts that violate these terms. On termination, sections concerning data ownership, disclaimers and liability survive.
-9. **Limitation of liability.** To the maximum extent permitted by law, Wazy's aggregate liability for any claim relating to the service is limited to the amount you paid us in the 12 months preceding the claim (or AED 100 if no fees were paid).
+9. **Limitation of liability.** To the maximum extent permitted by law, Finavig's aggregate liability for any claim relating to the service is limited to the amount you paid us in the 12 months preceding the claim (or AED 100 if no fees were paid).
 10. **Governing law.** These terms are governed by the laws of the United Arab Emirates. Disputes are subject to the exclusive jurisdiction of the UAE courts.
 11. **Contact.** Questions about these terms: `support@wazy.app`.
 
@@ -133,7 +133,7 @@ These terms govern your use of Wazy — the financial and document intelligence 
 
 **Title:** Privacy Policy — **Last updated: September 2026**
 
-Your documents and financial data are sensitive. This policy explains, in plain language, what Wazy collects, why, and how it stays protected. It complies with the UAE Federal Personal Data Protection Law (PDPL, Federal Decree-Law No. 45 of 2021).
+Your documents and financial data are sensitive. This policy explains, in plain language, what Finavig collects, why, and how it stays protected. It complies with the UAE Federal Personal Data Protection Law (PDPL, Federal Decree-Law No. 45 of 2021).
 
 1. **What we collect**
    - **Account details**: email address (and optional phone number for renewal and cash alerts).
@@ -150,7 +150,7 @@ Your documents and financial data are sensitive. This policy explains, in plain 
 4. **Where data lives** — Documents, financial records and account data are stored in Supabase (cloud infrastructure) with encryption in transit and at rest, protected by Row Level Security so only you can access your data. AI extraction runs on document content solely to locate dates, amounts and document attributes.
 5. **Retention & deletion** — Your data is kept while your account is active. Deleting a document removes it from your workspace. Deleting your account initiates removal of your personal data within 30 days, except where retention is required by law.
 6. **Your rights** — You can access, correct, export, or delete your data at any time from the app (CSV/PDF export built in). Under PDPL you may also request portability, restriction or objection to processing; contact us and we will respond promptly.
-7. **Children** — Wazy is a business and productivity tool and is not directed at children under 16. We do not knowingly collect data from children.
+7. **Children** — Finavig is a business and productivity tool and is not directed at children under 16. We do not knowingly collect data from children.
 8. **Security** — Encryption in transit (TLS) and at rest, isolated per-user data access, and least-privilege infrastructure. No system is perfectly secure, but we design to industry standards and will notify affected users and regulators of any breach as required by UAE law.
 9. **International transfers** — Where data is processed outside the UAE, we use providers that offer adequate safeguards consistent with PDPL requirements.
 10. **Changes to this policy** — Material changes will be announced in-app and the "last updated" date above revised.
@@ -185,5 +185,5 @@ public/
   screenshots/*.png
 ```
 
-Deliver complete, runnable code: `package.json`, `tailwind.config.ts`, `app/layout.tsx`, all components, and both legal pages. Ensure `npm run build` passes with zero errors. Copy should be final (no lorem ipsum). Add JSON-LD `SoftwareApplication` schema on the landing page (name: Wazy, applicationCategory: FinanceApplication, operatingSystem: iOS, Android).
+Deliver complete, runnable code: `package.json`, `tailwind.config.ts`, `app/layout.tsx`, all components, and both legal pages. Ensure `npm run build` passes with zero errors. Copy should be final (no lorem ipsum). Add JSON-LD `SoftwareApplication` schema on the landing page (name: Finavig, applicationCategory: FinanceApplication, operatingSystem: iOS, Android).
 ```

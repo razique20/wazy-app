@@ -41,11 +41,11 @@ class AppVersionService {
 
   /// Dummy App Store link for iOS releases.
   static const String dummyAppStoreUrl =
-      'https://apps.apple.com/app/wazy-doc-tracker/id1234567890';
+      'https://apps.apple.com/app/finavig/id1234567890';
 
   /// Dummy Google Play Store link for Android releases.
   static const String dummyPlayStoreUrl =
-      'https://play.google.com/store/apps/details?id=com.wazy.app';
+      'https://play.google.com/store/apps/details?id=com.finavig.finavig';
 
   /// Fallback release URL.
   static const String dummyReleaseUrl =
