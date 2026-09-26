@@ -28,6 +28,7 @@ import 'screens/ai_summary_screen.dart';
 import 'screens/ai_budget_plan_screen.dart';
 import 'screens/alerts_reminders_screen.dart';
 import 'services/auth_service.dart';
+import 'widgets/dialogs/quick_action_sheet.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _homeShellKey = GlobalKey<NavigatorState>();
@@ -200,7 +201,8 @@ final router = GoRouter(
 );/// Bottom navigation shell with the four main tabs.
 ///
 /// Floating dark pill design: icon-only destinations with a filled circular
-/// indicator for the active tab.
+/// indicator for the active tab, plus a center "universal quick action" (+)
+/// button that opens the 1-tap menu for every core creation flow.
 ///
 /// Destinations carry live context:
 /// * Documents — red badge when any tracked document needs action (≤30 days).
@@ -321,6 +323,12 @@ class _AppShellState extends State<_AppShell> {
                           : WazyColors.warning,
                   onTap: () => _goBranch(1),
                 ),
+                // Universal quick action (+): scan a document, log money,
+                // voice AI log, or create an envelope from any tab.
+                _QuickActionButton(
+                  isDark: isDark,
+                  onTap: () => showQuickActionSheet(context),
+                ),
                 _NavPillItem(
                   icon: widget.navigationShell.currentIndex == 2
                       ? Icons.description_rounded
@@ -351,6 +359,61 @@ class _AppShellState extends State<_AppShell> {
         index,
         initialLocation: index == widget.navigationShell.currentIndex,
       );
+}
+
+/// Center "universal quick action" (+) button inside the nav pill: a raised
+/// violet orb that opens the quick action menu from any tab.
+class _QuickActionButton extends StatelessWidget {
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _QuickActionButton({
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Center(
+        child: Tooltip(
+          message: 'Quick actions',
+          waitDuration: const Duration(milliseconds: 600),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(19),
+              child: Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [WazyColors.violet, WazyColors.violetDark],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: WazyColors.violet.withOpacity(0.45),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.add_rounded,
+                  size: 24,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// One icon-only destination inside the floating nav pill. The active tab
